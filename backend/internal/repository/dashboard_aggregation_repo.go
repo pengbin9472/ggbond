@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Wei-Shaw/sub2api/internal/pkg/timezone"
-	"github.com/Wei-Shaw/sub2api/internal/service"
+	"github.com/pengbin9472/ggbond/internal/pkg/timezone"
+	"github.com/pengbin9472/ggbond/internal/service"
 	"github.com/lib/pq"
 )
 

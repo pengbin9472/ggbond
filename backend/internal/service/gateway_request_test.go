@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Wei-Shaw/sub2api/internal/domain"
+	"github.com/pengbin9472/ggbond/internal/domain"
 	"github.com/stretchr/testify/require"
 )
 

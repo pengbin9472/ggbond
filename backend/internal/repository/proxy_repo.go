@@ -4,11 +4,11 @@ import (
 	"context"
 	"database/sql"
 
-	dbent "github.com/Wei-Shaw/sub2api/ent"
-	"github.com/Wei-Shaw/sub2api/ent/proxy"
-	"github.com/Wei-Shaw/sub2api/internal/service"
+	dbent "github.com/pengbin9472/ggbond/ent"
+	"github.com/pengbin9472/ggbond/ent/proxy"
+	"github.com/pengbin9472/ggbond/internal/service"
 
-	"github.com/Wei-Shaw/sub2api/internal/pkg/pagination"
+	"github.com/pengbin9472/ggbond/internal/pkg/pagination"
 )
 
 type sqlQuerier interface {

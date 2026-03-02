@@ -6,11 +6,11 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/Wei-Shaw/sub2api/internal/handler/dto"
-	"github.com/Wei-Shaw/sub2api/internal/pkg/pagination"
-	"github.com/Wei-Shaw/sub2api/internal/pkg/response"
-	middleware2 "github.com/Wei-Shaw/sub2api/internal/server/middleware"
-	"github.com/Wei-Shaw/sub2api/internal/service"
+	"github.com/pengbin9472/ggbond/internal/handler/dto"
+	"github.com/pengbin9472/ggbond/internal/pkg/pagination"
+	"github.com/pengbin9472/ggbond/internal/pkg/response"
+	middleware2 "github.com/pengbin9472/ggbond/internal/server/middleware"
+	"github.com/pengbin9472/ggbond/internal/service"
 
 	"github.com/gin-gonic/gin"
 )

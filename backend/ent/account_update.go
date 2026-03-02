@@ -11,11 +11,11 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/Wei-Shaw/sub2api/ent/account"
-	"github.com/Wei-Shaw/sub2api/ent/group"
-	"github.com/Wei-Shaw/sub2api/ent/predicate"
-	"github.com/Wei-Shaw/sub2api/ent/proxy"
-	"github.com/Wei-Shaw/sub2api/ent/usagelog"
+	"github.com/pengbin9472/ggbond/ent/account"
+	"github.com/pengbin9472/ggbond/ent/group"
+	"github.com/pengbin9472/ggbond/ent/predicate"
+	"github.com/pengbin9472/ggbond/ent/proxy"
+	"github.com/pengbin9472/ggbond/ent/usagelog"
 )
 
 // AccountUpdate is the builder for updating Account entities.

@@ -7,8 +7,8 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/Wei-Shaw/sub2api/internal/config"
-	infraerrors "github.com/Wei-Shaw/sub2api/internal/pkg/errors"
+	"github.com/pengbin9472/ggbond/internal/config"
+	infraerrors "github.com/pengbin9472/ggbond/internal/pkg/errors"
 	"github.com/stretchr/testify/require"
 )
 

@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Wei-Shaw/sub2api/internal/config"
+	"github.com/pengbin9472/ggbond/internal/config"
 )
 
 // TokenRefreshService OAuth token自动刷新服务

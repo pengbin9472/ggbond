@@ -11,7 +11,7 @@ import (
 
 	"github.com/pquerna/otp/totp"
 
-	infraerrors "github.com/Wei-Shaw/sub2api/internal/pkg/errors"
+	infraerrors "github.com/pengbin9472/ggbond/internal/pkg/errors"
 )
 
 var (
@@ -83,7 +83,7 @@ const (
 	totpLoginTTL    = 5 * time.Minute
 	totpAttemptsTTL = 15 * time.Minute
 	maxTotpAttempts = 5
-	totpIssuer      = "Sub2API"
+	totpIssuer      = "GGbond"
 )
 
 // TotpService handles TOTP operations

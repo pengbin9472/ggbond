@@ -15,13 +15,13 @@ import (
 	"syscall"
 	"time"
 
-	_ "github.com/Wei-Shaw/sub2api/ent/runtime"
-	"github.com/Wei-Shaw/sub2api/internal/config"
-	"github.com/Wei-Shaw/sub2api/internal/handler"
-	"github.com/Wei-Shaw/sub2api/internal/pkg/logger"
-	"github.com/Wei-Shaw/sub2api/internal/server/middleware"
-	"github.com/Wei-Shaw/sub2api/internal/setup"
-	"github.com/Wei-Shaw/sub2api/internal/web"
+	_ "github.com/pengbin9472/ggbond/ent/runtime"
+	"github.com/pengbin9472/ggbond/internal/config"
+	"github.com/pengbin9472/ggbond/internal/handler"
+	"github.com/pengbin9472/ggbond/internal/pkg/logger"
+	"github.com/pengbin9472/ggbond/internal/server/middleware"
+	"github.com/pengbin9472/ggbond/internal/setup"
+	"github.com/pengbin9472/ggbond/internal/web"
 
 	"github.com/gin-gonic/gin"
 	"golang.org/x/net/http2"
@@ -64,7 +64,7 @@ func main() {
 	flag.Parse()
 
 	if *showVersion {
-		log.Printf("Sub2API %s (commit: %s, built: %s)\n", Version, Commit, Date)
+		log.Printf("GGbond %s (commit: %s, built: %s)\n", Version, Commit, Date)
 		return
 	}
 
@@ -114,7 +114,7 @@ func runSetupServer() {
 	// This allows users to run setup on a different address if needed
 	addr := config.GetServerAddress()
 	log.Printf("Setup wizard available at http://%s", addr)
-	log.Println("Complete the setup wizard to configure Sub2API")
+	log.Println("Complete the setup wizard to configure GGbond")
 
 	server := &http.Server{
 		Addr:              addr,

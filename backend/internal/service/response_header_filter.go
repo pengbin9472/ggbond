@@ -1,8 +1,8 @@
 package service
 
 import (
-	"github.com/Wei-Shaw/sub2api/internal/config"
-	"github.com/Wei-Shaw/sub2api/internal/util/responseheaders"
+	"github.com/pengbin9472/ggbond/internal/config"
+	"github.com/pengbin9472/ggbond/internal/util/responseheaders"
 )
 
 func compileResponseHeaderFilter(cfg *config.Config) *responseheaders.CompiledHeaderFilter {

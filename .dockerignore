@@ -1,5 +1,5 @@
 # =============================================================================
-# Docker Ignore File for Sub2API
+# Docker Ignore File for GGbond
 # =============================================================================
 
 # Git
@@ -59,8 +59,8 @@ temp/
 
 # Deploy files (not needed in image)
 deploy/install.sh
-deploy/sub2api.service
-deploy/sub2api-sudoers
+deploy/ggbond.service
+deploy/ggbond-sudoers
 
 # GoReleaser
 .goreleaser.yaml

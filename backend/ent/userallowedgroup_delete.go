@@ -7,8 +7,8 @@ import (
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
-	"github.com/Wei-Shaw/sub2api/ent/predicate"
-	"github.com/Wei-Shaw/sub2api/ent/userallowedgroup"
+	"github.com/pengbin9472/ggbond/ent/predicate"
+	"github.com/pengbin9472/ggbond/ent/userallowedgroup"
 )
 
 // UserAllowedGroupDelete is the builder for deleting a UserAllowedGroup entity.

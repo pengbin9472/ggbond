@@ -1,5 +1,5 @@
 # =============================================================================
-# Sub2API Multi-Stage Dockerfile
+# GGbond Multi-Stage Dockerfile
 # =============================================================================
 # Stage 1: Build frontend
 # Stage 2: Build Go backend with embedded frontend
@@ -69,7 +69,7 @@ RUN VERSION_VALUE="${VERSION}" && \
     -tags embed \
     -ldflags="-s -w -X main.Version=${VERSION_VALUE} -X main.Commit=${COMMIT} -X main.Date=${DATE_VALUE} -X main.BuildType=release" \
     -trimpath \
-    -o /app/sub2api \
+    -o /app/ggbond \
     ./cmd/server
 
 # -----------------------------------------------------------------------------
@@ -78,9 +78,9 @@ RUN VERSION_VALUE="${VERSION}" && \
 FROM ${ALPINE_IMAGE}
 
 # Labels
-LABEL maintainer="Wei-Shaw <github.com/Wei-Shaw>"
-LABEL description="Sub2API - AI API Gateway Platform"
-LABEL org.opencontainers.image.source="https://github.com/Wei-Shaw/sub2api"
+LABEL maintainer="pengbin9472 <github.com/pengbin9472>"
+LABEL description="GGbond - AI API Gateway Platform"
+LABEL org.opencontainers.image.source="https://github.com/pengbin9472/ggbond"
 
 # Install runtime dependencies
 RUN apk add --no-cache \
@@ -89,21 +89,21 @@ RUN apk add --no-cache \
     && rm -rf /var/cache/apk/*
 
 # Create non-root user
-RUN addgroup -g 1000 sub2api && \
-    adduser -u 1000 -G sub2api -s /bin/sh -D sub2api
+RUN addgroup -g 1000 ggbond && \
+    adduser -u 1000 -G ggbond -s /bin/sh -D ggbond
 
 # Set working directory
 WORKDIR /app
 
 # Copy binary/resources with ownership to avoid extra full-layer chown copy
-COPY --from=backend-builder --chown=sub2api:sub2api /app/sub2api /app/sub2api
-COPY --from=backend-builder --chown=sub2api:sub2api /app/backend/resources /app/resources
+COPY --from=backend-builder --chown=ggbond:ggbond /app/ggbond /app/ggbond
+COPY --from=backend-builder --chown=ggbond:ggbond /app/backend/resources /app/resources
 
 # Create data directory
-RUN mkdir -p /app/data && chown sub2api:sub2api /app/data
+RUN mkdir -p /app/data && chown ggbond:ggbond /app/data
 
 # Switch to non-root user
-USER sub2api
+USER ggbond
 
 # Expose port (can be overridden by SERVER_PORT env var)
 EXPOSE 8080
@@ -113,4 +113,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
     CMD wget -q -T 5 -O /dev/null http://localhost:${SERVER_PORT:-8080}/health || exit 1
 
 # Run the application
-ENTRYPOINT ["/app/sub2api"]
+ENTRYPOINT ["/app/ggbond"]

@@ -7,10 +7,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Wei-Shaw/sub2api/internal/pkg/response"
-	"github.com/Wei-Shaw/sub2api/internal/pkg/sysutil"
-	middleware2 "github.com/Wei-Shaw/sub2api/internal/server/middleware"
-	"github.com/Wei-Shaw/sub2api/internal/service"
+	"github.com/pengbin9472/ggbond/internal/pkg/response"
+	"github.com/pengbin9472/ggbond/internal/pkg/sysutil"
+	middleware2 "github.com/pengbin9472/ggbond/internal/server/middleware"
+	"github.com/pengbin9472/ggbond/internal/service"
 
 	"github.com/gin-gonic/gin"
 )

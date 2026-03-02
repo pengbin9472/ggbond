@@ -12,10 +12,10 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/Wei-Shaw/sub2api/ent/predicate"
-	"github.com/Wei-Shaw/sub2api/ent/promocode"
-	"github.com/Wei-Shaw/sub2api/ent/promocodeusage"
-	"github.com/Wei-Shaw/sub2api/ent/user"
+	"github.com/pengbin9472/ggbond/ent/predicate"
+	"github.com/pengbin9472/ggbond/ent/promocode"
+	"github.com/pengbin9472/ggbond/ent/promocodeusage"
+	"github.com/pengbin9472/ggbond/ent/user"
 )
 
 // PromoCodeUsageQuery is the builder for querying PromoCodeUsage entities.

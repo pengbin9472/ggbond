@@ -14,7 +14,7 @@ import (
 	"strconv"
 	"time"
 
-	infraerrors "github.com/Wei-Shaw/sub2api/internal/pkg/errors"
+	infraerrors "github.com/pengbin9472/ggbond/internal/pkg/errors"
 )
 
 var (

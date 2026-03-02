@@ -8,14 +8,14 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Wei-Shaw/sub2api/internal/pkg/response"
-	"github.com/Wei-Shaw/sub2api/internal/service"
+	"github.com/pengbin9472/ggbond/internal/pkg/response"
+	"github.com/pengbin9472/ggbond/internal/service"
 	"github.com/gin-gonic/gin"
 )
 
 const (
-	dataType       = "sub2api-data"
-	legacyDataType = "sub2api-bundle"
+	dataType       = "ggbond-data"
+	legacyDataType = "ggbond-bundle"
 	dataVersion    = 1
 	dataPageCap    = 1000
 )
