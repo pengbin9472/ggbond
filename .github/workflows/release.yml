@@ -51,10 +51,23 @@ jobs:
             echo "should_release=true" >> $GITHUB_OUTPUT
             echo "Using pushed tag: $TAG_NAME"
           else
-            # Push to main - auto create tag from VERSION file
-            VERSION=$(tr -d '\r\n' < backend/cmd/server/VERSION)
-            SHORT_SHA=$(git rev-parse --short HEAD)
-            TAG_NAME="v${VERSION}-${SHORT_SHA}"
+            # Push to main - auto increment patch version
+            # Find the latest tag matching vX.Y.Z pattern
+            LATEST_TAG=$(git tag --list 'v[0-9]*.[0-9]*.[0-9]*' --sort=-v:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -n1)
+
+            if [ -z "$LATEST_TAG" ]; then
+              # No existing clean tag, read from VERSION file
+              VERSION=$(tr -d '\r\n' < backend/cmd/server/VERSION)
+              TAG_NAME="v${VERSION}"
+            else
+              # Parse major.minor.patch and increment patch
+              VERSION="${LATEST_TAG#v}"
+              MAJOR=$(echo "$VERSION" | cut -d. -f1)
+              MINOR=$(echo "$VERSION" | cut -d. -f2)
+              PATCH=$(echo "$VERSION" | cut -d. -f3)
+              PATCH=$((PATCH + 1))
+              TAG_NAME="v${MAJOR}.${MINOR}.${PATCH}"
+            fi
 
             if git rev-parse "$TAG_NAME" >/dev/null 2>&1; then
               echo "Tag $TAG_NAME already exists, skipping release"
@@ -62,14 +75,21 @@ jobs:
               exit 0
             fi
 
+            # Update VERSION file in the tag
+            NEW_VERSION="${TAG_NAME#v}"
+            echo "$NEW_VERSION" > backend/cmd/server/VERSION
+
             git config user.name "github-actions[bot]"
             git config user.email "github-actions[bot]@users.noreply.github.com"
-            git tag -a "$TAG_NAME" -m "Auto release from main branch"
+            git add backend/cmd/server/VERSION
+            git commit -m "chore: bump version to ${TAG_NAME} [skip ci]" || true
+            git tag -a "$TAG_NAME" -m "Auto release ${TAG_NAME}"
+            git push origin HEAD:main --no-verify
             git push origin "$TAG_NAME"
 
             echo "tag_name=$TAG_NAME" >> $GITHUB_OUTPUT
             echo "should_release=true" >> $GITHUB_OUTPUT
-            echo "Auto-created tag: $TAG_NAME"
+            echo "Auto-created tag: $TAG_NAME (incremented from ${LATEST_TAG:-none})"
           fi
 
   # Step 2: Build frontend
