@@ -11,6 +11,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/google/uuid"
 	"github.com/pengbin9472/ggbond/internal/domain"
 	"github.com/pengbin9472/ggbond/internal/pkg/antigravity"
 	"github.com/pengbin9472/ggbond/internal/pkg/gemini"
@@ -20,7 +21,6 @@ import (
 	"github.com/pengbin9472/ggbond/internal/pkg/logger"
 	"github.com/pengbin9472/ggbond/internal/server/middleware"
 	"github.com/pengbin9472/ggbond/internal/service"
-	"github.com/google/uuid"
 
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"

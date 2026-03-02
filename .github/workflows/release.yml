@@ -2,6 +2,8 @@ name: Release
 
 on:
   push:
+    branches:
+      - main
     tags:
       - 'v*'
   workflow_dispatch:
@@ -16,8 +18,6 @@ on:
         type: boolean
         default: false
 
-# 环境变量：合并 workflow_dispatch 输入和 repository variable
-# tag push 触发时读取 vars.SIMPLE_RELEASE，workflow_dispatch 时使用输入参数
 env:
   SIMPLE_RELEASE: ${{ github.event.inputs.simple_release == 'true' || vars.SIMPLE_RELEASE == 'true' }}
 
@@ -26,32 +26,56 @@ permissions:
   packages: write
 
 jobs:
-  # Update VERSION file with tag version
-  update-version:
+  # Step 1: Determine release tag (auto-create if pushing to main)
+  prepare:
     runs-on: ubuntu-latest
+    outputs:
+      tag_name: ${{ steps.resolve.outputs.tag_name }}
+      should_release: ${{ steps.resolve.outputs.should_release }}
     steps:
       - name: Checkout
         uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
 
-      - name: Update VERSION file
+      - name: Resolve release tag
+        id: resolve
         run: |
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            VERSION=${{ github.event.inputs.tag }}
-            VERSION=${VERSION#v}
+            echo "tag_name=${{ github.event.inputs.tag }}" >> $GITHUB_OUTPUT
+            echo "should_release=true" >> $GITHUB_OUTPUT
+            echo "Using workflow_dispatch tag: ${{ github.event.inputs.tag }}"
+          elif [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            TAG_NAME="${GITHUB_REF#refs/tags/}"
+            echo "tag_name=$TAG_NAME" >> $GITHUB_OUTPUT
+            echo "should_release=true" >> $GITHUB_OUTPUT
+            echo "Using pushed tag: $TAG_NAME"
           else
-            VERSION=${GITHUB_REF#refs/tags/v}
+            # Push to main - auto create tag from VERSION file
+            VERSION=$(tr -d '\r\n' < backend/cmd/server/VERSION)
+            SHORT_SHA=$(git rev-parse --short HEAD)
+            TAG_NAME="v${VERSION}-${SHORT_SHA}"
+
+            if git rev-parse "$TAG_NAME" >/dev/null 2>&1; then
+              echo "Tag $TAG_NAME already exists, skipping release"
+              echo "should_release=false" >> $GITHUB_OUTPUT
+              exit 0
+            fi
+
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git tag -a "$TAG_NAME" -m "Auto release from main branch"
+            git push origin "$TAG_NAME"
+
+            echo "tag_name=$TAG_NAME" >> $GITHUB_OUTPUT
+            echo "should_release=true" >> $GITHUB_OUTPUT
+            echo "Auto-created tag: $TAG_NAME"
           fi
-          echo "$VERSION" > backend/cmd/server/VERSION
-          echo "Updated VERSION file to: $VERSION"
 
-      - name: Upload VERSION artifact
-        uses: actions/upload-artifact@v7
-        with:
-          name: version-file
-          path: backend/cmd/server/VERSION
-          retention-days: 1
-
+  # Step 2: Build frontend
   build-frontend:
+    needs: [prepare]
+    if: needs.prepare.outputs.should_release == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -84,27 +108,30 @@ jobs:
           path: backend/internal/web/dist/
           retention-days: 1
 
+  # Step 3: Build backend + create release
   release:
-    needs: [update-version, build-frontend]
+    needs: [prepare, build-frontend]
+    if: needs.prepare.outputs.should_release == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v6
         with:
           fetch-depth: 0
-          ref: ${{ github.event.inputs.tag || github.ref }}
-
-      - name: Download VERSION artifact
-        uses: actions/download-artifact@v8
-        with:
-          name: version-file
-          path: backend/cmd/server/
+          ref: ${{ needs.prepare.outputs.tag_name }}
 
       - name: Download frontend artifact
         uses: actions/download-artifact@v8
         with:
           name: frontend-dist
           path: backend/internal/web/dist/
+
+      - name: Write VERSION file
+        run: |
+          VERSION=${{ needs.prepare.outputs.tag_name }}
+          VERSION=${VERSION#v}
+          echo "$VERSION" > backend/cmd/server/VERSION
+          echo "VERSION set to: $VERSION"
 
       - name: Setup Go
         uses: actions/setup-go@v6
@@ -114,8 +141,7 @@ jobs:
           cache-dependency-path: backend/go.sum
 
       - name: Verify Go version
-        run: |
-          go version | grep -q 'go1.25.7'
+        run: go version
 
       # Docker setup for GoReleaser
       - name: Set up QEMU
@@ -141,29 +167,14 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Fetch tags with annotations
-        run: |
-          # 确保获取完整的 annotated tag 信息
-          git fetch --tags --force
+        run: git fetch --tags --force
 
       - name: Get tag message
         id: tag_message
         run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            TAG_NAME=${{ github.event.inputs.tag }}
-          else
-            TAG_NAME=${GITHUB_REF#refs/tags/}
-          fi
+          TAG_NAME=${{ needs.prepare.outputs.tag_name }}
           echo "Processing tag: $TAG_NAME"
-
-          # 获取完整的 tag message（跳过第一行标题）
-          TAG_MESSAGE=$(git tag -l --format='%(contents:body)' "$TAG_NAME")
-
-          # 调试输出
-          echo "Tag message length: ${#TAG_MESSAGE}"
-          echo "Tag message preview:"
-          echo "$TAG_MESSAGE" | head -10
-
-          # 使用 EOF 分隔符处理多行内容
+          TAG_MESSAGE=$(git tag -l --format='%(contents:body)' "$TAG_NAME" 2>/dev/null || echo "")
           echo "message<<EOF" >> $GITHUB_OUTPUT
           echo "$TAG_MESSAGE" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
@@ -179,6 +190,7 @@ jobs:
           args: release --clean --skip=validate ${{ env.SIMPLE_RELEASE == 'true' && '--config=.goreleaser.simple.yaml' || '' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GORELEASER_CURRENT_TAG: ${{ needs.prepare.outputs.tag_name }}
           TAG_MESSAGE: ${{ steps.tag_message.outputs.message }}
           GITHUB_REPO_OWNER: ${{ github.repository_owner }}
           GITHUB_REPO_OWNER_LOWER: ${{ steps.lowercase.outputs.owner }}
@@ -207,42 +219,32 @@ jobs:
           DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
         continue-on-error: true
         run: |
-          # 检查必要的环境变量
           if [ -z "$TELEGRAM_BOT_TOKEN" ] || [ -z "$TELEGRAM_CHAT_ID" ]; then
             echo "Telegram credentials not configured, skipping notification"
             exit 0
           fi
 
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            TAG_NAME=${{ github.event.inputs.tag }}
-          else
-            TAG_NAME=${GITHUB_REF#refs/tags/}
-          fi
+          TAG_NAME=${{ needs.prepare.outputs.tag_name }}
           VERSION=${TAG_NAME#v}
           REPO="${{ github.repository }}"
-          GHCR_IMAGE="ghcr.io/${REPO,,}"  # ${,,} converts to lowercase
+          GHCR_IMAGE="ghcr.io/${REPO,,}"
 
-          # 获取 tag message 内容并转义 Markdown 特殊字符
           TAG_MESSAGE='${{ steps.tag_message.outputs.message }}'
           TAG_MESSAGE=$(echo "$TAG_MESSAGE" | sed 's/\([_*`\[]\)/\\\1/g')
 
-          # 限制消息长度（Telegram 消息限制 4096 字符，预留空间给头尾固定内容）
           if [ ${#TAG_MESSAGE} -gt 3500 ]; then
             TAG_MESSAGE="${TAG_MESSAGE:0:3500}..."
           fi
 
-          # 构建消息内容
           MESSAGE="🚀 *GGbond 新版本发布！*"$'\n'$'\n'
           MESSAGE+="📦 版本号: \`${VERSION}\`"$'\n'$'\n'
 
-          # 添加更新内容
           if [ -n "$TAG_MESSAGE" ]; then
             MESSAGE+="${TAG_MESSAGE}"$'\n'$'\n'
           fi
 
           MESSAGE+="🐳 *Docker 部署:*"$'\n'
           MESSAGE+="\`\`\`bash"$'\n'
-          # 根据是否配置 DockerHub 动态生成
           if [ -n "$DOCKERHUB_USERNAME" ]; then
             DOCKER_IMAGE="${DOCKERHUB_USERNAME}/ggbond"
             MESSAGE+="# Docker Hub"$'\n'
@@ -259,7 +261,6 @@ jobs:
           MESSAGE+="• [GitHub Packages](https://github.com/${REPO}/pkgs/container/ggbond)"$'\n'$'\n'
           MESSAGE+="#GGbond #Release #${TAG_NAME//./_}"
 
-          # 发送消息
           curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
             -H "Content-Type: application/json" \
             -d "$(jq -n \
