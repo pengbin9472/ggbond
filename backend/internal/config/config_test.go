@@ -296,8 +296,8 @@ func TestLoadDefaultDatabaseSSLMode(t *testing.T) {
 		t.Fatalf("Load() error: %v", err)
 	}
 
-	if cfg.Database.SSLMode != "prefer" {
-		t.Fatalf("Database.SSLMode = %q, want %q", cfg.Database.SSLMode, "prefer")
+	if cfg.Database.SSLMode != "disable" {
+		t.Fatalf("Database.SSLMode = %q, want %q", cfg.Database.SSLMode, "disable")
 	}
 }
 
@@ -795,7 +795,7 @@ func TestDatabaseDSNWithTimezone_WithPassword(t *testing.T) {
 		User:     "u",
 		Password: "p",
 		DBName:   "db",
-		SSLMode:  "prefer",
+		SSLMode:  "disable",
 	}
 	got := d.DSNWithTimezone("UTC")
 	if !strings.Contains(got, "password=p") {
