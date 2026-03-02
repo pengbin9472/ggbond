@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/lib/pq"
 	dbent "github.com/pengbin9472/ggbond/ent"
 	dbaccount "github.com/pengbin9472/ggbond/ent/account"
 	dbapikey "github.com/pengbin9472/ggbond/ent/apikey"
@@ -19,7 +20,6 @@ import (
 	"github.com/pengbin9472/ggbond/internal/pkg/timezone"
 	"github.com/pengbin9472/ggbond/internal/pkg/usagestats"
 	"github.com/pengbin9472/ggbond/internal/service"
-	"github.com/lib/pq"
 )
 
 const usageLogSelectColumns = "id, user_id, api_key_id, account_id, request_id, model, group_id, subscription_id, input_tokens, output_tokens, cache_creation_tokens, cache_read_tokens, cache_creation_5m_tokens, cache_creation_1h_tokens, input_cost, output_cost, cache_creation_cost, cache_read_cost, total_cost, actual_cost, rate_multiplier, account_rate_multiplier, billing_type, request_type, stream, openai_ws_mode, duration_ms, first_token_ms, user_agent, ip_address, image_count, image_size, media_type, reasoning_effort, cache_ttl_overridden, created_at"

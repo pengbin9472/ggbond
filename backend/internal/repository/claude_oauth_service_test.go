@@ -8,8 +8,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/pengbin9472/ggbond/internal/pkg/oauth"
 	"github.com/imroc/req/v3"
+	"github.com/pengbin9472/ggbond/internal/pkg/oauth"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 )

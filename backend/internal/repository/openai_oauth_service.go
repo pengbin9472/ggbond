@@ -7,10 +7,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/imroc/req/v3"
 	infraerrors "github.com/pengbin9472/ggbond/internal/pkg/errors"
 	"github.com/pengbin9472/ggbond/internal/pkg/openai"
 	"github.com/pengbin9472/ggbond/internal/service"
-	"github.com/imroc/req/v3"
 )
 
 // NewOpenAIOAuthClient creates a new OpenAI OAuth client

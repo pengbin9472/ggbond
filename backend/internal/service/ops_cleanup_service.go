@@ -8,9 +8,9 @@ import (
 	"sync"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/pengbin9472/ggbond/internal/config"
 	"github.com/pengbin9472/ggbond/internal/pkg/logger"
-	"github.com/google/uuid"
 	"github.com/redis/go-redis/v9"
 	"github.com/robfig/cron/v3"
 )

@@ -13,8 +13,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pengbin9472/ggbond/internal/server/middleware"
 	"github.com/gin-gonic/gin"
+	"github.com/pengbin9472/ggbond/internal/server/middleware"
 )
 
 const (

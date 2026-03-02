@@ -10,11 +10,11 @@ import (
 	"testing"
 	"time"
 
+	coderws "github.com/coder/websocket"
+	"github.com/gin-gonic/gin"
 	pkghttputil "github.com/pengbin9472/ggbond/internal/pkg/httputil"
 	"github.com/pengbin9472/ggbond/internal/server/middleware"
 	"github.com/pengbin9472/ggbond/internal/service"
-	coderws "github.com/coder/websocket"
-	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/tidwall/gjson"

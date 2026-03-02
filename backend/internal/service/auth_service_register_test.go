@@ -402,7 +402,7 @@ func TestAuthService_Register_AssignsDefaultSubscriptions(t *testing.T) {
 	repo := &userRepoStub{nextID: 42}
 	assigner := &defaultSubscriptionAssignerStub{}
 	service := newAuthService(repo, map[string]string{
-		SettingKeyRegistrationEnabled: "true",
+		SettingKeyRegistrationEnabled:  "true",
 		SettingKeyDefaultSubscriptions: `[{"group_id":11,"validity_days":30},{"group_id":12,"validity_days":7}]`,
 	}, nil)
 	service.defaultSubAssigner = assigner

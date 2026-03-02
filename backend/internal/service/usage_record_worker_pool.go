@@ -8,9 +8,9 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/alitto/pond/v2"
 	"github.com/pengbin9472/ggbond/internal/config"
 	"github.com/pengbin9472/ggbond/internal/pkg/logger"
-	"github.com/alitto/pond/v2"
 	"go.uber.org/zap"
 )
 

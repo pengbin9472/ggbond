@@ -6,9 +6,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/gin-gonic/gin"
 	"github.com/pengbin9472/ggbond/internal/pkg/response"
 	"github.com/pengbin9472/ggbond/internal/service"
-	"github.com/gin-gonic/gin"
 )
 
 // GetConcurrencyStats returns real-time concurrency usage aggregated by platform/group/account.

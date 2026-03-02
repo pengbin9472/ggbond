@@ -7,10 +7,10 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/gin-gonic/gin"
 	"github.com/pengbin9472/ggbond/internal/config"
 	"github.com/pengbin9472/ggbond/internal/server/middleware"
 	"github.com/pengbin9472/ggbond/internal/service"
-	"github.com/gin-gonic/gin"
 )
 
 type responseEnvelope struct {

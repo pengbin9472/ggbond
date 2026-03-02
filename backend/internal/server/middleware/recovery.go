@@ -7,9 +7,9 @@ import (
 	"os"
 	"strings"
 
+	"github.com/gin-gonic/gin"
 	infraerrors "github.com/pengbin9472/ggbond/internal/pkg/errors"
 	"github.com/pengbin9472/ggbond/internal/pkg/response"
-	"github.com/gin-gonic/gin"
 )
 
 // Recovery converts panics into the project's standard JSON error envelope.

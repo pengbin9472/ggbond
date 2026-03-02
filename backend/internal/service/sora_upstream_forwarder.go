@@ -9,8 +9,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pengbin9472/ggbond/internal/pkg/logger"
 	"github.com/gin-gonic/gin"
+	"github.com/pengbin9472/ggbond/internal/pkg/logger"
 )
 
 // forwardToUpstream 将请求 HTTP 透传到上游 Sora 服务（用于 apikey 类型账号）。

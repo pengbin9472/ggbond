@@ -18,14 +18,14 @@ import (
 	"sync"
 	"time"
 
+	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/pengbin9472/ggbond/internal/config"
 	"github.com/pengbin9472/ggbond/internal/pkg/claude"
 	"github.com/pengbin9472/ggbond/internal/pkg/geminicli"
 	"github.com/pengbin9472/ggbond/internal/pkg/openai"
 	"github.com/pengbin9472/ggbond/internal/util/soraerror"
 	"github.com/pengbin9472/ggbond/internal/util/urlvalidator"
-	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
 )
 
 // sseDataPrefix matches SSE data lines with optional whitespace after colon.

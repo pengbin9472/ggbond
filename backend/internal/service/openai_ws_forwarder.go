@@ -15,11 +15,11 @@ import (
 	"strings"
 	"time"
 
+	coderws "github.com/coder/websocket"
+	"github.com/gin-gonic/gin"
 	"github.com/pengbin9472/ggbond/internal/pkg/logger"
 	"github.com/pengbin9472/ggbond/internal/pkg/openai"
 	"github.com/pengbin9472/ggbond/internal/util/responseheaders"
-	coderws "github.com/coder/websocket"
-	"github.com/gin-gonic/gin"
 	"github.com/tidwall/gjson"
 	"github.com/tidwall/sjson"
 	"go.uber.org/zap"

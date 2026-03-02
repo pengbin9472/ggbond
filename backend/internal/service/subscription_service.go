@@ -9,11 +9,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/dgraph-io/ristretto"
 	dbent "github.com/pengbin9472/ggbond/ent"
 	"github.com/pengbin9472/ggbond/internal/config"
 	infraerrors "github.com/pengbin9472/ggbond/internal/pkg/errors"
 	"github.com/pengbin9472/ggbond/internal/pkg/pagination"
-	"github.com/dgraph-io/ristretto"
 	"golang.org/x/sync/singleflight"
 )
 

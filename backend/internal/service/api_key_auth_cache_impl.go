@@ -9,8 +9,8 @@ import (
 	"math/rand/v2"
 	"time"
 
-	"github.com/pengbin9472/ggbond/internal/config"
 	"github.com/dgraph-io/ristretto"
+	"github.com/pengbin9472/ggbond/internal/config"
 )
 
 type apiKeyAuthCacheConfig struct {

@@ -5,9 +5,9 @@ import (
 	"database/sql"
 	"time"
 
+	"github.com/google/wire"
 	"github.com/pengbin9472/ggbond/internal/config"
 	"github.com/pengbin9472/ggbond/internal/pkg/logger"
-	"github.com/google/wire"
 	"github.com/redis/go-redis/v9"
 )
 

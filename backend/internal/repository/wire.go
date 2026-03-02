@@ -5,10 +5,10 @@ import (
 	"errors"
 
 	entsql "entgo.io/ent/dialect/sql"
+	"github.com/google/wire"
 	"github.com/pengbin9472/ggbond/ent"
 	"github.com/pengbin9472/ggbond/internal/config"
 	"github.com/pengbin9472/ggbond/internal/service"
-	"github.com/google/wire"
 	"github.com/redis/go-redis/v9"
 )
 

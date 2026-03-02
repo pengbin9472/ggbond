@@ -3,10 +3,10 @@ package admin
 import (
 	"strconv"
 
+	"github.com/gin-gonic/gin"
 	"github.com/pengbin9472/ggbond/internal/model"
 	"github.com/pengbin9472/ggbond/internal/pkg/response"
 	"github.com/pengbin9472/ggbond/internal/service"
-	"github.com/gin-gonic/gin"
 )
 
 // ErrorPassthroughHandler 处理错误透传规则的 HTTP 请求

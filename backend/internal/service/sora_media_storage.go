@@ -15,8 +15,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pengbin9472/ggbond/internal/config"
 	"github.com/google/uuid"
+	"github.com/pengbin9472/ggbond/internal/config"
 )
 
 const (

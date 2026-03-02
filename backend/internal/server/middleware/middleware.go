@@ -3,8 +3,8 @@ package middleware
 import (
 	"context"
 
-	"github.com/pengbin9472/ggbond/internal/pkg/ctxkey"
 	"github.com/gin-gonic/gin"
+	"github.com/pengbin9472/ggbond/internal/pkg/ctxkey"
 )
 
 // ContextKey 定义上下文键类型
