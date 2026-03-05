@@ -696,7 +696,7 @@ func (r *groupRepository) GetGroupMonitoringStats(ctx context.Context) ([]servic
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var stats []service.GroupMonitoringStat
 	for rows.Next() {
@@ -839,7 +839,7 @@ func (r *groupRepository) GetGroupMonitoringHistory(ctx context.Context, groupID
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var points []service.MonitoringHistoryPoint
 	for rows.Next() {
@@ -907,7 +907,7 @@ func (r *groupRepository) ComputeGroupMonitoringStats(ctx context.Context) ([]se
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var stats []service.GroupMonitoringStat
 	groupIDs := make([]int64, 0)

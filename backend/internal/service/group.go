@@ -83,8 +83,8 @@ type GroupMonitoringStat struct {
 
 	// 从 usage_logs 聚合的性能指标
 	AvailabilityRate float64 `json:"availability_rate"` // 可用率百分比，-1 表示无数据
-	CacheHitRate     float64 `json:"cache_hit_rate"`     // 缓存命中率百分比，-1 表示无数据
-	AvgResponseTime  int     `json:"avg_response_time"`  // 平均响应时间（毫秒）
+	CacheHitRate     float64 `json:"cache_hit_rate"`    // 缓存命中率百分比，-1 表示无数据
+	AvgResponseTime  int     `json:"avg_response_time"` // 平均响应时间（毫秒）
 }
 
 // MonitoringHistoryPoint 监控历史数据点

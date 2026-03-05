@@ -15,8 +15,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/lib/pq"
 	"github.com/pengbin9472/ggbond/internal/domain"
-	infraerrors "github.com/pengbin9472/ggbond/internal/pkg/errors"
 	"github.com/pengbin9472/ggbond/internal/pkg/ctxkey"
+	infraerrors "github.com/pengbin9472/ggbond/internal/pkg/errors"
 )
 
 const (

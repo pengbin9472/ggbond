@@ -3821,7 +3821,6 @@ func injectAutoPromptCache(body []byte) []byte {
 	return result
 }
 
-
 // enforceCacheControlLimit 强制执行 cache_control 块数量限制（最多 4 个）
 // 超限时优先从 messages 中移除 cache_control，保护 system 中的缓存控制
 func enforceCacheControlLimit(body []byte) []byte {
