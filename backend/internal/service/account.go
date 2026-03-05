@@ -557,6 +557,13 @@ func (a *Account) GetExtraString(key string) string {
 	return ""
 }
 
+// GetCustomUserAgent 获取账号自定义 User-Agent
+// 字段：accounts.extra.user_agent
+// 返回空字符串表示未配置（使用默认行为）
+func (a *Account) GetCustomUserAgent() string {
+	return a.GetExtraString("user_agent")
+}
+
 func (a *Account) GetClaudeUserID() string {
 	if v := strings.TrimSpace(a.GetExtraString("claude_user_id")); v != "" {
 		return v

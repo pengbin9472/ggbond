@@ -4883,6 +4883,11 @@ func (s *GatewayService) buildUpstreamRequestAnthropicAPIKeyPassthrough(
 	req.Header.Del("cookie")
 	req.Header.Set("x-api-key", token)
 
+	// 账号级自定义 User-Agent（优先级最高，覆盖白名单透传）
+	if customUA := account.GetCustomUserAgent(); customUA != "" {
+		req.Header.Set("User-Agent", customUA)
+	}
+
 	if req.Header.Get("content-type") == "" {
 		req.Header.Set("content-type", "application/json")
 	}
@@ -5292,6 +5297,11 @@ func (s *GatewayService) buildUpstreamRequest(ctx context.Context, c *gin.Contex
 	// OAuth账号：应用缓存的指纹到请求头（覆盖白名单透传的头）
 	if fingerprint != nil {
 		s.identityService.ApplyFingerprint(req, fingerprint)
+	}
+
+	// 账号级自定义 User-Agent（优先级最高，覆盖指纹和白名单透传）
+	if customUA := account.GetCustomUserAgent(); customUA != "" {
+		req.Header.Set("User-Agent", customUA)
 	}
 
 	// 确保必要的headers存在
@@ -7435,6 +7445,11 @@ func (s *GatewayService) buildCountTokensRequest(ctx context.Context, c *gin.Con
 		if fp != nil {
 			s.identityService.ApplyFingerprint(req, fp)
 		}
+	}
+
+	// 账号级自定义 User-Agent（优先级最高，覆盖指纹和白名单透传）
+	if customUA := account.GetCustomUserAgent(); customUA != "" {
+		req.Header.Set("User-Agent", customUA)
 	}
 
 	// 确保必要的 headers 存在
