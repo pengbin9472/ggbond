@@ -465,31 +465,28 @@ check_dependencies() {
     fi
 }
 
-# Get test release version (fixed tag: v0.0.0-test)
+# Get latest test release version (find newest vX.Y.Z-test tag)
 get_latest_version() {
     print_info "$(msg 'fetching_version')"
-    # Test branch uses a fixed rolling release tag
-    LATEST_VERSION="v0.0.0-test"
 
-    # Verify the release exists
-    local http_code
-    http_code=$(curl -s -o /dev/null -w "%{http_code}" --connect-timeout 10 --max-time 30 "https://api.github.com/repos/${GITHUB_REPO}/releases/tags/${LATEST_VERSION}" 2>/dev/null)
+    # Query GitHub API for releases, find the latest *-test tag
+    LATEST_VERSION=$(curl -s --connect-timeout 10 --max-time 30 "https://api.github.com/repos/${GITHUB_REPO}/releases" 2>/dev/null | grep '"tag_name"' | sed -E 's/.*"([^"]+)".*/\1/' | grep -- '-test$' | head -1)
 
-    if [ "$http_code" != "200" ]; then
+    if [ -z "$LATEST_VERSION" ]; then
         print_error "$(msg 'failed_get_version')"
-        print_info "Test release (${LATEST_VERSION}) not found. Please check if test branch CI has run."
+        print_info "No test release found. Please check if test branch CI has run."
         exit 1
     fi
 
     print_info "$(msg 'latest_version'): $LATEST_VERSION (test)"
 }
 
-# List available versions
+# List available test versions
 list_versions() {
     print_info "$(msg 'fetching_versions')"
 
     local versions
-    versions=$(curl -s --connect-timeout 10 --max-time 30 "https://api.github.com/repos/${GITHUB_REPO}/releases" 2>/dev/null | grep '"tag_name"' | sed -E 's/.*"([^"]+)".*/\1/' | head -20)
+    versions=$(curl -s --connect-timeout 10 --max-time 30 "https://api.github.com/repos/${GITHUB_REPO}/releases" 2>/dev/null | grep '"tag_name"' | sed -E 's/.*"([^"]+)".*/\1/' | grep -- '-test$' | head -20)
 
     if [ -z "$versions" ]; then
         print_error "$(msg 'failed_get_version')"

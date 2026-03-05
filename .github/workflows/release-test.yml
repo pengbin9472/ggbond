@@ -11,8 +11,57 @@ permissions:
   packages: write
 
 jobs:
-  # Step 1: Build frontend
+  # Step 1: Determine release tag (auto-increment patch version)
+  prepare:
+    runs-on: ubuntu-latest
+    outputs:
+      tag_name: ${{ steps.resolve.outputs.tag_name }}
+      should_release: ${{ steps.resolve.outputs.should_release }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Resolve release tag
+        id: resolve
+        run: |
+          # Find the latest tag matching vX.Y.Z-test pattern
+          LATEST_TAG=$(git tag --list 'v[0-9]*.[0-9]*.[0-9]*-test' --sort=-v:refname | head -n1)
+
+          if [ -z "$LATEST_TAG" ]; then
+            # No existing test tag, start from v0.0.1-test
+            TAG_NAME="v0.0.1-test"
+          else
+            # Parse major.minor.patch and increment patch
+            VERSION="${LATEST_TAG#v}"
+            VERSION="${VERSION%-test}"
+            MAJOR=$(echo "$VERSION" | cut -d. -f1)
+            MINOR=$(echo "$VERSION" | cut -d. -f2)
+            PATCH=$(echo "$VERSION" | cut -d. -f3)
+            PATCH=$((PATCH + 1))
+            TAG_NAME="v${MAJOR}.${MINOR}.${PATCH}-test"
+          fi
+
+          if git rev-parse "$TAG_NAME" >/dev/null 2>&1; then
+            echo "Tag $TAG_NAME already exists, skipping release"
+            echo "should_release=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a "$TAG_NAME" -m "Test release ${TAG_NAME}"
+          git push origin "$TAG_NAME"
+
+          echo "tag_name=$TAG_NAME" >> $GITHUB_OUTPUT
+          echo "should_release=true" >> $GITHUB_OUTPUT
+          echo "Auto-created tag: $TAG_NAME (incremented from ${LATEST_TAG:-none})"
+
+  # Step 2: Build frontend
   build-frontend:
+    needs: [prepare]
+    if: needs.prepare.outputs.should_release == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -45,21 +94,31 @@ jobs:
           path: backend/internal/web/dist/
           retention-days: 1
 
-  # Step 2: Build backend + push Docker images via GoReleaser
+  # Step 3: Build backend + push Docker images via GoReleaser
   release:
-    needs: [build-frontend]
+    needs: [prepare, build-frontend]
+    if: needs.prepare.outputs.should_release == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v6
         with:
           fetch-depth: 0
+          ref: ${{ needs.prepare.outputs.tag_name }}
 
       - name: Download frontend artifact
         uses: actions/download-artifact@v8
         with:
           name: frontend-dist
           path: backend/internal/web/dist/
+
+      - name: Write VERSION file
+        run: |
+          VERSION=${{ needs.prepare.outputs.tag_name }}
+          VERSION=${VERSION#v}
+          VERSION=${VERSION%-test}
+          echo "$VERSION" > backend/cmd/server/VERSION
+          echo "VERSION set to: $VERSION"
 
       - name: Setup Go
         uses: actions/setup-go@v6
@@ -94,17 +153,6 @@ jobs:
         id: lowercase
         run: echo "owner=$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
 
-      - name: Delete existing release and recreate tag
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          # Delete existing release if it exists
-          gh release delete v0.0.0-test --yes --cleanup-tag 2>/dev/null || true
-          # Recreate the tag
-          git tag -f "v0.0.0-test" -m "test branch build"
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v7
         with:
@@ -112,7 +160,7 @@ jobs:
           args: release --clean --skip=validate --config=.goreleaser.test.yaml
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GORELEASER_CURRENT_TAG: v0.0.0-test
+          GORELEASER_CURRENT_TAG: ${{ needs.prepare.outputs.tag_name }}
           GITHUB_REPO_OWNER: ${{ github.repository_owner }}
           GITHUB_REPO_OWNER_LOWER: ${{ steps.lowercase.outputs.owner }}
           GITHUB_REPO_NAME: ${{ github.event.repository.name }}
