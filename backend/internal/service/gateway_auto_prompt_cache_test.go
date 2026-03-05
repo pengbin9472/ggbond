@@ -115,11 +115,14 @@ func TestInjectAutoPromptCache_SystemStringLong_InjectsSystem(t *testing.T) {
 	systemArr, ok := output["system"].([]any)
 	require.True(t, ok, "long system string should be converted to block array")
 	require.Len(t, systemArr, 1)
-	block := systemArr[0].(map[string]any)
+	block, ok2 := systemArr[0].(map[string]any)
+	require.True(t, ok2, "system block should be a map")
 	require.Equal(t, "text", block["type"])
 	cc, exists := block["cache_control"]
 	require.True(t, exists, "system block should have cache_control")
-	require.Equal(t, "ephemeral", cc.(map[string]any)["type"])
+	ccMap, ok3 := cc.(map[string]any)
+	require.True(t, ok3, "cache_control should be a map")
+	require.Equal(t, "ephemeral", ccMap["type"])
 }
 
 func TestInjectAutoPromptCache_SystemBlockArray_InjectsLastTextBlock(t *testing.T) {
@@ -140,17 +143,22 @@ func TestInjectAutoPromptCache_SystemBlockArray_InjectsLastTextBlock(t *testing.
 	var output map[string]any
 	require.NoError(t, json.Unmarshal(result, &output))
 
-	systemArr := output["system"].([]any)
+	systemArr, ok := output["system"].([]any)
+	require.True(t, ok, "system should be an array")
 	// 第一个 text 块不应有 cache_control
-	firstBlock := systemArr[0].(map[string]any)
+	firstBlock, ok := systemArr[0].(map[string]any)
+	require.True(t, ok, "first block should be a map")
 	_, exists := firstBlock["cache_control"]
 	require.False(t, exists, "first text block should NOT have cache_control")
 
 	// 最后一个 text 块应有 cache_control
-	lastBlock := systemArr[1].(map[string]any)
+	lastBlock, ok := systemArr[1].(map[string]any)
+	require.True(t, ok, "last block should be a map")
 	cc, exists := lastBlock["cache_control"]
 	require.True(t, exists, "last text block should have cache_control")
-	require.Equal(t, "ephemeral", cc.(map[string]any)["type"])
+	ccMap, ok := cc.(map[string]any)
+	require.True(t, ok, "cache_control should be a map")
+	require.Equal(t, "ephemeral", ccMap["type"])
 }
 
 // ─── injectAutoPromptCache: messages 断点位置 ────────────────────────
@@ -175,26 +183,33 @@ func TestInjectAutoPromptCache_MultiTurn_MarksBeforeLastUser(t *testing.T) {
 	var output map[string]any
 	require.NoError(t, json.Unmarshal(result, &output))
 
-	msgs := output["messages"].([]any)
+	msgs, ok := output["messages"].([]any)
+	require.True(t, ok, "messages should be an array")
 
 	// messages[3]（倒数第二条 assistant 消息）应有 cache_control
-	assistantMsg := msgs[3].(map[string]any)
+	assistantMsg, ok := msgs[3].(map[string]any)
+	require.True(t, ok, "assistant message should be a map")
 	// content 应被转换为块数组
 	contentArr, ok := assistantMsg["content"].([]any)
 	require.True(t, ok, "assistant content should be converted to block array")
-	lastBlock := contentArr[len(contentArr)-1].(map[string]any)
+	lastBlock, ok := contentArr[len(contentArr)-1].(map[string]any)
+	require.True(t, ok, "last content block should be a map")
 	cc, exists := lastBlock["cache_control"]
 	require.True(t, exists, "message before last user should have cache_control")
-	require.Equal(t, "ephemeral", cc.(map[string]any)["type"])
+	ccMap, ok := cc.(map[string]any)
+	require.True(t, ok, "cache_control should be a map")
+	require.Equal(t, "ephemeral", ccMap["type"])
 
 	// messages[4]（最后一条 user 消息）不应有 cache_control
-	lastUserMsg := msgs[4].(map[string]any)
+	lastUserMsg, ok := msgs[4].(map[string]any)
+	require.True(t, ok, "last user message should be a map")
 	switch content := lastUserMsg["content"].(type) {
 	case string:
 		// 纯字符串 → 没有 cache_control，OK
 	case []any:
 		for _, item := range content {
-			block := item.(map[string]any)
+			block, ok := item.(map[string]any)
+			require.True(t, ok, "content item should be a map")
 			_, exists := block["cache_control"]
 			require.False(t, exists, "last user message should NOT have cache_control")
 		}
@@ -217,11 +232,14 @@ func TestInjectAutoPromptCache_SingleMessage_MarksIt(t *testing.T) {
 	var output map[string]any
 	require.NoError(t, json.Unmarshal(result, &output))
 
-	msgs := output["messages"].([]any)
-	userMsg := msgs[0].(map[string]any)
+	msgs, ok := output["messages"].([]any)
+	require.True(t, ok, "messages should be an array")
+	userMsg, ok := msgs[0].(map[string]any)
+	require.True(t, ok, "user message should be a map")
 	contentArr, ok := userMsg["content"].([]any)
 	require.True(t, ok, "single user content should be converted to block array")
-	block := contentArr[0].(map[string]any)
+	block, ok := contentArr[0].(map[string]any)
+	require.True(t, ok, "content block should be a map")
 	_, exists := block["cache_control"]
 	require.True(t, exists, "single user message should have cache_control for retry coverage")
 }
@@ -244,14 +262,17 @@ func TestInjectAutoPromptCache_TwoMessages_MarksFirstUserInsteadOfLastUser(t *te
 	var output map[string]any
 	require.NoError(t, json.Unmarshal(result, &output))
 
-	msgs := output["messages"].([]any)
+	msgs, ok := output["messages"].([]any)
+	require.True(t, ok, "messages should be an array")
 	// 不应标记任何 messages（因为 lastUserIdx=0 且 len>1）
 	for i, m := range msgs {
-		msg := m.(map[string]any)
+		msg, ok := m.(map[string]any)
+		require.True(t, ok, "message[%d] should be a map", i)
 		switch content := msg["content"].(type) {
 		case []any:
 			for _, item := range content {
-				block := item.(map[string]any)
+				block, ok := item.(map[string]any)
+				require.True(t, ok, "content item should be a map")
 				_, exists := block["cache_control"]
 				require.False(t, exists, "message[%d] should NOT have cache_control in this edge case", i)
 			}
@@ -285,16 +306,21 @@ func TestInjectAutoPromptCache_ThreeMessages_MarksAssistant(t *testing.T) {
 	var output map[string]any
 	require.NoError(t, json.Unmarshal(result, &output))
 
-	msgs := output["messages"].([]any)
+	msgs, ok := output["messages"].([]any)
+	require.True(t, ok, "messages should be an array")
 	// messages[1]（assistant）应有 cache_control
-	asstMsg := msgs[1].(map[string]any)
-	contentArr := asstMsg["content"].([]any)
-	block := contentArr[0].(map[string]any)
+	asstMsg, ok := msgs[1].(map[string]any)
+	require.True(t, ok, "assistant message should be a map")
+	contentArr, ok := asstMsg["content"].([]any)
+	require.True(t, ok, "assistant content should be an array")
+	block, ok := contentArr[0].(map[string]any)
+	require.True(t, ok, "content block should be a map")
 	_, exists := block["cache_control"]
 	require.True(t, exists, "assistant message (index 1) should have cache_control")
 
 	// messages[2]（最后 user）不应有
-	lastUserMsg := msgs[2].(map[string]any)
+	lastUserMsg, ok := msgs[2].(map[string]any)
+	require.True(t, ok, "last user message should be a map")
 	_, isString := lastUserMsg["content"].(string)
 	require.True(t, isString, "last user content should remain unchanged string")
 }
@@ -325,9 +351,11 @@ func TestInjectAutoPromptCache_BelowMinTokens_NoInjection(t *testing.T) {
 	require.True(t, isString, "system should remain string when below threshold")
 
 	// 检查 messages 中没有 cache_control
-	msgs := outputData["messages"].([]any)
+	msgs, ok := outputData["messages"].([]any)
+	require.True(t, ok, "messages should be an array")
 	for i, m := range msgs {
-		msg := m.(map[string]any)
+		msg, ok := m.(map[string]any)
+		require.True(t, ok, "message[%d] should be a map", i)
 		switch content := msg["content"].(type) {
 		case []any:
 			for _, item := range content {
@@ -362,11 +390,14 @@ func TestInjectAutoPromptCache_SystemShortButMessagesMeetThreshold(t *testing.T)
 	require.True(t, isString, "short system should remain string")
 
 	// messages[1]（assistant）应有 cache_control（累计 token 数达标）
-	msgs := output["messages"].([]any)
-	asstMsg := msgs[1].(map[string]any)
+	msgs, ok := output["messages"].([]any)
+	require.True(t, ok, "messages should be an array")
+	asstMsg, ok := msgs[1].(map[string]any)
+	require.True(t, ok, "assistant message should be a map")
 	contentArr, ok := asstMsg["content"].([]any)
 	require.True(t, ok)
-	block := contentArr[0].(map[string]any)
+	block, ok := contentArr[0].(map[string]any)
+	require.True(t, ok, "content block should be a map")
 	_, exists := block["cache_control"]
 	require.True(t, exists, "messages breakpoint should be injected when cumulative tokens meet threshold")
 }
@@ -410,7 +441,8 @@ func TestInjectAutoPromptCache_HaikuModel_HigherThreshold(t *testing.T) {
 	// Sonnet：1250 tokens >= 1024 → 注入
 	systemArr, ok := outputSonnet["system"].([]any)
 	require.True(t, ok, "sonnet model with medium system should inject")
-	block := systemArr[0].(map[string]any)
+	block, ok2 := systemArr[0].(map[string]any)
+	require.True(t, ok2, "system block should be a map")
 	_, exists := block["cache_control"]
 	require.True(t, exists)
 }
@@ -518,7 +550,8 @@ func TestInjectAutoPromptCache_NoMessages_OnlySystemInjected(t *testing.T) {
 	// system 应被注入
 	systemArr, ok := output["system"].([]any)
 	require.True(t, ok)
-	block := systemArr[0].(map[string]any)
+	block, ok := systemArr[0].(map[string]any)
+	require.True(t, ok, "system block should be a map")
 	_, exists := block["cache_control"]
 	require.True(t, exists, "system should be injected even with empty messages")
 }
@@ -541,14 +574,17 @@ func TestInjectAutoPromptCache_SystemWithThinkingBlock_SkipsThinking(t *testing.
 	var output map[string]any
 	require.NoError(t, json.Unmarshal(result, &output))
 
-	systemArr := output["system"].([]any)
+	systemArr, ok := output["system"].([]any)
+	require.True(t, ok, "system should be an array")
 	// text 块应有 cache_control
-	textBlock := systemArr[0].(map[string]any)
+	textBlock, ok := systemArr[0].(map[string]any)
+	require.True(t, ok, "text block should be a map")
 	_, exists := textBlock["cache_control"]
 	require.True(t, exists, "text block should have cache_control")
 
 	// thinking 块不应有 cache_control
-	thinkingBlock := systemArr[1].(map[string]any)
+	thinkingBlock, ok := systemArr[1].(map[string]any)
+	require.True(t, ok, "thinking block should be a map")
 	_, exists = thinkingBlock["cache_control"]
 	require.False(t, exists, "thinking block should NOT have cache_control")
 }
@@ -577,17 +613,21 @@ func TestInjectAutoPromptCache_RealWorldMultiTurn_CacheHitScenario(t *testing.T)
 	var outputN map[string]any
 	require.NoError(t, json.Unmarshal(resultN, &outputN))
 
-	msgsN := outputN["messages"].([]any)
+	msgsN, ok := outputN["messages"].([]any)
+	require.True(t, ok, "messages should be an array")
 	// 断点应在 messages[3]（第二条 assistant，最后一条 user 之前）
-	asstMsg := msgsN[3].(map[string]any)
+	asstMsg, ok := msgsN[3].(map[string]any)
+	require.True(t, ok, "assistant message should be a map")
 	contentArr, ok := asstMsg["content"].([]any)
 	require.True(t, ok)
-	block := contentArr[0].(map[string]any)
+	block, ok := contentArr[0].(map[string]any)
+	require.True(t, ok, "content block should be a map")
 	_, exists := block["cache_control"]
 	require.True(t, exists, "request N should mark message[3] (assistant before last user)")
 
 	// 最后一条 user 消息不应被标记
-	lastUser := msgsN[4].(map[string]any)
+	lastUser, ok := msgsN[4].(map[string]any)
+	require.True(t, ok, "last user message should be a map")
 	_, isString := lastUser["content"].(string)
 	require.True(t, isString, "last user message should not be modified")
 
@@ -611,12 +651,15 @@ func TestInjectAutoPromptCache_RealWorldMultiTurn_CacheHitScenario(t *testing.T)
 	var outputN1 map[string]any
 	require.NoError(t, json.Unmarshal(resultN1, &outputN1))
 
-	msgsN1 := outputN1["messages"].([]any)
+	msgsN1, ok := outputN1["messages"].([]any)
+	require.True(t, ok, "messages should be an array")
 	// 断点应在 messages[5]（第三条 assistant，最后一条 user 之前）
-	asstMsgN1 := msgsN1[5].(map[string]any)
+	asstMsgN1, ok := msgsN1[5].(map[string]any)
+	require.True(t, ok, "assistant message should be a map")
 	contentArrN1, ok := asstMsgN1["content"].([]any)
 	require.True(t, ok)
-	blockN1 := contentArrN1[0].(map[string]any)
+	blockN1, ok := contentArrN1[0].(map[string]any)
+	require.True(t, ok, "content block should be a map")
 	_, existsN1 := blockN1["cache_control"]
 	require.True(t, existsN1, "request N+1 should mark message[5] (assistant before last user)")
 }
@@ -634,9 +677,11 @@ func TestInjectCacheControlOnMessage_StringContent(t *testing.T) {
 	require.Equal(t, 1, count)
 	contentArr, ok := msg["content"].([]any)
 	require.True(t, ok)
-	block := contentArr[0].(map[string]any)
+	block, ok := contentArr[0].(map[string]any)
+	require.True(t, ok, "content block should be a map")
 	require.Equal(t, "Hello world", block["text"])
-	cc := block["cache_control"].(map[string]string)
+	cc, ok := block["cache_control"].(map[string]string)
+	require.True(t, ok, "cache_control should be a map[string]string")
 	require.Equal(t, "ephemeral", cc["type"])
 }
 
@@ -652,13 +697,16 @@ func TestInjectCacheControlOnMessage_BlockArrayContent(t *testing.T) {
 	injectCacheControlOnMessage(msg, &count, 2)
 
 	require.Equal(t, 1, count)
-	contentArr := msg["content"].([]any)
+	contentArr, ok := msg["content"].([]any)
+	require.True(t, ok, "content should be an array")
 	// 第一个块不应有
-	first := contentArr[0].(map[string]any)
+	first, ok := contentArr[0].(map[string]any)
+	require.True(t, ok, "first block should be a map")
 	_, exists := first["cache_control"]
 	require.False(t, exists)
 	// 最后一个块应有
-	last := contentArr[1].(map[string]any)
+	last, ok := contentArr[1].(map[string]any)
+	require.True(t, ok, "last block should be a map")
 	_, exists = last["cache_control"]
 	require.True(t, exists)
 }
@@ -760,27 +808,34 @@ func TestInjectAutoPromptCache_WithTools_InjectsToolsBreakpoint(t *testing.T) {
 	// 1. system 应有 cache_control
 	systemArr, ok := output["system"].([]any)
 	require.True(t, ok)
-	sysBlock := systemArr[0].(map[string]any)
+	sysBlock, ok := systemArr[0].(map[string]any)
+	require.True(t, ok, "system block should be a map")
 	_, sysCC := sysBlock["cache_control"]
 	require.True(t, sysCC, "system should have cache_control")
 
 	// 2. tools 中最后一个工具应有 cache_control
-	tools := output["tools"].([]any)
-	lastTool := tools[len(tools)-1].(map[string]any)
+	tools, ok := output["tools"].([]any)
+	require.True(t, ok, "tools should be an array")
+	lastTool, ok := tools[len(tools)-1].(map[string]any)
+	require.True(t, ok, "last tool should be a map")
 	_, toolCC := lastTool["cache_control"]
 	require.True(t, toolCC, "last tool should have cache_control")
 
 	// 第一个工具不应有 cache_control
-	firstTool := tools[0].(map[string]any)
+	firstTool, ok := tools[0].(map[string]any)
+	require.True(t, ok, "first tool should be a map")
 	_, firstToolCC := firstTool["cache_control"]
 	require.False(t, firstToolCC, "first tool should NOT have cache_control")
 
 	// 3. messages 中 assistant 消息（最后 user 之前）应有 cache_control
-	msgs := output["messages"].([]any)
-	asstMsg := msgs[1].(map[string]any)
+	msgs, ok := output["messages"].([]any)
+	require.True(t, ok, "messages should be an array")
+	asstMsg, ok := msgs[1].(map[string]any)
+	require.True(t, ok, "assistant message should be a map")
 	contentArr, ok := asstMsg["content"].([]any)
 	require.True(t, ok)
-	msgBlock := contentArr[0].(map[string]any)
+	msgBlock, ok := contentArr[0].(map[string]any)
+	require.True(t, ok, "message block should be a map")
 	_, msgCC := msgBlock["cache_control"]
 	require.True(t, msgCC, "message before last user should have cache_control")
 
@@ -813,8 +868,10 @@ func TestInjectAutoPromptCache_WithTools_ExistingToolsCacheControl(t *testing.T)
 	var output map[string]any
 	require.NoError(t, json.Unmarshal(result, &output))
 
-	tools := output["tools"].([]any)
-	tool := tools[0].(map[string]any)
+	tools, ok := output["tools"].([]any)
+	require.True(t, ok, "tools should be an array")
+	tool, ok := tools[0].(map[string]any)
+	require.True(t, ok, "tool should be a map")
 	_, exists := tool["cache_control"]
 	require.True(t, exists, "existing cache_control should be preserved")
 
@@ -871,17 +928,22 @@ func TestInjectAutoPromptCache_ToolsShortContent_NoToolsBreakpoint(t *testing.T)
 	require.True(t, isString, "short system should remain string")
 
 	// tools 太短（累计不足）→ 不注入
-	tools := output["tools"].([]any)
-	tool := tools[0].(map[string]any)
+	tools, ok := output["tools"].([]any)
+	require.True(t, ok, "tools should be an array")
+	tool, ok := tools[0].(map[string]any)
+	require.True(t, ok, "tool should be a map")
 	_, toolCC := tool["cache_control"]
 	require.False(t, toolCC, "tools should NOT have cache_control when cumulative tokens below threshold")
 
 	// messages 应注入（累计达标）
-	msgs := output["messages"].([]any)
-	asstMsg := msgs[1].(map[string]any)
+	msgs, ok := output["messages"].([]any)
+	require.True(t, ok, "messages should be an array")
+	asstMsg, ok := msgs[1].(map[string]any)
+	require.True(t, ok, "assistant message should be a map")
 	contentArr, ok := asstMsg["content"].([]any)
 	require.True(t, ok)
-	block := contentArr[0].(map[string]any)
+	block, ok := contentArr[0].(map[string]any)
+	require.True(t, ok, "content block should be a map")
 	_, msgCC := block["cache_control"]
 	require.True(t, msgCC, "messages breakpoint should still be injected when cumulative tokens meet threshold")
 }
@@ -934,13 +996,16 @@ func TestRemoveCacheControlFromTools_RemovesFirst(t *testing.T) {
 	require.True(t, ok)
 
 	// 第一个的 cache_control 应被移除
-	tools := data["tools"].([]any)
-	t1 := tools[0].(map[string]any)
+	tools, ok2 := data["tools"].([]any)
+	require.True(t, ok2, "tools should be an array")
+	t1, ok2 := tools[0].(map[string]any)
+	require.True(t, ok2, "first tool should be a map")
 	_, exists := t1["cache_control"]
 	require.False(t, exists, "first tool's cache_control should be removed")
 
 	// 第二个仍在
-	t2 := tools[1].(map[string]any)
+	t2, ok2 := tools[1].(map[string]any)
+	require.True(t, ok2, "second tool should be a map")
 	_, exists = t2["cache_control"]
 	require.True(t, exists, "second tool's cache_control should remain")
 }
@@ -1008,29 +1073,37 @@ func TestInjectAutoPromptCache_ThreeLayerBreakpoints_E2E(t *testing.T) {
 
 	// 验证各层的位置正确
 	// system: 最后一个 text 块
-	systemArr := output["system"].([]any)
-	lastSysBlock := systemArr[len(systemArr)-1].(map[string]any)
+	systemArr, ok := output["system"].([]any)
+	require.True(t, ok, "system should be an array")
+	lastSysBlock, ok := systemArr[len(systemArr)-1].(map[string]any)
+	require.True(t, ok, "last system block should be a map")
 	_, hasSysCC := lastSysBlock["cache_control"]
 	require.True(t, hasSysCC, "system last text block should have cache_control")
 
 	// tools: 最后一个工具
-	outTools := output["tools"].([]any)
-	lastOutTool := outTools[len(outTools)-1].(map[string]any)
+	outTools, ok := output["tools"].([]any)
+	require.True(t, ok, "tools should be an array")
+	lastOutTool, ok := outTools[len(outTools)-1].(map[string]any)
+	require.True(t, ok, "last tool should be a map")
 	_, hasToolCC := lastOutTool["cache_control"]
 	require.True(t, hasToolCC, "last tool should have cache_control")
 
 	// messages: 最后 user 之前的 assistant
-	outMsgs := output["messages"].([]any)
+	outMsgs, ok := output["messages"].([]any)
+	require.True(t, ok, "messages should be an array")
 	// messages[3] = 第二个 assistant
-	prefixMsg := outMsgs[3].(map[string]any)
+	prefixMsg, ok := outMsgs[3].(map[string]any)
+	require.True(t, ok, "prefix message should be a map")
 	prefixContent, ok := prefixMsg["content"].([]any)
 	require.True(t, ok)
-	prefixBlock := prefixContent[0].(map[string]any)
+	prefixBlock, ok := prefixContent[0].(map[string]any)
+	require.True(t, ok, "prefix block should be a map")
 	_, hasMsgCC := prefixBlock["cache_control"]
 	require.True(t, hasMsgCC, "message before last user should have cache_control")
 
 	// 最后一条 user 不应有断点
-	lastMsg := outMsgs[4].(map[string]any)
+	lastMsg, ok := outMsgs[4].(map[string]any)
+	require.True(t, ok, "last message should be a map")
 	_, isString := lastMsg["content"].(string)
 	require.True(t, isString, "last user message should not be modified")
 }
@@ -1092,11 +1165,15 @@ func TestInjectCacheControlOnMessage_ToolUseBlock(t *testing.T) {
 	injectCacheControlOnMessage(msg, &count, 2)
 
 	require.Equal(t, 1, count)
-	contentArr := msg["content"].([]any)
-	block := contentArr[0].(map[string]any)
+	contentArr, ok := msg["content"].([]any)
+	require.True(t, ok, "content should be an array")
+	block, ok := contentArr[0].(map[string]any)
+	require.True(t, ok, "content block should be a map")
 	cc, exists := block["cache_control"]
 	require.True(t, exists, "tool_use block should have cache_control")
-	require.Equal(t, "ephemeral", cc.(map[string]string)["type"])
+	ccMap, ok := cc.(map[string]string)
+	require.True(t, ok, "cache_control should be a map[string]string")
+	require.Equal(t, "ephemeral", ccMap["type"])
 }
 
 func TestInjectCacheControlOnMessage_ToolResultBlock(t *testing.T) {
@@ -1115,8 +1192,10 @@ func TestInjectCacheControlOnMessage_ToolResultBlock(t *testing.T) {
 	injectCacheControlOnMessage(msg, &count, 2)
 
 	require.Equal(t, 1, count)
-	contentArr := msg["content"].([]any)
-	block := contentArr[0].(map[string]any)
+	contentArr, ok := msg["content"].([]any)
+	require.True(t, ok, "content should be an array")
+	block, ok := contentArr[0].(map[string]any)
+	require.True(t, ok, "content block should be a map")
 	_, exists := block["cache_control"]
 	require.True(t, exists, "tool_result block should have cache_control")
 }
@@ -1139,13 +1218,16 @@ func TestInjectCacheControlOnMessage_MixedContentLastToolUse(t *testing.T) {
 	injectCacheControlOnMessage(msg, &count, 2)
 
 	require.Equal(t, 1, count)
-	contentArr := msg["content"].([]any)
+	contentArr, ok := msg["content"].([]any)
+	require.True(t, ok, "content should be an array")
 	// text 块不应有
-	textBlock := contentArr[0].(map[string]any)
+	textBlock, ok := contentArr[0].(map[string]any)
+	require.True(t, ok, "text block should be a map")
 	_, exists := textBlock["cache_control"]
 	require.False(t, exists, "text block should NOT have cache_control (not the last block)")
 	// tool_use 块应有
-	toolBlock := contentArr[1].(map[string]any)
+	toolBlock, ok := contentArr[1].(map[string]any)
+	require.True(t, ok, "tool_use block should be a map")
 	_, exists = toolBlock["cache_control"]
 	require.True(t, exists, "tool_use block (last) should have cache_control")
 }
@@ -1163,13 +1245,16 @@ func TestInjectCacheControlOnMessage_SkipsThinkingBlock(t *testing.T) {
 	injectCacheControlOnMessage(msg, &count, 2)
 
 	require.Equal(t, 1, count)
-	contentArr := msg["content"].([]any)
+	contentArr, ok := msg["content"].([]any)
+	require.True(t, ok, "content should be an array")
 	// thinking 块不应有
-	thinkingBlock := contentArr[1].(map[string]any)
+	thinkingBlock, ok := contentArr[1].(map[string]any)
+	require.True(t, ok, "thinking block should be a map")
 	_, exists := thinkingBlock["cache_control"]
 	require.False(t, exists, "thinking block should NOT have cache_control")
 	// text 块应有（thinking 被跳过后，text 是倒数第一个可缓存块）
-	textBlock := contentArr[0].(map[string]any)
+	textBlock, ok := contentArr[0].(map[string]any)
+	require.True(t, ok, "text block should be a map")
 	_, exists = textBlock["cache_control"]
 	require.True(t, exists, "text block should have cache_control when thinking is skipped")
 }
@@ -1225,12 +1310,15 @@ func TestInjectAutoPromptCache_ToolUseConversation_MarksToolUseBlock(t *testing.
 	var output map[string]any
 	require.NoError(t, json.Unmarshal(result, &output))
 
-	msgs := output["messages"].([]any)
+	msgs, ok := output["messages"].([]any)
+	require.True(t, ok, "messages should be an array")
 	// messages[3]（assistant with text）是最后 user 之前的消息，应有 cache_control
-	asstMsg := msgs[3].(map[string]any)
+	asstMsg, ok := msgs[3].(map[string]any)
+	require.True(t, ok, "assistant message should be a map")
 	contentArr, ok := asstMsg["content"].([]any)
 	require.True(t, ok)
-	block := contentArr[0].(map[string]any)
+	block, ok := contentArr[0].(map[string]any)
+	require.True(t, ok, "content block should be a map")
 	_, exists := block["cache_control"]
 	require.True(t, exists, "assistant text block before last user should have cache_control")
 
@@ -1309,11 +1397,15 @@ func TestInjectAutoPromptCache_PureToolUseBeforeLastUser_StillInjects(t *testing
 	var output map[string]any
 	require.NoError(t, json.Unmarshal(result, &output))
 
-	msgs := output["messages"].([]any)
+	msgs, ok := output["messages"].([]any)
+	require.True(t, ok, "messages should be an array")
 	// messages[4]（tool_result user）是 targetIdx（lastUserIdx=5, targetIdx=4）
-	toolResultMsg := msgs[4].(map[string]any)
-	contentArr := toolResultMsg["content"].([]any)
-	block := contentArr[0].(map[string]any)
+	toolResultMsg, ok := msgs[4].(map[string]any)
+	require.True(t, ok, "tool result message should be a map")
+	contentArr, ok := toolResultMsg["content"].([]any)
+	require.True(t, ok, "content should be an array")
+	block, ok := contentArr[0].(map[string]any)
+	require.True(t, ok, "content block should be a map")
 	_, exists := block["cache_control"]
 	require.True(t, exists, "tool_result block should have cache_control (stable prefix boundary)")
 }

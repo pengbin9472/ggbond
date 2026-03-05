@@ -3965,12 +3965,8 @@ func enforceCacheControlLimit(body []byte) []byte {
 		return body
 	}
 
-	modified := false
-
 	// 清理 thinking 块中的非法 cache_control（thinking 块不支持该字段）
-	if removeCacheControlFromThinkingBlocks(data) {
-		modified = true
-	}
+	modified := removeCacheControlFromThinkingBlocks(data)
 
 	// 计算当前 cache_control 块数量
 	count := countCacheControlBlocks(data)
