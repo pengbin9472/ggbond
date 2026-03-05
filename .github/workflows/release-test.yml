@@ -94,11 +94,16 @@ jobs:
         id: lowercase
         run: echo "owner=$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
 
-      - name: Create dummy tag for GoReleaser
+      - name: Delete existing release and recreate tag
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+          # Delete existing release if it exists
+          gh release delete v0.0.0-test --yes --cleanup-tag 2>/dev/null || true
+          # Recreate the tag
           git tag -f "v0.0.0-test" -m "test branch build"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v7
