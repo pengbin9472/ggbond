@@ -3713,11 +3713,13 @@ func injectClaudeCodePrompt(body []byte, system any) []byte {
 // 1. 为 system 数组中的最后一个 text 块添加 cache_control（稳定的系统提示词前缀）
 // 2. 为 tools 数组中的最后一个工具定义添加 cache_control（工具定义在会话内几乎不变）
 // 3. 为 messages 中最后一条 user 消息之前的消息添加 cache_control（稳定的历史对话前缀）
-//    - 这比标记最后一条 user 消息更有效，因为历史前缀在请求间不变，缓存命中率更高
-//    - 如果只有一条 user 消息（首轮对话），则仍标记该消息以覆盖重试场景
+//   - 这比标记最后一条 user 消息更有效，因为历史前缀在请求间不变，缓存命中率更高
+//   - 如果只有一条 user 消息（首轮对话），则仍标记该消息以覆盖重试场景
+//
 // 4. 注入前检查累计 token 数，不足最低门槛时跳过，避免无效的缓存创建开销（创建缓存比正常请求贵 25%）
-//    - Claude Sonnet/Opus: 1024 tokens
-//    - Claude Haiku: 2048 tokens
+//   - Claude Sonnet/Opus: 1024 tokens
+//   - Claude Haiku: 2048 tokens
+//
 // 5. 跳过已有 cache_control 的块，避免重复标记
 // 6. 遵守 Anthropic API 的 4 个 cache_control 块限制
 func injectAutoPromptCache(body []byte) []byte {

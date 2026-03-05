@@ -317,8 +317,8 @@ func TestInjectAutoPromptCache_BelowMinTokens_NoInjection(t *testing.T) {
 
 	// 输入输出应完全一致（无注入）
 	var inputData, outputData map[string]any
-	json.Unmarshal(body, &inputData)
-	json.Unmarshal(result, &outputData)
+	require.NoError(t, json.Unmarshal(body, &inputData))
+	require.NoError(t, json.Unmarshal(result, &outputData))
 
 	// 检查 system 没有被转换
 	_, isString := outputData["system"].(string)
