@@ -104,7 +104,7 @@ jobs:
         uses: goreleaser/goreleaser-action@v7
         with:
           version: '~> v2'
-          args: release --clean --skip=validate --skip=publish --config=.goreleaser.test.yaml
+          args: release --clean --skip=validate --config=.goreleaser.test.yaml
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GORELEASER_CURRENT_TAG: v0.0.0-test

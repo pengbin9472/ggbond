@@ -112,4 +112,10 @@ docker_manifests:
       - "ghcr.io/{{ .Env.GITHUB_REPO_OWNER_LOWER }}/ggbond:test-arm64"
 
 release:
-  disable: true
+  github:
+    owner: "{{ .Env.GITHUB_REPO_OWNER }}"
+    name: "{{ .Env.GITHUB_REPO_NAME }}"
+  draft: false
+  prerelease: true
+  make_latest: false
+  name_template: "GGbond Test Build {{.Date}}"
