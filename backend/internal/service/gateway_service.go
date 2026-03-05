@@ -3710,10 +3710,15 @@ func injectClaudeCodePrompt(body []byte, system any) []byte {
 
 // injectAutoPromptCache 自动为请求注入 cache_control 标记以启用 Prompt Caching
 // 策略：
-// 1. 为 system 数组中的最后一个 text 块添加 cache_control（通常是最长的上下文）
-// 2. 为 messages 数组中最后一条 user 消息的最后一个 text 块添加 cache_control
-// 3. 跳过已有 cache_control 的块，避免重复标记
-// 4. 遵守 Anthropic API 的 4 个 cache_control 块限制
+// 1. 为 system 数组中的最后一个 text 块添加 cache_control（稳定的系统提示词前缀）
+// 2. 为 messages 中最后一条 user 消息之前的消息添加 cache_control（稳定的历史对话前缀）
+//    - 这比标记最后一条 user 消息更有效，因为历史前缀在请求间不变，缓存命中率更高
+//    - 如果只有一条 user 消息（首轮对话），则仍标记该消息以覆盖重试场景
+// 3. 注入前检查累计 token 数，不足最低门槛时跳过，避免无效的缓存创建开销（创建缓存比正常请求贵 25%）
+//    - Claude Sonnet/Opus: 1024 tokens
+//    - Claude Haiku: 2048 tokens
+// 4. 跳过已有 cache_control 的块，避免重复标记
+// 5. 遵守 Anthropic API 的 4 个 cache_control 块限制
 func injectAutoPromptCache(body []byte) []byte {
 	var data map[string]any
 	if err := json.Unmarshal(body, &data); err != nil {
@@ -3728,83 +3733,86 @@ func injectAutoPromptCache(body []byte) []byte {
 		return body // 已达上限，不注入
 	}
 
+	// 根据模型确定最低可缓存 token 数
+	minTokens := 1024
+	if model, _ := data["model"].(string); strings.Contains(strings.ToLower(model), "haiku") {
+		minTokens = 2048
+	}
+
 	injectedCount := 0
 	maxInject := remainingQuota
 	if maxInject > 2 {
 		maxInject = 2 // 最多自动注入 2 个（system 1个 + messages 1个），为用户手动标记留空间
 	}
 
+	// 累计 token 估算（从请求开头累加，用于判断各断点位置是否达到缓存门槛）
+	cumulativeTokens := estimateSystemTokenCount(data)
+
 	// 1. 为 system 中最后一个 text 块添加 cache_control
-	switch system := data["system"].(type) {
-	case []any:
-		// system 是块数组形式：[{"type": "text", "text": "..."}]
-		if len(system) > 0 {
-			for i := len(system) - 1; i >= 0 && injectedCount < maxInject; i-- {
-				if block, ok := system[i].(map[string]any); ok {
-					blockType, _ := block["type"].(string)
-					// 只处理 text 块，跳过 thinking 块
-					if blockType == "text" {
-						// 检查是否已有 cache_control
-						if _, exists := block["cache_control"]; !exists {
-							block["cache_control"] = map[string]string{"type": "ephemeral"}
-							injectedCount++
+	if cumulativeTokens >= minTokens {
+		switch system := data["system"].(type) {
+		case []any:
+			// system 是块数组形式：[{"type": "text", "text": "..."}]
+			if len(system) > 0 {
+				for i := len(system) - 1; i >= 0 && injectedCount < maxInject; i-- {
+					if block, ok := system[i].(map[string]any); ok {
+						blockType, _ := block["type"].(string)
+						// 只处理 text 块，跳过 thinking 块
+						if blockType == "text" {
+							// 检查是否已有 cache_control
+							if _, exists := block["cache_control"]; !exists {
+								block["cache_control"] = map[string]string{"type": "ephemeral"}
+								injectedCount++
+							}
+							break // system 只处理最后一个 text 块，无论是否已标记
 						}
-						break // system 只处理最后一个 text 块，无论是否已标记
 					}
 				}
 			}
+		case string:
+			// system 是纯字符串形式："system": "You are a helpful assistant"
+			// 转换为块数组并添加 cache_control
+			data["system"] = []any{
+				map[string]any{
+					"type":          "text",
+					"text":          system,
+					"cache_control": map[string]string{"type": "ephemeral"},
+				},
+			}
+			injectedCount++
 		}
-	case string:
-		// system 是纯字符串形式："system": "You are a helpful assistant"
-		// 转换为块数组并添加 cache_control
-		data["system"] = []any{
-			map[string]any{
-				"type":          "text",
-				"text":          system,
-				"cache_control": map[string]string{"type": "ephemeral"},
-			},
-		}
-		injectedCount++
 	}
 
-	// 2. 为 messages 中最后一条 user 消息的最后一个 text 块添加 cache_control
+	// 2. 为 messages 中稳定的历史前缀边界添加 cache_control
 	if messages, ok := data["messages"].([]any); ok && len(messages) > 0 && injectedCount < maxInject {
 		// 从后往前找最后一条 user 消息
-		for i := len(messages) - 1; i >= 0 && injectedCount < maxInject; i-- {
+		lastUserIdx := -1
+		for i := len(messages) - 1; i >= 0; i-- {
 			if msg, ok := messages[i].(map[string]any); ok {
-				role, _ := msg["role"].(string)
-				if role == "user" {
-					switch content := msg["content"].(type) {
-					case []any:
-						// content 是块数组形式：[{"type": "text", "text": "..."}]
-						if len(content) > 0 {
-							for j := len(content) - 1; j >= 0; j-- {
-								if block, ok := content[j].(map[string]any); ok {
-									blockType, _ := block["type"].(string)
-									if blockType == "text" {
-										if _, exists := block["cache_control"]; !exists {
-											block["cache_control"] = map[string]string{"type": "ephemeral"}
-											injectedCount++
-										}
-										break
-									}
-								}
-							}
-						}
-					case string:
-						// content 是纯字符串形式："content": "Hello"
-						// 转换为块数组并添加 cache_control
-						msg["content"] = []any{
-							map[string]any{
-								"type":          "text",
-								"text":          content,
-								"cache_control": map[string]string{"type": "ephemeral"},
-							},
-						}
-						injectedCount++
-					}
-					break // 只处理最后一条 user 消息
+				if role, _ := msg["role"].(string); role == "user" {
+					lastUserIdx = i
+					break
 				}
+			}
+		}
+
+		// 确定要标记的目标消息索引
+		targetIdx := -1
+		if lastUserIdx > 0 {
+			// 多轮对话：标记最后一条 user 消息的前一条（通常是 assistant 消息）
+			// 这是请求间不变的历史前缀边界，缓存命中率最高
+			targetIdx = lastUserIdx - 1
+		} else if lastUserIdx == 0 && len(messages) == 1 {
+			// 首轮对话（只有一条 user 消息）：仍标记该消息以覆盖重试/重新生成场景
+			targetIdx = 0
+		}
+		// lastUserIdx == 0 但有多条消息：user 在开头，后面是 assistant 等，不常见，跳过
+
+		if targetIdx >= 0 {
+			// 累加到目标消息为止的 token 数，检查是否达到缓存门槛
+			msgTokens := estimateMessagesTokenCount(messages, targetIdx)
+			if cumulativeTokens+msgTokens >= minTokens {
+				injectCacheControlOnMessage(messages[targetIdx], &injectedCount, maxInject)
 			}
 		}
 	}
@@ -3819,6 +3827,94 @@ func injectAutoPromptCache(body []byte) []byte {
 		return body
 	}
 	return result
+}
+
+// estimateTextTokens 粗略估算文本的 token 数
+// 使用 len(text)/4 作为保守估计（英文约 4 字符/token，CJK 文本实际更高但宁可保守）
+func estimateTextTokens(text string) int {
+	n := len(text)
+	if n == 0 {
+		return 0
+	}
+	return n / 4
+}
+
+// estimateSystemTokenCount 估算 system prompt 的总 token 数
+func estimateSystemTokenCount(data map[string]any) int {
+	total := 0
+	switch system := data["system"].(type) {
+	case []any:
+		for _, item := range system {
+			if block, ok := item.(map[string]any); ok {
+				if text, ok := block["text"].(string); ok {
+					total += estimateTextTokens(text)
+				}
+			}
+		}
+	case string:
+		total += estimateTextTokens(system)
+	}
+	return total
+}
+
+// estimateMessagesTokenCount 估算 messages[0..upToIdx] 的累计 token 数
+func estimateMessagesTokenCount(messages []any, upToIdx int) int {
+	total := 0
+	for i := 0; i <= upToIdx && i < len(messages); i++ {
+		msg, ok := messages[i].(map[string]any)
+		if !ok {
+			continue
+		}
+		switch content := msg["content"].(type) {
+		case []any:
+			for _, item := range content {
+				if block, ok := item.(map[string]any); ok {
+					if text, ok := block["text"].(string); ok {
+						total += estimateTextTokens(text)
+					}
+				}
+			}
+		case string:
+			total += estimateTextTokens(content)
+		}
+	}
+	return total
+}
+
+// injectCacheControlOnMessage 为指定消息的最后一个 text 块注入 cache_control
+func injectCacheControlOnMessage(msgAny any, injectedCount *int, maxInject int) {
+	msg, ok := msgAny.(map[string]any)
+	if !ok || *injectedCount >= maxInject {
+		return
+	}
+
+	switch content := msg["content"].(type) {
+	case []any:
+		// content 是块数组形式：[{"type": "text", "text": "..."}]
+		for j := len(content) - 1; j >= 0; j-- {
+			if block, ok := content[j].(map[string]any); ok {
+				blockType, _ := block["type"].(string)
+				if blockType == "text" {
+					if _, exists := block["cache_control"]; !exists {
+						block["cache_control"] = map[string]string{"type": "ephemeral"}
+						*injectedCount++
+					}
+					return
+				}
+			}
+		}
+	case string:
+		// content 是纯字符串形式："content": "Hello"
+		// 转换为块数组并添加 cache_control
+		msg["content"] = []any{
+			map[string]any{
+				"type":          "text",
+				"text":          content,
+				"cache_control": map[string]string{"type": "ephemeral"},
+			},
+		}
+		*injectedCount++
+	}
 }
 
 // enforceCacheControlLimit 强制执行 cache_control 块数量限制（最多 4 个）
