@@ -62,6 +62,8 @@
           <span v-else-if="tool.key === 'gemini-cli'" class="text-sm font-bold">G</span>
           <!-- Droid CLI / Terminal icon -->
           <svg v-else-if="tool.key === 'droid-cli'" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="m6.75 7.5 3 2.25-3 2.25m4.5 0h3m-9 8.25h13.5A2.25 2.25 0 0 0 21 18V6a2.25 2.25 0 0 0-2.25-2.25H5.25A2.25 2.25 0 0 0 3 6v12a2.25 2.25 0 0 0 2.25 2.25Z"/></svg>
+          <!-- OpenCode / Command line icon -->
+          <svg v-else-if="tool.key === 'opencode'" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 7.5l3 2.25-3 2.25m4.5 0h3M3.75 3h16.5a1.5 1.5 0 0 1 1.5 1.5v15a1.5 1.5 0 0 1-1.5 1.5H3.75a1.5 1.5 0 0 1-1.5-1.5v-15a1.5 1.5 0 0 1 1.5-1.5Z"/></svg>
           {{ tool.name }}
         </button>
       </div>
@@ -82,6 +84,7 @@ import OpenClawTutorial from '@/components/tutorial/OpenClawTutorial.vue'
 import GeminiCliTutorial from '@/components/tutorial/GeminiCliTutorial.vue'
 import CodexTutorial from '@/components/tutorial/CodexTutorial.vue'
 import DroidCliTutorial from '@/components/tutorial/DroidCliTutorial.vue'
+import OpenCodeTutorial from '@/components/tutorial/OpenCodeTutorial.vue'
 
 interface TutorialSystem {
   key: string
@@ -113,7 +116,8 @@ const cliTools: CliTool[] = [
   { key: 'openclaw', name: 'OpenClaw', component: OpenClawTutorial },
   { key: 'codex', name: 'Codex', component: CodexTutorial },
   { key: 'gemini-cli', name: 'Gemini CLI', component: GeminiCliTutorial },
-  { key: 'droid-cli', name: 'Droid CLI', component: DroidCliTutorial }
+  { key: 'droid-cli', name: 'Droid CLI', component: DroidCliTutorial },
+  { key: 'opencode', name: 'OpenCode', component: OpenCodeTutorial }
 ]
 
 // 当前工具标题
