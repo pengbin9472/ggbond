@@ -967,7 +967,7 @@ func (r *groupRepository) ComputeGroupMonitoringStats(ctx context.Context) ([]se
 		// 如果 usage_logs 查询失败，不影响账户状态统计
 		return stats, nil
 	}
-	defer usageRows.Close()
+	defer func() { _ = usageRows.Close() }()
 
 	// 构建 group_id -> usage 数据的映射
 	type usageData struct {
