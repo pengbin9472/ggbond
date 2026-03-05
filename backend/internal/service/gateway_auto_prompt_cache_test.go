@@ -1072,3 +1072,248 @@ func TestInjectAutoPromptCache_MaxQuotaWithTools(t *testing.T) {
 	count := countCacheControlBlocks(output)
 	require.LessOrEqual(t, count, 4, "total cache_control blocks should not exceed 4")
 }
+
+// ─── tool_use / tool_result 消息场景 ──────────────────────────────────
+
+func TestInjectCacheControlOnMessage_ToolUseBlock(t *testing.T) {
+	// assistant 消息只有 tool_use 块（没有 text 块），应在 tool_use 块上注入
+	msg := map[string]any{
+		"role": "assistant",
+		"content": []any{
+			map[string]any{
+				"type":  "tool_use",
+				"id":    "toolu_123",
+				"name":  "read_file",
+				"input": map[string]any{"path": "/etc/config"},
+			},
+		},
+	}
+	count := 0
+	injectCacheControlOnMessage(msg, &count, 2)
+
+	require.Equal(t, 1, count)
+	contentArr := msg["content"].([]any)
+	block := contentArr[0].(map[string]any)
+	cc, exists := block["cache_control"]
+	require.True(t, exists, "tool_use block should have cache_control")
+	require.Equal(t, "ephemeral", cc.(map[string]string)["type"])
+}
+
+func TestInjectCacheControlOnMessage_ToolResultBlock(t *testing.T) {
+	// user 消息包含 tool_result 块，应在 tool_result 块上注入
+	msg := map[string]any{
+		"role": "user",
+		"content": []any{
+			map[string]any{
+				"type":        "tool_result",
+				"tool_use_id": "toolu_123",
+				"content":     "file contents here",
+			},
+		},
+	}
+	count := 0
+	injectCacheControlOnMessage(msg, &count, 2)
+
+	require.Equal(t, 1, count)
+	contentArr := msg["content"].([]any)
+	block := contentArr[0].(map[string]any)
+	_, exists := block["cache_control"]
+	require.True(t, exists, "tool_result block should have cache_control")
+}
+
+func TestInjectCacheControlOnMessage_MixedContentLastToolUse(t *testing.T) {
+	// assistant 消息：text + tool_use，应在最后一个块（tool_use）上注入
+	msg := map[string]any{
+		"role": "assistant",
+		"content": []any{
+			map[string]any{"type": "text", "text": "Let me read that file for you."},
+			map[string]any{
+				"type":  "tool_use",
+				"id":    "toolu_456",
+				"name":  "read_file",
+				"input": map[string]any{"path": "/config.yml"},
+			},
+		},
+	}
+	count := 0
+	injectCacheControlOnMessage(msg, &count, 2)
+
+	require.Equal(t, 1, count)
+	contentArr := msg["content"].([]any)
+	// text 块不应有
+	textBlock := contentArr[0].(map[string]any)
+	_, exists := textBlock["cache_control"]
+	require.False(t, exists, "text block should NOT have cache_control (not the last block)")
+	// tool_use 块应有
+	toolBlock := contentArr[1].(map[string]any)
+	_, exists = toolBlock["cache_control"]
+	require.True(t, exists, "tool_use block (last) should have cache_control")
+}
+
+func TestInjectCacheControlOnMessage_SkipsThinkingBlock(t *testing.T) {
+	// 消息含 thinking + text 块，应跳过 thinking 标记 text
+	msg := map[string]any{
+		"role": "assistant",
+		"content": []any{
+			map[string]any{"type": "text", "text": "Answer"},
+			map[string]any{"type": "thinking", "text": "internal thought"},
+		},
+	}
+	count := 0
+	injectCacheControlOnMessage(msg, &count, 2)
+
+	require.Equal(t, 1, count)
+	contentArr := msg["content"].([]any)
+	// thinking 块不应有
+	thinkingBlock := contentArr[1].(map[string]any)
+	_, exists := thinkingBlock["cache_control"]
+	require.False(t, exists, "thinking block should NOT have cache_control")
+	// text 块应有（thinking 被跳过后，text 是倒数第一个可缓存块）
+	textBlock := contentArr[0].(map[string]any)
+	_, exists = textBlock["cache_control"]
+	require.True(t, exists, "text block should have cache_control when thinking is skipped")
+}
+
+func TestInjectAutoPromptCache_ToolUseConversation_MarksToolUseBlock(t *testing.T) {
+	// 模拟 Claude Code 典型场景：assistant 只有 tool_use 没有 text
+	longSystem := strings.Repeat("You are Claude Code. ", 300)
+	input := map[string]any{
+		"model":  "claude-sonnet-4-20250514",
+		"system": longSystem,
+		"tools": []any{
+			map[string]any{
+				"name":         "read_file",
+				"description":  "Read a file",
+				"input_schema": map[string]any{"type": "object"},
+			},
+		},
+		"messages": []any{
+			map[string]any{"role": "user", "content": "Read the config file"},
+			map[string]any{
+				"role": "assistant",
+				"content": []any{
+					map[string]any{
+						"type":  "tool_use",
+						"id":    "toolu_001",
+						"name":  "read_file",
+						"input": map[string]any{"path": "/etc/config.yml"},
+					},
+				},
+			},
+			map[string]any{
+				"role": "user",
+				"content": []any{
+					map[string]any{
+						"type":        "tool_result",
+						"tool_use_id": "toolu_001",
+						"content":     "port: 3000\nhost: localhost",
+					},
+				},
+			},
+			map[string]any{
+				"role": "assistant",
+				"content": []any{
+					map[string]any{"type": "text", "text": "The config file contains port 3000 and host localhost."},
+				},
+			},
+			map[string]any{"role": "user", "content": "Change the port to 8080"},
+		},
+	}
+	body, _ := json.Marshal(input)
+	result := injectAutoPromptCache(body)
+
+	var output map[string]any
+	require.NoError(t, json.Unmarshal(result, &output))
+
+	msgs := output["messages"].([]any)
+	// messages[3]（assistant with text）是最后 user 之前的消息，应有 cache_control
+	asstMsg := msgs[3].(map[string]any)
+	contentArr, ok := asstMsg["content"].([]any)
+	require.True(t, ok)
+	block := contentArr[0].(map[string]any)
+	_, exists := block["cache_control"]
+	require.True(t, exists, "assistant text block before last user should have cache_control")
+
+	// 总共 3 个断点：system + tools + messages
+	count := countCacheControlBlocks(output)
+	require.Equal(t, 3, count)
+}
+
+func TestInjectAutoPromptCache_PureToolUseBeforeLastUser_StillInjects(t *testing.T) {
+	// 关键场景：最后 user 之前是纯 tool_result（user 角色），再之前是纯 tool_use（assistant 角色）
+	// 断点应落在 messages[3]（tool_result user）上，而不是静默跳过
+	longSystem := strings.Repeat("System prompt. ", 400)
+	input := map[string]any{
+		"model":  "claude-sonnet-4-20250514",
+		"system": longSystem,
+		"messages": []any{
+			map[string]any{"role": "user", "content": "Do something"},
+			map[string]any{
+				"role": "assistant",
+				"content": []any{
+					map[string]any{"type": "text", "text": "I'll help."},
+					map[string]any{
+						"type":  "tool_use",
+						"id":    "toolu_x",
+						"name":  "bash",
+						"input": map[string]any{"command": "ls"},
+					},
+				},
+			},
+			map[string]any{
+				"role": "user",
+				"content": []any{
+					map[string]any{
+						"type":        "tool_result",
+						"tool_use_id": "toolu_x",
+						"content":     "file1.txt\nfile2.txt",
+					},
+				},
+			},
+			map[string]any{
+				"role": "assistant",
+				"content": []any{
+					map[string]any{
+						"type":  "tool_use",
+						"id":    "toolu_y",
+						"name":  "read_file",
+						"input": map[string]any{"path": "file1.txt"},
+					},
+				},
+			},
+			map[string]any{
+				"role": "user",
+				"content": []any{
+					map[string]any{
+						"type":        "tool_result",
+						"tool_use_id": "toolu_y",
+						"content":     "Hello World",
+					},
+				},
+			},
+			// ↑ messages[4]: 这是最后 user 之前的消息...
+			// 但这个 user 消息是 tool_result 类型的 "user"
+			// lastUserIdx 会找到这个（因为 role == "user"）
+			// 所以需要从后往前找的是最后一个 *非 tool_result* 的 user
+			// 实际上，按 Anthropic API，tool_result 的 role 也是 "user"
+			// 所以 lastUserIdx 会指向 messages[4]，targetIdx = 3 (assistant tool_use)
+			// 我们需要在 messages[3] 的 tool_use 块上注入 cache_control
+
+			// 这是真正的"最后一条新 user 消息"
+			map[string]any{"role": "user", "content": "What's in file1.txt?"},
+		},
+	}
+	body, _ := json.Marshal(input)
+	result := injectAutoPromptCache(body)
+
+	var output map[string]any
+	require.NoError(t, json.Unmarshal(result, &output))
+
+	msgs := output["messages"].([]any)
+	// messages[4]（tool_result user）是 targetIdx（lastUserIdx=5, targetIdx=4）
+	toolResultMsg := msgs[4].(map[string]any)
+	contentArr := toolResultMsg["content"].([]any)
+	block := contentArr[0].(map[string]any)
+	_, exists := block["cache_control"]
+	require.True(t, exists, "tool_result block should have cache_control (stable prefix boundary)")
+}

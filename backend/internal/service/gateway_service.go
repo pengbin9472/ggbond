@@ -3916,7 +3916,9 @@ func estimateToolsTokenCount(data map[string]any) int {
 	return estimateTextTokens(string(toolsJSON))
 }
 
-// injectCacheControlOnMessage 为指定消息的最后一个 text 块注入 cache_control
+// injectCacheControlOnMessage 为指定消息的最后一个可缓存内容块注入 cache_control
+// Anthropic 支持在任意内容块（text、tool_use、tool_result、image 等）上设置 cache_control
+// 只跳过 thinking 块（不支持缓存）
 func injectCacheControlOnMessage(msgAny any, injectedCount *int, maxInject int) {
 	msg, ok := msgAny.(map[string]any)
 	if !ok || *injectedCount >= maxInject {
@@ -3925,17 +3927,20 @@ func injectCacheControlOnMessage(msgAny any, injectedCount *int, maxInject int) 
 
 	switch content := msg["content"].(type) {
 	case []any:
-		// content 是块数组形式：[{"type": "text", "text": "..."}]
+		// content 是块数组形式，从后往前找第一个可缓存的块
 		for j := len(content) - 1; j >= 0; j-- {
 			if block, ok := content[j].(map[string]any); ok {
 				blockType, _ := block["type"].(string)
-				if blockType == "text" {
-					if _, exists := block["cache_control"]; !exists {
-						block["cache_control"] = map[string]string{"type": "ephemeral"}
-						*injectedCount++
-					}
-					return
+				// 跳过 thinking 块（Anthropic 不支持 thinking 块的 cache_control）
+				if blockType == "thinking" {
+					continue
 				}
+				// 在任意非 thinking 块上注入 cache_control（text、tool_use、tool_result 等均支持）
+				if _, exists := block["cache_control"]; !exists {
+					block["cache_control"] = map[string]string{"type": "ephemeral"}
+					*injectedCount++
+				}
+				return
 			}
 		}
 	case string:
