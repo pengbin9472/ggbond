@@ -3965,12 +3965,16 @@ func enforceCacheControlLimit(body []byte) []byte {
 		return body
 	}
 
+	modified := false
+
 	// 清理 thinking 块中的非法 cache_control（thinking 块不支持该字段）
-	removeCacheControlFromThinkingBlocks(data)
+	if removeCacheControlFromThinkingBlocks(data) {
+		modified = true
+	}
 
 	// 计算当前 cache_control 块数量
 	count := countCacheControlBlocks(data)
-	if count <= maxCacheControlBlocks {
+	if count <= maxCacheControlBlocks && !modified {
 		return body
 	}
 
@@ -4133,7 +4137,8 @@ func removeCacheControlFromSystem(data map[string]any) bool {
 
 // removeCacheControlFromThinkingBlocks 强制清理所有 thinking 块中的非法 cache_control
 // thinking 块不支持 cache_control 字段，这个函数确保所有 thinking 块都不含该字段
-func removeCacheControlFromThinkingBlocks(data map[string]any) {
+func removeCacheControlFromThinkingBlocks(data map[string]any) bool {
+	changed := false
 	// 清理 system 中的 thinking 块
 	if system, ok := data["system"].([]any); ok {
 		for _, item := range system {
@@ -4141,6 +4146,7 @@ func removeCacheControlFromThinkingBlocks(data map[string]any) {
 				if blockType, _ := m["type"].(string); blockType == "thinking" {
 					if _, has := m["cache_control"]; has {
 						delete(m, "cache_control")
+						changed = true
 						logger.LegacyPrintf("service.gateway", "[Warning] Removed illegal cache_control from thinking block in system")
 					}
 				}
@@ -4158,6 +4164,7 @@ func removeCacheControlFromThinkingBlocks(data map[string]any) {
 							if blockType, _ := m["type"].(string); blockType == "thinking" {
 								if _, has := m["cache_control"]; has {
 									delete(m, "cache_control")
+									changed = true
 									logger.LegacyPrintf("service.gateway", "[Warning] Removed illegal cache_control from thinking block in messages[%d].content[%d]", msgIdx, contentIdx)
 								}
 							}
@@ -4167,6 +4174,7 @@ func removeCacheControlFromThinkingBlocks(data map[string]any) {
 			}
 		}
 	}
+	return changed
 }
 
 // Forward 转发请求到Claude API
