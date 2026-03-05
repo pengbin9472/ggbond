@@ -260,6 +260,7 @@ export default {
     announcements: 'Announcements',
     apiKeys: 'API Keys',
     usage: 'Usage',
+    monitoring: 'Monitoring',
     redeem: 'Redeem',
     profile: 'Profile',
     users: 'Users',
@@ -438,6 +439,22 @@ export default {
   // Groups (shared)
   groups: {
     subscription: 'Sub'
+  },
+
+  // Monitoring
+  monitoring: {
+    title: 'Group Monitoring',
+    description: 'View availability status of each group',
+    online: 'Online',
+    offline: 'Offline',
+    totalGroupsCount: 'groups',
+    availabilityRate: 'Availability',
+    cacheHitRate: 'Cache Hit Rate',
+    notCollected: 'Not collected',
+    noGroups: 'No monitoring data',
+    noGroupsDescription: 'No groups have been configured in the system yet',
+    loadError: 'Failed to load monitoring data',
+    showHistory: 'Click to view history'
   },
 
   // API Keys
@@ -1344,6 +1361,10 @@ export default {
         fallbackGroup: 'Fallback Group',
         fallbackHint: 'Non-Claude Code requests will use this group. Leave empty to reject directly.',
         noFallback: 'No Fallback (Reject)'
+      },
+      autoPromptCache: {
+        title: 'Auto Prompt Cache',
+        hint: 'When enabled, the gateway automatically adds cache markers to text content in system and messages, leveraging Anthropic\'s Prompt Caching to reduce costs'
       },
       invalidRequestFallback: {
         title: 'Invalid Request Fallback Group',
@@ -3572,6 +3593,12 @@ export default {
         minVersionPlaceholder: 'e.g. 2.1.63',
         minVersionHint:
           'Reject Claude Code clients below this version (semver format). Leave empty to disable version check.'
+      },
+      autoPromptCache: {
+        title: 'Auto Prompt Cache',
+        description: 'Automatically enable Prompt Caching for Anthropic API requests to reduce costs and improve response speed',
+        enableAutoPromptCache: 'Enable Auto Prompt Cache',
+        enableAutoPromptCacheHint: 'When enabled, the gateway automatically adds cache markers to long text content in system and messages, leveraging Anthropic\'s Prompt Caching feature'
       },
       site: {
         title: 'Site Settings',

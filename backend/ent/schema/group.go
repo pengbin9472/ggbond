@@ -148,6 +148,11 @@ func (Group) Fields() []ent.Field {
 		field.Int("sort_order").
 			Default(0).
 			Comment("分组显示排序，数值越小越靠前"),
+
+		// 自动 Prompt 缓存 (added by migration 053)
+		field.Bool("enable_auto_prompt_cache").
+			Default(false).
+			Comment("是否启用自动 Prompt 缓存（仅 Anthropic 平台）"),
 	}
 }
 

@@ -75,6 +75,8 @@ const (
 	FieldSupportedModelScopes = "supported_model_scopes"
 	// FieldSortOrder holds the string denoting the sort_order field in the database.
 	FieldSortOrder = "sort_order"
+	// FieldEnableAutoPromptCache holds the string denoting the enable_auto_prompt_cache field in the database.
+	FieldEnableAutoPromptCache = "enable_auto_prompt_cache"
 	// EdgeAPIKeys holds the string denoting the api_keys edge name in mutations.
 	EdgeAPIKeys = "api_keys"
 	// EdgeRedeemCodes holds the string denoting the redeem_codes edge name in mutations.
@@ -180,6 +182,7 @@ var Columns = []string{
 	FieldMcpXMLInject,
 	FieldSupportedModelScopes,
 	FieldSortOrder,
+	FieldEnableAutoPromptCache,
 }
 
 var (
@@ -247,6 +250,8 @@ var (
 	DefaultSupportedModelScopes []string
 	// DefaultSortOrder holds the default value on creation for the "sort_order" field.
 	DefaultSortOrder int
+	// DefaultEnableAutoPromptCache holds the default value on creation for the "enable_auto_prompt_cache" field.
+	DefaultEnableAutoPromptCache bool
 )
 
 // OrderOption defines the ordering options for the Group queries.
@@ -395,6 +400,11 @@ func ByMcpXMLInject(opts ...sql.OrderTermOption) OrderOption {
 // BySortOrder orders the results by the sort_order field.
 func BySortOrder(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldSortOrder, opts...).ToFunc()
+}
+
+// ByEnableAutoPromptCache orders the results by the enable_auto_prompt_cache field.
+func ByEnableAutoPromptCache(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldEnableAutoPromptCache, opts...).ToFunc()
 }
 
 // ByAPIKeysCount orders the results by api_keys count.

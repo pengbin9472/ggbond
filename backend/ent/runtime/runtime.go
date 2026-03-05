@@ -423,6 +423,10 @@ func init() {
 	groupDescSortOrder := groupFields[26].Descriptor()
 	// group.DefaultSortOrder holds the default value on creation for the sort_order field.
 	group.DefaultSortOrder = groupDescSortOrder.Default.(int)
+	// groupDescEnableAutoPromptCache is the schema descriptor for enable_auto_prompt_cache field.
+	groupDescEnableAutoPromptCache := groupFields[27].Descriptor()
+	// group.DefaultEnableAutoPromptCache holds the default value on creation for the enable_auto_prompt_cache field.
+	group.DefaultEnableAutoPromptCache = groupDescEnableAutoPromptCache.Default.(bool)
 	idempotencyrecordMixin := schema.IdempotencyRecord{}.Mixin()
 	idempotencyrecordMixinFields0 := idempotencyrecordMixin[0].Fields()
 	_ = idempotencyrecordMixinFields0

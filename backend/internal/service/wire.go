@@ -291,6 +291,13 @@ func ProvideSettingService(settingRepo SettingRepository, groupRepo GroupReposit
 	return svc
 }
 
+// ProvideGroupMonitoringService creates and starts GroupMonitoringService
+func ProvideGroupMonitoringService(groupRepo GroupRepository) *GroupMonitoringService {
+	svc := NewGroupMonitoringService(groupRepo)
+	svc.Start(context.Background())
+	return svc
+}
+
 // ProviderSet is the Wire provider set for all services
 var ProviderSet = wire.NewSet(
 	// Core services
@@ -369,4 +376,5 @@ var ProviderSet = wire.NewSet(
 	ProvideIdempotencyCoordinator,
 	ProvideSystemOperationLockService,
 	ProvideIdempotencyCleanupService,
+	ProvideGroupMonitoringService,
 )

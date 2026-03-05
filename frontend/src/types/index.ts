@@ -373,6 +373,7 @@ export interface Group {
   claude_code_only: boolean
   fallback_group_id: number | null
   fallback_group_id_on_invalid_request: number | null
+  enable_auto_prompt_cache: boolean
   created_at: string
   updated_at: string
 }
@@ -455,6 +456,7 @@ export interface CreateGroupRequest {
   claude_code_only?: boolean
   fallback_group_id?: number | null
   fallback_group_id_on_invalid_request?: number | null
+  enable_auto_prompt_cache?: boolean
   mcp_xml_inject?: boolean
   supported_model_scopes?: string[]
   // 从指定分组复制账号
@@ -483,6 +485,7 @@ export interface UpdateGroupRequest {
   claude_code_only?: boolean
   fallback_group_id?: number | null
   fallback_group_id_on_invalid_request?: number | null
+  enable_auto_prompt_cache?: boolean
   mcp_xml_inject?: boolean
   supported_model_scopes?: string[]
   copy_accounts_from_group_ids?: number[]
@@ -1093,6 +1096,29 @@ export interface GroupStat {
   total_tokens: number
   cost: number // 标准计费
   actual_cost: number // 实际扣除
+}
+
+export interface GroupMonitoringStat {
+  group_id: number
+  group_name: string
+  platform: string
+  total_accounts: number
+  normal_accounts: number
+  error_accounts: number
+  ratelimit_accounts: number
+  overload_accounts: number
+  disabled_accounts: number
+  rate_multiplier: number
+  sort_order: number
+  availability_rate: number
+  cache_hit_rate: number
+  avg_response_time: number
+}
+
+export interface MonitoringHistoryPoint {
+  availability_rate: number
+  cache_hit_rate: number
+  recorded_at: number
 }
 
 export interface UserUsageTrendPoint {

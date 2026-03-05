@@ -708,6 +708,34 @@
           </div>
         </div>
 
+        <!-- 自动 Prompt 缓存（仅 anthropic 平台） -->
+        <div v-if="createForm.platform === 'anthropic'" class="border-t pt-4">
+          <div class="mb-2 flex items-center gap-2">
+            <label class="input-label mb-0">{{ t('admin.groups.autoPromptCache.title') }}</label>
+          </div>
+          <div class="flex items-center gap-3">
+            <button
+              type="button"
+              @click="createForm.enable_auto_prompt_cache = !createForm.enable_auto_prompt_cache"
+              :class="[
+                'relative inline-flex h-6 w-11 items-center rounded-full transition-colors',
+                createForm.enable_auto_prompt_cache ? 'bg-primary-500' : 'bg-gray-300 dark:bg-dark-600'
+              ]"
+            >
+              <span
+                :class="[
+                  'inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform',
+                  createForm.enable_auto_prompt_cache ? 'translate-x-6' : 'translate-x-1'
+                ]"
+              />
+            </button>
+            <span class="text-sm text-gray-500 dark:text-gray-400">
+              {{ createForm.enable_auto_prompt_cache ? t('common.enabled') : t('common.disabled') }}
+            </span>
+          </div>
+          <p class="input-hint mt-2">{{ t('admin.groups.autoPromptCache.hint') }}</p>
+        </div>
+
         <!-- 无效请求兜底（仅 anthropic/antigravity 平台，且非订阅分组） -->
         <div
           v-if="['anthropic', 'antigravity'].includes(createForm.platform) && createForm.subscription_type !== 'subscription'"
@@ -1405,6 +1433,34 @@
           </div>
         </div>
 
+        <!-- 自动 Prompt 缓存（仅 anthropic 平台） -->
+        <div v-if="editForm.platform === 'anthropic'" class="border-t pt-4">
+          <div class="mb-2 flex items-center gap-2">
+            <label class="input-label mb-0">{{ t('admin.groups.autoPromptCache.title') }}</label>
+          </div>
+          <div class="flex items-center gap-3">
+            <button
+              type="button"
+              @click="editForm.enable_auto_prompt_cache = !editForm.enable_auto_prompt_cache"
+              :class="[
+                'relative inline-flex h-6 w-11 items-center rounded-full transition-colors',
+                editForm.enable_auto_prompt_cache ? 'bg-primary-500' : 'bg-gray-300 dark:bg-dark-600'
+              ]"
+            >
+              <span
+                :class="[
+                  'inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform',
+                  editForm.enable_auto_prompt_cache ? 'translate-x-6' : 'translate-x-1'
+                ]"
+              />
+            </button>
+            <span class="text-sm text-gray-500 dark:text-gray-400">
+              {{ editForm.enable_auto_prompt_cache ? t('common.enabled') : t('common.disabled') }}
+            </span>
+          </div>
+          <p class="input-hint mt-2">{{ t('admin.groups.autoPromptCache.hint') }}</p>
+        </div>
+
         <!-- 无效请求兜底（仅 anthropic/antigravity 平台，且非订阅分组） -->
         <div
           v-if="['anthropic', 'antigravity'].includes(editForm.platform) && editForm.subscription_type !== 'subscription'"
@@ -1920,6 +1976,8 @@ const createForm = reactive({
   claude_code_only: false,
   fallback_group_id: null as number | null,
   fallback_group_id_on_invalid_request: null as number | null,
+  // 自动 Prompt 缓存（仅 anthropic 平台使用）
+  enable_auto_prompt_cache: false,
   // 模型路由开关
   model_routing_enabled: false,
   // 支持的模型系列（仅 antigravity 平台）
@@ -2161,6 +2219,8 @@ const editForm = reactive({
   claude_code_only: false,
   fallback_group_id: null as number | null,
   fallback_group_id_on_invalid_request: null as number | null,
+  // 自动 Prompt 缓存（仅 anthropic 平台使用）
+  enable_auto_prompt_cache: false,
   // 模型路由开关
   model_routing_enabled: false,
   // 支持的模型系列（仅 antigravity 平台）
@@ -2258,6 +2318,7 @@ const closeCreateModal = () => {
   createForm.sora_video_price_per_request_hd = null
   createForm.sora_storage_quota_gb = null
   createForm.claude_code_only = false
+  createForm.enable_auto_prompt_cache = false
   createForm.fallback_group_id = null
   createForm.fallback_group_id_on_invalid_request = null
   createForm.supported_model_scopes = ['claude', 'gemini_text', 'gemini_image']
@@ -2320,6 +2381,7 @@ const handleEdit = async (group: AdminGroup) => {
   editForm.claude_code_only = group.claude_code_only || false
   editForm.fallback_group_id = group.fallback_group_id
   editForm.fallback_group_id_on_invalid_request = group.fallback_group_id_on_invalid_request
+  editForm.enable_auto_prompt_cache = group.enable_auto_prompt_cache || false
   editForm.model_routing_enabled = group.model_routing_enabled || false
   editForm.supported_model_scopes = group.supported_model_scopes || ['claude', 'gemini_text', 'gemini_image']
   editForm.mcp_xml_inject = group.mcp_xml_inject ?? true

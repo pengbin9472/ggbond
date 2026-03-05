@@ -195,6 +195,11 @@ func SortOrder(v int) predicate.Group {
 	return predicate.Group(sql.FieldEQ(FieldSortOrder, v))
 }
 
+// EnableAutoPromptCache applies equality check predicate on the "enable_auto_prompt_cache" field. It's identical to EnableAutoPromptCacheEQ.
+func EnableAutoPromptCache(v bool) predicate.Group {
+	return predicate.Group(sql.FieldEQ(FieldEnableAutoPromptCache, v))
+}
+
 // CreatedAtEQ applies the EQ predicate on the "created_at" field.
 func CreatedAtEQ(v time.Time) predicate.Group {
 	return predicate.Group(sql.FieldEQ(FieldCreatedAt, v))
@@ -1468,6 +1473,16 @@ func SortOrderLT(v int) predicate.Group {
 // SortOrderLTE applies the LTE predicate on the "sort_order" field.
 func SortOrderLTE(v int) predicate.Group {
 	return predicate.Group(sql.FieldLTE(FieldSortOrder, v))
+}
+
+// EnableAutoPromptCacheEQ applies the EQ predicate on the "enable_auto_prompt_cache" field.
+func EnableAutoPromptCacheEQ(v bool) predicate.Group {
+	return predicate.Group(sql.FieldEQ(FieldEnableAutoPromptCache, v))
+}
+
+// EnableAutoPromptCacheNEQ applies the NEQ predicate on the "enable_auto_prompt_cache" field.
+func EnableAutoPromptCacheNEQ(v bool) predicate.Group {
+	return predicate.Group(sql.FieldNEQ(FieldEnableAutoPromptCache, v))
 }
 
 // HasAPIKeys applies the HasEdge predicate on the "api_keys" edge.

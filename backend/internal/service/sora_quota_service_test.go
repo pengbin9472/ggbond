@@ -67,6 +67,21 @@ func (r *stubGroupRepoForQuota) BindAccountsToGroup(context.Context, int64, []in
 func (r *stubGroupRepoForQuota) UpdateSortOrders(context.Context, []GroupSortOrderUpdate) error {
 	return nil
 }
+func (r *stubGroupRepoForQuota) GetGroupMonitoringStats(context.Context) ([]GroupMonitoringStat, error) {
+	return nil, nil
+}
+func (r *stubGroupRepoForQuota) ComputeGroupMonitoringStats(context.Context) ([]GroupMonitoringStat, error) {
+	return nil, nil
+}
+func (r *stubGroupRepoForQuota) UpsertGroupMonitoringStats(context.Context, []GroupMonitoringStat) error {
+	return nil
+}
+func (r *stubGroupRepoForQuota) InsertGroupMonitoringHistory(context.Context, []GroupMonitoringStat) error {
+	return nil
+}
+func (r *stubGroupRepoForQuota) GetGroupMonitoringHistory(context.Context, int64, int) ([]MonitoringHistoryPoint, error) {
+	return nil, nil
+}
 
 // ==================== Stub: SettingRepository (用于 SettingService) ====================
 

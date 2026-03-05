@@ -16,6 +16,7 @@ import (
 	"github.com/lib/pq"
 	"github.com/pengbin9472/ggbond/internal/domain"
 	infraerrors "github.com/pengbin9472/ggbond/internal/pkg/errors"
+	"github.com/pengbin9472/ggbond/internal/pkg/ctxkey"
 )
 
 const (
@@ -555,6 +556,13 @@ func extractRetryModelAndStream(reqType opsRetryRequestType, errorLog *OpsErrorL
 func (s *OpsService) executeWithAccount(ctx context.Context, reqType opsRetryRequestType, errorLog *OpsErrorLogDetail, body []byte, account *Account) *opsRetryExecution {
 	if account == nil {
 		return &opsRetryExecution{status: opsRetryStatusFailed, errorMessage: "missing account"}
+	}
+
+	// 加载 Group 并注入到 context，确保 Forward 可以正确应用 auto prompt cache 等分组级配置
+	if errorLog.GroupID != nil && *errorLog.GroupID > 0 && s.groupRepo != nil {
+		if grp, err := s.groupRepo.GetByID(ctx, *errorLog.GroupID); err == nil && grp != nil {
+			ctx = context.WithValue(ctx, ctxkey.Group, grp)
+		}
 	}
 
 	c, w := newOpsRetryContext(ctx, errorLog)

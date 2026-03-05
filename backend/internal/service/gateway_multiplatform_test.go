@@ -282,6 +282,21 @@ func (m *mockGroupRepoForGateway) GetAccountIDsByGroupIDs(ctx context.Context, g
 func (m *mockGroupRepoForGateway) UpdateSortOrders(ctx context.Context, updates []GroupSortOrderUpdate) error {
 	return nil
 }
+func (m *mockGroupRepoForGateway) GetGroupMonitoringStats(context.Context) ([]GroupMonitoringStat, error) {
+	return nil, nil
+}
+func (m *mockGroupRepoForGateway) ComputeGroupMonitoringStats(context.Context) ([]GroupMonitoringStat, error) {
+	return nil, nil
+}
+func (m *mockGroupRepoForGateway) UpsertGroupMonitoringStats(context.Context, []GroupMonitoringStat) error {
+	return nil
+}
+func (m *mockGroupRepoForGateway) InsertGroupMonitoringHistory(context.Context, []GroupMonitoringStat) error {
+	return nil
+}
+func (m *mockGroupRepoForGateway) GetGroupMonitoringHistory(context.Context, int64, int) ([]MonitoringHistoryPoint, error) {
+	return nil, nil
+}
 
 func ptr[T any](v T) *T {
 	return &v

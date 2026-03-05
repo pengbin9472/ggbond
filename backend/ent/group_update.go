@@ -625,6 +625,20 @@ func (_u *GroupUpdate) AddSortOrder(v int) *GroupUpdate {
 	return _u
 }
 
+// SetEnableAutoPromptCache sets the "enable_auto_prompt_cache" field.
+func (_u *GroupUpdate) SetEnableAutoPromptCache(v bool) *GroupUpdate {
+	_u.mutation.SetEnableAutoPromptCache(v)
+	return _u
+}
+
+// SetNillableEnableAutoPromptCache sets the "enable_auto_prompt_cache" field if the given value is not nil.
+func (_u *GroupUpdate) SetNillableEnableAutoPromptCache(v *bool) *GroupUpdate {
+	if v != nil {
+		_u.SetEnableAutoPromptCache(*v)
+	}
+	return _u
+}
+
 // AddAPIKeyIDs adds the "api_keys" edge to the APIKey entity by IDs.
 func (_u *GroupUpdate) AddAPIKeyIDs(ids ...int64) *GroupUpdate {
 	_u.mutation.AddAPIKeyIDs(ids...)
@@ -1109,6 +1123,9 @@ func (_u *GroupUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if value, ok := _u.mutation.AddedSortOrder(); ok {
 		_spec.AddField(group.FieldSortOrder, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.EnableAutoPromptCache(); ok {
+		_spec.SetField(group.FieldEnableAutoPromptCache, field.TypeBool, value)
 	}
 	if _u.mutation.APIKeysCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -2014,6 +2031,20 @@ func (_u *GroupUpdateOne) AddSortOrder(v int) *GroupUpdateOne {
 	return _u
 }
 
+// SetEnableAutoPromptCache sets the "enable_auto_prompt_cache" field.
+func (_u *GroupUpdateOne) SetEnableAutoPromptCache(v bool) *GroupUpdateOne {
+	_u.mutation.SetEnableAutoPromptCache(v)
+	return _u
+}
+
+// SetNillableEnableAutoPromptCache sets the "enable_auto_prompt_cache" field if the given value is not nil.
+func (_u *GroupUpdateOne) SetNillableEnableAutoPromptCache(v *bool) *GroupUpdateOne {
+	if v != nil {
+		_u.SetEnableAutoPromptCache(*v)
+	}
+	return _u
+}
+
 // AddAPIKeyIDs adds the "api_keys" edge to the APIKey entity by IDs.
 func (_u *GroupUpdateOne) AddAPIKeyIDs(ids ...int64) *GroupUpdateOne {
 	_u.mutation.AddAPIKeyIDs(ids...)
@@ -2528,6 +2559,9 @@ func (_u *GroupUpdateOne) sqlSave(ctx context.Context) (_node *Group, err error)
 	}
 	if value, ok := _u.mutation.AddedSortOrder(); ok {
 		_spec.AddField(group.FieldSortOrder, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.EnableAutoPromptCache(); ok {
+		_spec.SetField(group.FieldEnableAutoPromptCache, field.TypeBool, value)
 	}
 	if _u.mutation.APIKeysCleared() {
 		edge := &sqlgraph.EdgeSpec{

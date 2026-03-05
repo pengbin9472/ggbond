@@ -180,6 +180,18 @@ const routes: RouteRecordRaw[] = [
     }
   },
   {
+    path: '/monitoring',
+    name: 'Monitoring',
+    component: () => import('@/views/MonitoringView.vue'),
+    meta: {
+      requiresAuth: true,
+      requiresAdmin: false,
+      title: 'Group Monitoring',
+      titleKey: 'monitoring.title',
+      descriptionKey: 'monitoring.description'
+    }
+  },
+  {
     path: '/purchase',
     name: 'PurchaseSubscription',
     component: () => import('@/views/user/PurchaseSubscriptionView.vue'),

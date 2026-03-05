@@ -440,6 +440,7 @@ type AccountSelectionResult struct {
 	Acquired    bool
 	ReleaseFunc func()
 	WaitPlan    *AccountWaitPlan // nil means no wait allowed
+	Group       *Group           // 调度解析后的有效分组（fallback/ClaudeCode 降级后可能与原始分组不同）
 }
 
 // ClaudeUsage 表示Claude API返回的usage信息
@@ -1041,7 +1042,7 @@ func (s *GatewayService) SelectAccountForModelWithExclusions(ctx context.Context
 
 // SelectAccountWithLoadAwareness selects account with load-awareness and wait plan.
 // metadataUserID: 已废弃参数，会话限制现在统一使用 sessionHash
-func (s *GatewayService) SelectAccountWithLoadAwareness(ctx context.Context, groupID *int64, sessionHash string, requestedModel string, excludedIDs map[int64]struct{}, metadataUserID string) (*AccountSelectionResult, error) {
+func (s *GatewayService) SelectAccountWithLoadAwareness(ctx context.Context, groupID *int64, sessionHash string, requestedModel string, excludedIDs map[int64]struct{}, metadataUserID string) (selResult *AccountSelectionResult, selErr error) {
 	// 调试日志：记录调度入口参数
 	excludedIDsList := make([]int64, 0, len(excludedIDs))
 	for id := range excludedIDs {
@@ -1061,6 +1062,13 @@ func (s *GatewayService) SelectAccountWithLoadAwareness(ctx context.Context, gro
 		return nil, err
 	}
 	ctx = s.withGroupContext(ctx, group)
+
+	// 将有效分组附加到所有成功返回的结果上，供调用方使用（如 auto prompt cache）
+	defer func() {
+		if selResult != nil {
+			selResult.Group = group
+		}
+	}()
 
 	var stickyAccountID int64
 	if prefetch := prefetchedStickyAccountIDFromContext(ctx, groupID); prefetch > 0 {
@@ -3700,6 +3708,120 @@ func injectClaudeCodePrompt(body []byte, system any) []byte {
 	return result
 }
 
+// injectAutoPromptCache 自动为请求注入 cache_control 标记以启用 Prompt Caching
+// 策略：
+// 1. 为 system 数组中的最后一个 text 块添加 cache_control（通常是最长的上下文）
+// 2. 为 messages 数组中最后一条 user 消息的最后一个 text 块添加 cache_control
+// 3. 跳过已有 cache_control 的块，避免重复标记
+// 4. 遵守 Anthropic API 的 4 个 cache_control 块限制
+func injectAutoPromptCache(body []byte) []byte {
+	var data map[string]any
+	if err := json.Unmarshal(body, &data); err != nil {
+		return body
+	}
+
+	// 先计算现有 cache_control 块数量，避免挤掉用户手动标记的块
+	existingCount := countCacheControlBlocks(data)
+	const maxCacheControlBlocks = 4
+	remainingQuota := maxCacheControlBlocks - existingCount
+	if remainingQuota <= 0 {
+		return body // 已达上限，不注入
+	}
+
+	injectedCount := 0
+	maxInject := remainingQuota
+	if maxInject > 2 {
+		maxInject = 2 // 最多自动注入 2 个（system 1个 + messages 1个），为用户手动标记留空间
+	}
+
+	// 1. 为 system 中最后一个 text 块添加 cache_control
+	switch system := data["system"].(type) {
+	case []any:
+		// system 是块数组形式：[{"type": "text", "text": "..."}]
+		if len(system) > 0 {
+			for i := len(system) - 1; i >= 0 && injectedCount < maxInject; i-- {
+				if block, ok := system[i].(map[string]any); ok {
+					blockType, _ := block["type"].(string)
+					// 只处理 text 块，跳过 thinking 块
+					if blockType == "text" {
+						// 检查是否已有 cache_control
+						if _, exists := block["cache_control"]; !exists {
+							block["cache_control"] = map[string]string{"type": "ephemeral"}
+							injectedCount++
+						}
+						break // system 只处理最后一个 text 块，无论是否已标记
+					}
+				}
+			}
+		}
+	case string:
+		// system 是纯字符串形式："system": "You are a helpful assistant"
+		// 转换为块数组并添加 cache_control
+		data["system"] = []any{
+			map[string]any{
+				"type":          "text",
+				"text":          system,
+				"cache_control": map[string]string{"type": "ephemeral"},
+			},
+		}
+		injectedCount++
+	}
+
+	// 2. 为 messages 中最后一条 user 消息的最后一个 text 块添加 cache_control
+	if messages, ok := data["messages"].([]any); ok && len(messages) > 0 && injectedCount < maxInject {
+		// 从后往前找最后一条 user 消息
+		for i := len(messages) - 1; i >= 0 && injectedCount < maxInject; i-- {
+			if msg, ok := messages[i].(map[string]any); ok {
+				role, _ := msg["role"].(string)
+				if role == "user" {
+					switch content := msg["content"].(type) {
+					case []any:
+						// content 是块数组形式：[{"type": "text", "text": "..."}]
+						if len(content) > 0 {
+							for j := len(content) - 1; j >= 0; j-- {
+								if block, ok := content[j].(map[string]any); ok {
+									blockType, _ := block["type"].(string)
+									if blockType == "text" {
+										if _, exists := block["cache_control"]; !exists {
+											block["cache_control"] = map[string]string{"type": "ephemeral"}
+											injectedCount++
+										}
+										break
+									}
+								}
+							}
+						}
+					case string:
+						// content 是纯字符串形式："content": "Hello"
+						// 转换为块数组并添加 cache_control
+						msg["content"] = []any{
+							map[string]any{
+								"type":          "text",
+								"text":          content,
+								"cache_control": map[string]string{"type": "ephemeral"},
+							},
+						}
+						injectedCount++
+					}
+					break // 只处理最后一条 user 消息
+				}
+			}
+		}
+	}
+
+	if injectedCount == 0 {
+		return body // 没有注入任何标记，返回原始 body
+	}
+
+	result, err := json.Marshal(data)
+	if err != nil {
+		logger.LegacyPrintf("service.gateway", "Warning: failed to inject auto prompt cache: %v", err)
+		return body
+	}
+	return result
+}
+
+
 // enforceCacheControlLimit 强制执行 cache_control 块数量限制（最多 4 个）
 // 超限时优先从 messages 中移除 cache_control，保护 system 中的缓存控制
 func enforceCacheControlLimit(body []byte) []byte {
@@ -3923,6 +4045,11 @@ func (s *GatewayService) Forward(ctx context.Context, c *gin.Context, account *A
 	// 放在 inject/normalize 之后，确保不会被覆盖
 	if account.IsOAuth() {
 		body = filterSystemBlocksByPrefix(body)
+	}
+
+	// 自动 Prompt 缓存：如果分组启用，自动为请求注入 cache_control 标记
+	if grp, ok := ctx.Value(ctxkey.Group).(*Group); ok && grp != nil && grp.EnableAutoPromptCache && grp.Platform == PlatformAnthropic {
+		body = injectAutoPromptCache(body)
 	}
 
 	// 强制执行 cache_control 块数量限制（最多 4 个）

@@ -200,6 +200,21 @@ func (s *groupRepoStubForGroupUpdate) BindAccountsToGroup(context.Context, int64
 func (s *groupRepoStubForGroupUpdate) UpdateSortOrders(context.Context, []GroupSortOrderUpdate) error {
 	panic("unexpected")
 }
+func (s *groupRepoStubForGroupUpdate) GetGroupMonitoringStats(context.Context) ([]GroupMonitoringStat, error) {
+	panic("unexpected")
+}
+func (s *groupRepoStubForGroupUpdate) ComputeGroupMonitoringStats(context.Context) ([]GroupMonitoringStat, error) {
+	panic("unexpected")
+}
+func (s *groupRepoStubForGroupUpdate) UpsertGroupMonitoringStats(context.Context, []GroupMonitoringStat) error {
+	panic("unexpected")
+}
+func (s *groupRepoStubForGroupUpdate) InsertGroupMonitoringHistory(context.Context, []GroupMonitoringStat) error {
+	panic("unexpected")
+}
+func (s *groupRepoStubForGroupUpdate) GetGroupMonitoringHistory(context.Context, int64, int) ([]MonitoringHistoryPoint, error) {
+	panic("unexpected")
+}
 
 // ---------------------------------------------------------------------------
 // Tests

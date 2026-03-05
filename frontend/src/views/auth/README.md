@@ -226,7 +226,7 @@ await handleLogin()
 ```typescript
 // User enters registration data
 formData.username = 'jane_smith'
-formData.email = 'jane@example.com'
+formData.email = '[email]'
 formData.password = 'SecurePass123'
 formData.confirmPassword = 'SecurePass123'
 

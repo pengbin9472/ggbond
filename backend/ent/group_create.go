@@ -424,6 +424,20 @@ func (_c *GroupCreate) SetNillableSortOrder(v *int) *GroupCreate {
 	return _c
 }
 
+// SetEnableAutoPromptCache sets the "enable_auto_prompt_cache" field.
+func (_c *GroupCreate) SetEnableAutoPromptCache(v bool) *GroupCreate {
+	_c.mutation.SetEnableAutoPromptCache(v)
+	return _c
+}
+
+// SetNillableEnableAutoPromptCache sets the "enable_auto_prompt_cache" field if the given value is not nil.
+func (_c *GroupCreate) SetNillableEnableAutoPromptCache(v *bool) *GroupCreate {
+	if v != nil {
+		_c.SetEnableAutoPromptCache(*v)
+	}
+	return _c
+}
+
 // AddAPIKeyIDs adds the "api_keys" edge to the APIKey entity by IDs.
 func (_c *GroupCreate) AddAPIKeyIDs(ids ...int64) *GroupCreate {
 	_c.mutation.AddAPIKeyIDs(ids...)
@@ -613,6 +627,10 @@ func (_c *GroupCreate) defaults() error {
 		v := group.DefaultSortOrder
 		_c.mutation.SetSortOrder(v)
 	}
+	if _, ok := _c.mutation.EnableAutoPromptCache(); !ok {
+		v := group.DefaultEnableAutoPromptCache
+		_c.mutation.SetEnableAutoPromptCache(v)
+	}
 	return nil
 }
 
@@ -682,6 +700,9 @@ func (_c *GroupCreate) check() error {
 	}
 	if _, ok := _c.mutation.SortOrder(); !ok {
 		return &ValidationError{Name: "sort_order", err: errors.New(`ent: missing required field "Group.sort_order"`)}
+	}
+	if _, ok := _c.mutation.EnableAutoPromptCache(); !ok {
+		return &ValidationError{Name: "enable_auto_prompt_cache", err: errors.New(`ent: missing required field "Group.enable_auto_prompt_cache"`)}
 	}
 	return nil
 }
@@ -829,6 +850,10 @@ func (_c *GroupCreate) createSpec() (*Group, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.SortOrder(); ok {
 		_spec.SetField(group.FieldSortOrder, field.TypeInt, value)
 		_node.SortOrder = value
+	}
+	if value, ok := _c.mutation.EnableAutoPromptCache(); ok {
+		_spec.SetField(group.FieldEnableAutoPromptCache, field.TypeBool, value)
+		_node.EnableAutoPromptCache = value
 	}
 	if nodes := _c.mutation.APIKeysIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
@@ -1520,6 +1545,18 @@ func (u *GroupUpsert) AddSortOrder(v int) *GroupUpsert {
 	return u
 }
 
+// SetEnableAutoPromptCache sets the "enable_auto_prompt_cache" field.
+func (u *GroupUpsert) SetEnableAutoPromptCache(v bool) *GroupUpsert {
+	u.Set(group.FieldEnableAutoPromptCache, v)
+	return u
+}
+
+// UpdateEnableAutoPromptCache sets the "enable_auto_prompt_cache" field to the value that was provided on create.
+func (u *GroupUpsert) UpdateEnableAutoPromptCache() *GroupUpsert {
+	u.SetExcluded(group.FieldEnableAutoPromptCache)
+	return u
+}
+
 // UpdateNewValues updates the mutable fields using the new values that were set on create.
 // Using this option is equivalent to using:
 //
@@ -2185,6 +2222,20 @@ func (u *GroupUpsertOne) AddSortOrder(v int) *GroupUpsertOne {
 func (u *GroupUpsertOne) UpdateSortOrder() *GroupUpsertOne {
 	return u.Update(func(s *GroupUpsert) {
 		s.UpdateSortOrder()
+	})
+}
+
+// SetEnableAutoPromptCache sets the "enable_auto_prompt_cache" field.
+func (u *GroupUpsertOne) SetEnableAutoPromptCache(v bool) *GroupUpsertOne {
+	return u.Update(func(s *GroupUpsert) {
+		s.SetEnableAutoPromptCache(v)
+	})
+}
+
+// UpdateEnableAutoPromptCache sets the "enable_auto_prompt_cache" field to the value that was provided on create.
+func (u *GroupUpsertOne) UpdateEnableAutoPromptCache() *GroupUpsertOne {
+	return u.Update(func(s *GroupUpsert) {
+		s.UpdateEnableAutoPromptCache()
 	})
 }
 
@@ -3019,6 +3070,20 @@ func (u *GroupUpsertBulk) AddSortOrder(v int) *GroupUpsertBulk {
 func (u *GroupUpsertBulk) UpdateSortOrder() *GroupUpsertBulk {
 	return u.Update(func(s *GroupUpsert) {
 		s.UpdateSortOrder()
+	})
+}
+
+// SetEnableAutoPromptCache sets the "enable_auto_prompt_cache" field.
+func (u *GroupUpsertBulk) SetEnableAutoPromptCache(v bool) *GroupUpsertBulk {
+	return u.Update(func(s *GroupUpsert) {
+		s.SetEnableAutoPromptCache(v)
+	})
+}
+
+// UpdateEnableAutoPromptCache sets the "enable_auto_prompt_cache" field to the value that was provided on create.
+func (u *GroupUpsertBulk) UpdateEnableAutoPromptCache() *GroupUpsertBulk {
+	return u.Update(func(s *GroupUpsert) {
+		s.UpdateEnableAutoPromptCache()
 	})
 }
 

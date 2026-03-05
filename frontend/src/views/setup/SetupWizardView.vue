@@ -308,7 +308,7 @@
               v-model="formData.admin.email"
               type="email"
               class="input"
-              placeholder="admin@example.com"
+              placeholder="[email]"
             />
           </div>
 

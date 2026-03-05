@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/pengbin9472/ggbond/internal/config"
+	"github.com/pengbin9472/ggbond/internal/pkg/ctxkey"
 	pkghttputil "github.com/pengbin9472/ggbond/internal/pkg/httputil"
 	"github.com/pengbin9472/ggbond/internal/pkg/ip"
 	"github.com/pengbin9472/ggbond/internal/pkg/logger"
@@ -252,7 +253,12 @@ func (h *OpenAIGatewayHandler) Responses(c *gin.Context) {
 		// Forward request
 		service.SetOpsLatencyMs(c, service.OpsRoutingLatencyMsKey, time.Since(routingStart).Milliseconds())
 		forwardStart := time.Now()
-		result, err := h.gatewayService.Forward(c.Request.Context(), c, account, body)
+		forwardCtx := c.Request.Context()
+		// 使用调度解析后的有效分组更新 context（fallback/ClaudeCode 降级后可能与原始分组不同）
+		if selection.Group != nil {
+			forwardCtx = context.WithValue(forwardCtx, ctxkey.Group, selection.Group)
+		}
+		result, err := h.gatewayService.Forward(forwardCtx, c, account, body)
 		forwardDurationMs := time.Since(forwardStart).Milliseconds()
 		if accountReleaseFunc != nil {
 			accountReleaseFunc()
