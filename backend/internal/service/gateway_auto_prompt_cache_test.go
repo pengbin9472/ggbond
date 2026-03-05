@@ -682,3 +682,393 @@ func TestInjectCacheControlOnMessage_NotAMap(t *testing.T) {
 	injectCacheControlOnMessage("not a map", &count, 2)
 	require.Equal(t, 0, count)
 }
+
+// ─── estimateToolsTokenCount ─────────────────────────────────────────
+
+func TestEstimateToolsTokenCount_NoTools(t *testing.T) {
+	data := map[string]any{}
+	require.Equal(t, 0, estimateToolsTokenCount(data))
+}
+
+func TestEstimateToolsTokenCount_EmptyTools(t *testing.T) {
+	data := map[string]any{"tools": []any{}}
+	require.Equal(t, 0, estimateToolsTokenCount(data))
+}
+
+func TestEstimateToolsTokenCount_WithTools(t *testing.T) {
+	data := map[string]any{
+		"tools": []any{
+			map[string]any{
+				"name":        "get_weather",
+				"description": strings.Repeat("Get weather information for a location. ", 20),
+				"input_schema": map[string]any{
+					"type": "object",
+					"properties": map[string]any{
+						"location": map[string]any{"type": "string", "description": "City name"},
+					},
+				},
+			},
+		},
+	}
+	tokens := estimateToolsTokenCount(data)
+	require.Greater(t, tokens, 0, "tools with content should have non-zero token estimate")
+}
+
+// ─── injectAutoPromptCache: tools 断点 ───────────────────────────────
+
+func TestInjectAutoPromptCache_WithTools_InjectsToolsBreakpoint(t *testing.T) {
+	// 有 tools 时，应在 system + tools + messages 三层都设置断点
+	longSystem := strings.Repeat("You are a helpful coding assistant. ", 200)
+	input := map[string]any{
+		"model":  "claude-sonnet-4-20250514",
+		"system": longSystem,
+		"tools": []any{
+			map[string]any{
+				"name":        "read_file",
+				"description": "Read a file from the filesystem",
+				"input_schema": map[string]any{
+					"type": "object",
+					"properties": map[string]any{
+						"path": map[string]any{"type": "string"},
+					},
+				},
+			},
+			map[string]any{
+				"name":        "write_file",
+				"description": "Write content to a file",
+				"input_schema": map[string]any{
+					"type": "object",
+					"properties": map[string]any{
+						"path":    map[string]any{"type": "string"},
+						"content": map[string]any{"type": "string"},
+					},
+				},
+			},
+		},
+		"messages": []any{
+			map[string]any{"role": "user", "content": "Read the config file"},
+			map[string]any{"role": "assistant", "content": "Here's the config content..."},
+			map[string]any{"role": "user", "content": "Now update the port to 8080"},
+		},
+	}
+	body, _ := json.Marshal(input)
+	result := injectAutoPromptCache(body)
+
+	var output map[string]any
+	require.NoError(t, json.Unmarshal(result, &output))
+
+	// 1. system 应有 cache_control
+	systemArr, ok := output["system"].([]any)
+	require.True(t, ok)
+	sysBlock := systemArr[0].(map[string]any)
+	_, sysCC := sysBlock["cache_control"]
+	require.True(t, sysCC, "system should have cache_control")
+
+	// 2. tools 中最后一个工具应有 cache_control
+	tools := output["tools"].([]any)
+	lastTool := tools[len(tools)-1].(map[string]any)
+	_, toolCC := lastTool["cache_control"]
+	require.True(t, toolCC, "last tool should have cache_control")
+
+	// 第一个工具不应有 cache_control
+	firstTool := tools[0].(map[string]any)
+	_, firstToolCC := firstTool["cache_control"]
+	require.False(t, firstToolCC, "first tool should NOT have cache_control")
+
+	// 3. messages 中 assistant 消息（最后 user 之前）应有 cache_control
+	msgs := output["messages"].([]any)
+	asstMsg := msgs[1].(map[string]any)
+	contentArr, ok := asstMsg["content"].([]any)
+	require.True(t, ok)
+	msgBlock := contentArr[0].(map[string]any)
+	_, msgCC := msgBlock["cache_control"]
+	require.True(t, msgCC, "message before last user should have cache_control")
+
+	// 总共应有 3 个 cache_control
+	count := countCacheControlBlocks(output)
+	require.Equal(t, 3, count, "should have exactly 3 cache_control blocks (system + tools + messages)")
+}
+
+func TestInjectAutoPromptCache_WithTools_ExistingToolsCacheControl(t *testing.T) {
+	// 工具已有 cache_control 时不应重复注入
+	longSystem := strings.Repeat("System prompt. ", 400)
+	input := map[string]any{
+		"model":  "claude-sonnet-4-20250514",
+		"system": longSystem,
+		"tools": []any{
+			map[string]any{
+				"name":          "my_tool",
+				"description":   "A tool",
+				"input_schema":  map[string]any{"type": "object"},
+				"cache_control": map[string]any{"type": "ephemeral"},
+			},
+		},
+		"messages": []any{
+			map[string]any{"role": "user", "content": "Hello"},
+		},
+	}
+	body, _ := json.Marshal(input)
+	result := injectAutoPromptCache(body)
+
+	var output map[string]any
+	require.NoError(t, json.Unmarshal(result, &output))
+
+	tools := output["tools"].([]any)
+	tool := tools[0].(map[string]any)
+	_, exists := tool["cache_control"]
+	require.True(t, exists, "existing cache_control should be preserved")
+
+	// 不应重复注入
+	count := countCacheControlBlocks(output)
+	require.LessOrEqual(t, count, 4, "should not exceed max cache_control blocks")
+}
+
+func TestInjectAutoPromptCache_NoTools_StillWorks(t *testing.T) {
+	// 没有 tools 时仍正常注入 system + messages
+	longSystem := strings.Repeat("Helpful assistant. ", 300)
+	input := map[string]any{
+		"model":  "claude-sonnet-4-20250514",
+		"system": longSystem,
+		"messages": []any{
+			map[string]any{"role": "user", "content": "Q1"},
+			map[string]any{"role": "assistant", "content": "A1"},
+			map[string]any{"role": "user", "content": "Q2"},
+		},
+	}
+	body, _ := json.Marshal(input)
+	result := injectAutoPromptCache(body)
+
+	var output map[string]any
+	require.NoError(t, json.Unmarshal(result, &output))
+
+	count := countCacheControlBlocks(output)
+	require.Equal(t, 2, count, "without tools should have 2 breakpoints (system + messages)")
+}
+
+func TestInjectAutoPromptCache_ToolsShortContent_NoToolsBreakpoint(t *testing.T) {
+	// system 短 + tools 短：累计不足 1024 tokens → tools 不注入
+	// 但 messages 够长 → messages 仍注入
+	input := map[string]any{
+		"model":  "claude-sonnet-4-20250514",
+		"system": "Be helpful.",
+		"tools": []any{
+			map[string]any{"name": "t", "description": "short"},
+		},
+		"messages": []any{
+			map[string]any{"role": "user", "content": strings.Repeat("Long question. ", 200)},
+			map[string]any{"role": "assistant", "content": strings.Repeat("Long answer. ", 200)},
+			map[string]any{"role": "user", "content": "Follow up"},
+		},
+	}
+	body, _ := json.Marshal(input)
+	result := injectAutoPromptCache(body)
+
+	var output map[string]any
+	require.NoError(t, json.Unmarshal(result, &output))
+
+	// system 太短 → 不注入
+	_, isString := output["system"].(string)
+	require.True(t, isString, "short system should remain string")
+
+	// tools 太短（累计不足）→ 不注入
+	tools := output["tools"].([]any)
+	tool := tools[0].(map[string]any)
+	_, toolCC := tool["cache_control"]
+	require.False(t, toolCC, "tools should NOT have cache_control when cumulative tokens below threshold")
+
+	// messages 应注入（累计达标）
+	msgs := output["messages"].([]any)
+	asstMsg := msgs[1].(map[string]any)
+	contentArr, ok := asstMsg["content"].([]any)
+	require.True(t, ok)
+	block := contentArr[0].(map[string]any)
+	_, msgCC := block["cache_control"]
+	require.True(t, msgCC, "messages breakpoint should still be injected when cumulative tokens meet threshold")
+}
+
+// ─── countCacheControlBlocks: tools 统计 ─────────────────────────────
+
+func TestCountCacheControlBlocks_IncludesTools(t *testing.T) {
+	data := map[string]any{
+		"system": []any{
+			map[string]any{"type": "text", "text": "sys", "cache_control": map[string]any{"type": "ephemeral"}},
+		},
+		"tools": []any{
+			map[string]any{"name": "t1", "cache_control": map[string]any{"type": "ephemeral"}},
+			map[string]any{"name": "t2"},
+		},
+		"messages": []any{
+			map[string]any{
+				"role": "user",
+				"content": []any{
+					map[string]any{"type": "text", "text": "hi", "cache_control": map[string]any{"type": "ephemeral"}},
+				},
+			},
+		},
+	}
+	count := countCacheControlBlocks(data)
+	require.Equal(t, 3, count, "should count system(1) + tools(1) + messages(1) = 3")
+}
+
+func TestCountCacheControlBlocks_ToolsOnly(t *testing.T) {
+	data := map[string]any{
+		"tools": []any{
+			map[string]any{"name": "t1", "cache_control": map[string]any{"type": "ephemeral"}},
+			map[string]any{"name": "t2", "cache_control": map[string]any{"type": "ephemeral"}},
+		},
+	}
+	count := countCacheControlBlocks(data)
+	require.Equal(t, 2, count)
+}
+
+// ─── removeCacheControlFromTools ─────────────────────────────────────
+
+func TestRemoveCacheControlFromTools_RemovesFirst(t *testing.T) {
+	data := map[string]any{
+		"tools": []any{
+			map[string]any{"name": "t1", "cache_control": map[string]any{"type": "ephemeral"}},
+			map[string]any{"name": "t2", "cache_control": map[string]any{"type": "ephemeral"}},
+		},
+	}
+	ok := removeCacheControlFromTools(data)
+	require.True(t, ok)
+
+	// 第一个的 cache_control 应被移除
+	tools := data["tools"].([]any)
+	t1 := tools[0].(map[string]any)
+	_, exists := t1["cache_control"]
+	require.False(t, exists, "first tool's cache_control should be removed")
+
+	// 第二个仍在
+	t2 := tools[1].(map[string]any)
+	_, exists = t2["cache_control"]
+	require.True(t, exists, "second tool's cache_control should remain")
+}
+
+func TestRemoveCacheControlFromTools_NoTools(t *testing.T) {
+	data := map[string]any{}
+	ok := removeCacheControlFromTools(data)
+	require.False(t, ok)
+}
+
+func TestRemoveCacheControlFromTools_NoCacheControl(t *testing.T) {
+	data := map[string]any{
+		"tools": []any{
+			map[string]any{"name": "t1"},
+		},
+	}
+	ok := removeCacheControlFromTools(data)
+	require.False(t, ok)
+}
+
+// ─── 三层断点：端到端真实场景 ────────────────────────────────────────
+
+func TestInjectAutoPromptCache_ThreeLayerBreakpoints_E2E(t *testing.T) {
+	// 模拟 Claude Code 真实场景：长 system prompt + 多个 tools + 多轮对话
+	longSystem := strings.Repeat("You are Claude, an AI assistant made by Anthropic. You have access to tools. ", 80)
+
+	tools := make([]any, 10)
+	for i := range tools {
+		tools[i] = map[string]any{
+			"name":        "tool_" + strings.Repeat("x", 5),
+			"description": strings.Repeat("This tool does something useful. ", 10),
+			"input_schema": map[string]any{
+				"type": "object",
+				"properties": map[string]any{
+					"param1": map[string]any{"type": "string", "description": "First parameter"},
+					"param2": map[string]any{"type": "number", "description": "Second parameter"},
+				},
+			},
+		}
+	}
+
+	messages := []any{
+		map[string]any{"role": "user", "content": "Help me refactor the auth module"},
+		map[string]any{"role": "assistant", "content": strings.Repeat("I'll help you refactor. ", 30)},
+		map[string]any{"role": "user", "content": "Can you also add unit tests?"},
+		map[string]any{"role": "assistant", "content": strings.Repeat("Here are the unit tests. ", 30)},
+		map[string]any{"role": "user", "content": "Now run the tests"},
+	}
+
+	input := map[string]any{
+		"model":    "claude-sonnet-4-20250514",
+		"system":   longSystem,
+		"tools":    tools,
+		"messages": messages,
+	}
+	body, _ := json.Marshal(input)
+	result := injectAutoPromptCache(body)
+
+	var output map[string]any
+	require.NoError(t, json.Unmarshal(result, &output))
+
+	// 验证三层断点
+	count := countCacheControlBlocks(output)
+	require.Equal(t, 3, count, "should have 3 breakpoints: system + tools + messages")
+
+	// 验证各层的位置正确
+	// system: 最后一个 text 块
+	systemArr := output["system"].([]any)
+	lastSysBlock := systemArr[len(systemArr)-1].(map[string]any)
+	_, hasSysCC := lastSysBlock["cache_control"]
+	require.True(t, hasSysCC, "system last text block should have cache_control")
+
+	// tools: 最后一个工具
+	outTools := output["tools"].([]any)
+	lastOutTool := outTools[len(outTools)-1].(map[string]any)
+	_, hasToolCC := lastOutTool["cache_control"]
+	require.True(t, hasToolCC, "last tool should have cache_control")
+
+	// messages: 最后 user 之前的 assistant
+	outMsgs := output["messages"].([]any)
+	// messages[3] = 第二个 assistant
+	prefixMsg := outMsgs[3].(map[string]any)
+	prefixContent, ok := prefixMsg["content"].([]any)
+	require.True(t, ok)
+	prefixBlock := prefixContent[0].(map[string]any)
+	_, hasMsgCC := prefixBlock["cache_control"]
+	require.True(t, hasMsgCC, "message before last user should have cache_control")
+
+	// 最后一条 user 不应有断点
+	lastMsg := outMsgs[4].(map[string]any)
+	_, isString := lastMsg["content"].(string)
+	require.True(t, isString, "last user message should not be modified")
+}
+
+func TestInjectAutoPromptCache_MaxQuotaWithTools(t *testing.T) {
+	// 已有 2 个用户手动标记 + 自动注入最多补到 4（即自动注入 2 个）
+	longSystem := strings.Repeat("x", 5000)
+	input := map[string]any{
+		"model": "claude-sonnet-4-20250514",
+		"system": []any{
+			map[string]any{"type": "text", "text": longSystem},
+		},
+		"tools": []any{
+			map[string]any{"name": "t1"},
+			map[string]any{"name": "t2"},
+		},
+		"messages": []any{
+			map[string]any{
+				"role": "user",
+				"content": []any{
+					map[string]any{"type": "text", "text": "Q1", "cache_control": map[string]any{"type": "ephemeral"}},
+				},
+			},
+			map[string]any{
+				"role": "assistant",
+				"content": []any{
+					map[string]any{"type": "text", "text": "A1", "cache_control": map[string]any{"type": "ephemeral"}},
+				},
+			},
+			map[string]any{"role": "user", "content": "Q2"},
+		},
+	}
+	body, _ := json.Marshal(input)
+	result := injectAutoPromptCache(body)
+
+	var output map[string]any
+	require.NoError(t, json.Unmarshal(result, &output))
+
+	count := countCacheControlBlocks(output)
+	require.LessOrEqual(t, count, 4, "total cache_control blocks should not exceed 4")
+}

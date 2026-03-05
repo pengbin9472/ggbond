@@ -3709,16 +3709,17 @@ func injectClaudeCodePrompt(body []byte, system any) []byte {
 }
 
 // injectAutoPromptCache 自动为请求注入 cache_control 标记以启用 Prompt Caching
-// 策略：
+// Anthropic 的前缀缓存顺序为：system → tools → messages，断点策略按此顺序设置：
 // 1. 为 system 数组中的最后一个 text 块添加 cache_control（稳定的系统提示词前缀）
-// 2. 为 messages 中最后一条 user 消息之前的消息添加 cache_control（稳定的历史对话前缀）
+// 2. 为 tools 数组中的最后一个工具定义添加 cache_control（工具定义在会话内几乎不变）
+// 3. 为 messages 中最后一条 user 消息之前的消息添加 cache_control（稳定的历史对话前缀）
 //    - 这比标记最后一条 user 消息更有效，因为历史前缀在请求间不变，缓存命中率更高
 //    - 如果只有一条 user 消息（首轮对话），则仍标记该消息以覆盖重试场景
-// 3. 注入前检查累计 token 数，不足最低门槛时跳过，避免无效的缓存创建开销（创建缓存比正常请求贵 25%）
+// 4. 注入前检查累计 token 数，不足最低门槛时跳过，避免无效的缓存创建开销（创建缓存比正常请求贵 25%）
 //    - Claude Sonnet/Opus: 1024 tokens
 //    - Claude Haiku: 2048 tokens
-// 4. 跳过已有 cache_control 的块，避免重复标记
-// 5. 遵守 Anthropic API 的 4 个 cache_control 块限制
+// 5. 跳过已有 cache_control 的块，避免重复标记
+// 6. 遵守 Anthropic API 的 4 个 cache_control 块限制
 func injectAutoPromptCache(body []byte) []byte {
 	var data map[string]any
 	if err := json.Unmarshal(body, &data); err != nil {
@@ -3741,11 +3742,11 @@ func injectAutoPromptCache(body []byte) []byte {
 
 	injectedCount := 0
 	maxInject := remainingQuota
-	if maxInject > 2 {
-		maxInject = 2 // 最多自动注入 2 个（system 1个 + messages 1个），为用户手动标记留空间
+	if maxInject > 3 {
+		maxInject = 3 // 最多自动注入 3 个（system 1 + tools 1 + messages 1），为用户手动标记留 1 个空位
 	}
 
-	// 累计 token 估算（从请求开头累加，用于判断各断点位置是否达到缓存门槛）
+	// 累计 token 估算（按前缀顺序 system → tools → messages 累加）
 	cumulativeTokens := estimateSystemTokenCount(data)
 
 	// 1. 为 system 中最后一个 text 块添加 cache_control
@@ -3783,7 +3784,24 @@ func injectAutoPromptCache(body []byte) []byte {
 		}
 	}
 
-	// 2. 为 messages 中稳定的历史前缀边界添加 cache_control
+	// 2. 为 tools 中最后一个工具定义添加 cache_control
+	// 工具定义在同一会话内几乎不变，是高命中率的缓存点
+	toolsTokens := estimateToolsTokenCount(data)
+	cumulativeTokens += toolsTokens
+	if tools, ok := data["tools"].([]any); ok && len(tools) > 0 && injectedCount < maxInject {
+		if cumulativeTokens >= minTokens {
+			// 标记最后一个工具定义
+			lastTool := tools[len(tools)-1]
+			if toolMap, ok := lastTool.(map[string]any); ok {
+				if _, exists := toolMap["cache_control"]; !exists {
+					toolMap["cache_control"] = map[string]string{"type": "ephemeral"}
+					injectedCount++
+				}
+			}
+		}
+	}
+
+	// 3. 为 messages 中稳定的历史前缀边界添加 cache_control
 	if messages, ok := data["messages"].([]any); ok && len(messages) > 0 && injectedCount < maxInject {
 		// 从后往前找最后一条 user 消息
 		lastUserIdx := -1
@@ -3881,6 +3899,21 @@ func estimateMessagesTokenCount(messages []any, upToIdx int) int {
 	return total
 }
 
+// estimateToolsTokenCount 估算 tools 数组的总 token 数
+// 工具定义包含 name、description 和 input_schema，通过 JSON 序列化估算总大小
+func estimateToolsTokenCount(data map[string]any) int {
+	tools, ok := data["tools"].([]any)
+	if !ok || len(tools) == 0 {
+		return 0
+	}
+	// 将整个 tools 数组序列化为 JSON 来估算总字符数
+	toolsJSON, err := json.Marshal(tools)
+	if err != nil {
+		return 0
+	}
+	return estimateTextTokens(string(toolsJSON))
+}
+
 // injectCacheControlOnMessage 为指定消息的最后一个 text 块注入 cache_control
 func injectCacheControlOnMessage(msgAny any, injectedCount *int, maxInject int) {
 	msg, ok := msgAny.(map[string]any)
@@ -3918,7 +3951,7 @@ func injectCacheControlOnMessage(msgAny any, injectedCount *int, maxInject int) 
 }
 
 // enforceCacheControlLimit 强制执行 cache_control 块数量限制（最多 4 个）
-// 超限时优先从 messages 中移除 cache_control，保护 system 中的缓存控制
+// 超限时优先从 messages 中移除，再从 tools 中移除，最后从 system 中移除
 func enforceCacheControlLimit(body []byte) []byte {
 	var data map[string]any
 	if err := json.Unmarshal(body, &data); err != nil {
@@ -3934,9 +3967,13 @@ func enforceCacheControlLimit(body []byte) []byte {
 		return body
 	}
 
-	// 超限：优先从 messages 中移除，再从 system 中移除
+	// 超限：优先从 messages 中移除，再从 tools 中移除，最后从 system 中移除
 	for count > maxCacheControlBlocks {
 		if removeCacheControlFromMessages(data) {
+			count--
+			continue
+		}
+		if removeCacheControlFromTools(data) {
 			count--
 			continue
 		}
@@ -3954,7 +3991,7 @@ func enforceCacheControlLimit(body []byte) []byte {
 	return result
 }
 
-// countCacheControlBlocks 统计 system 和 messages 中的 cache_control 块数量
+// countCacheControlBlocks 统计 system、tools 和 messages 中的 cache_control 块数量
 // 注意：thinking 块不支持 cache_control，统计时跳过
 func countCacheControlBlocks(data map[string]any) int {
 	count := 0
@@ -3968,6 +4005,17 @@ func countCacheControlBlocks(data map[string]any) int {
 					continue
 				}
 				if _, has := m["cache_control"]; has {
+					count++
+				}
+			}
+		}
+	}
+
+	// 统计 tools 中的块
+	if tools, ok := data["tools"].([]any); ok {
+		for _, tool := range tools {
+			if t, ok := tool.(map[string]any); ok {
+				if _, has := t["cache_control"]; has {
 					count++
 				}
 			}
@@ -4026,6 +4074,25 @@ func removeCacheControlFromMessages(data map[string]any) bool {
 					delete(m, "cache_control")
 					return true
 				}
+			}
+		}
+	}
+	return false
+}
+
+// removeCacheControlFromTools 从 tools 中移除一个 cache_control（从头开始）
+// 返回 true 表示成功移除，false 表示没有可移除的
+func removeCacheControlFromTools(data map[string]any) bool {
+	tools, ok := data["tools"].([]any)
+	if !ok {
+		return false
+	}
+
+	for _, tool := range tools {
+		if t, ok := tool.(map[string]any); ok {
+			if _, has := t["cache_control"]; has {
+				delete(t, "cache_control")
+				return true
 			}
 		}
 	}
