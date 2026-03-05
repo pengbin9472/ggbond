@@ -180,16 +180,31 @@ const isOnline = computed(() => {
   return props.group.normal_accounts > 0
 })
 
-// 生成 SVG 折线的 points 字符串
+// 生成 SVG 折线的 points 字符串（自适应 Y 轴）
 const makePoints = (data: MonitoringHistoryPoint[], field: 'availability_rate' | 'cache_hit_rate'): string => {
   const validData = data.filter(d => d[field] >= 0)
   if (validData.length < 2) return ''
+
+  const values = validData.map(d => d[field])
+  let min = Math.min(...values)
+  let max = Math.max(...values)
+
+  // 数据无波动时，上下扩展 5% 的范围，确保线画在中间
+  if (max - min < 1) {
+    min = Math.max(0, min - 5)
+    max = Math.min(100, max + 5)
+  }
+
+  // 上下留 padding（图表高度的 10%）
+  const padding = chartHeight * 0.1
+  const plotHeight = chartHeight - padding * 2
+  const range = max - min || 1
 
   const xStep = chartWidth / (validData.length - 1)
   return validData
     .map((d, i) => {
       const x = i * xStep
-      const y = chartHeight - (d[field] / 100) * chartHeight
+      const y = padding + plotHeight - ((d[field] - min) / range) * plotHeight
       return `${x.toFixed(1)},${y.toFixed(1)}`
     })
     .join(' ')
