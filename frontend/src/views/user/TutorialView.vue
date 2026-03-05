@@ -1,4 +1,5 @@
 <template>
+  <AppLayout>
   <div class="card p-3 sm:p-6">
     <div class="mb-4 sm:mb-8">
       <h3
@@ -69,11 +70,13 @@
     <!-- 动态组件 -->
     <component :is="currentTutorialComponent" :platform="activeTutorialSystem" />
   </div>
+  </AppLayout>
 </template>
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import type { Component } from 'vue'
+import AppLayout from '@/components/layout/AppLayout.vue'
 import ClaudeCodeTutorial from '@/components/tutorial/ClaudeCodeTutorial.vue'
 import OpenClawTutorial from '@/components/tutorial/OpenClawTutorial.vue'
 import GeminiCliTutorial from '@/components/tutorial/GeminiCliTutorial.vue'
