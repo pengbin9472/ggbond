@@ -24,7 +24,7 @@ services:
   # GGbond Application
   # ===========================================================================
   ggbond:
-    image: weishaw/ggbond:test
+    image: ghcr.io/pengbin9472/ggbond:test
     container_name: ggbond
     restart: unless-stopped
     ulimits:
