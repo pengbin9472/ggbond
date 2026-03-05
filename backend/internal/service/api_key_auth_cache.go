@@ -49,6 +49,7 @@ type APIKeyAuthGroupSnapshot struct {
 	SoraVideoPricePerRequest        *float64 `json:"sora_video_price_per_request,omitempty"`
 	SoraVideoPricePerRequestHD      *float64 `json:"sora_video_price_per_request_hd,omitempty"`
 	ClaudeCodeOnly                  bool     `json:"claude_code_only"`
+	EnableAutoPromptCache           bool     `json:"enable_auto_prompt_cache"`
 	FallbackGroupID                 *int64   `json:"fallback_group_id,omitempty"`
 	FallbackGroupIDOnInvalidRequest *int64   `json:"fallback_group_id_on_invalid_request,omitempty"`
 

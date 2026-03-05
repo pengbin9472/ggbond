@@ -133,6 +133,7 @@ type CreateGroupInput struct {
 	SoraVideoPricePerRequest   *float64
 	SoraVideoPricePerRequestHD *float64
 	ClaudeCodeOnly             bool   // 仅允许 Claude Code 客户端
+	EnableAutoPromptCache      bool   // 自动 Prompt 缓存（仅 Anthropic 平台）
 	FallbackGroupID            *int64 // 降级分组 ID
 	// 无效请求兜底分组 ID（仅 anthropic 平台使用）
 	FallbackGroupIDOnInvalidRequest *int64
@@ -169,6 +170,7 @@ type UpdateGroupInput struct {
 	SoraVideoPricePerRequest   *float64
 	SoraVideoPricePerRequestHD *float64
 	ClaudeCodeOnly             *bool  // 仅允许 Claude Code 客户端
+	EnableAutoPromptCache      *bool  // 自动 Prompt 缓存（仅 Anthropic 平台）
 	FallbackGroupID            *int64 // 降级分组 ID
 	// 无效请求兜底分组 ID（仅 anthropic 平台使用）
 	FallbackGroupIDOnInvalidRequest *int64
@@ -899,6 +901,7 @@ func (s *adminServiceImpl) CreateGroup(ctx context.Context, input *CreateGroupIn
 		SoraVideoPricePerRequest:        soraVideoPrice,
 		SoraVideoPricePerRequestHD:      soraVideoPriceHD,
 		ClaudeCodeOnly:                  input.ClaudeCodeOnly,
+		EnableAutoPromptCache:           input.EnableAutoPromptCache,
 		FallbackGroupID:                 input.FallbackGroupID,
 		FallbackGroupIDOnInvalidRequest: fallbackOnInvalidRequest,
 		ModelRouting:                    input.ModelRouting,
@@ -1074,6 +1077,10 @@ func (s *adminServiceImpl) UpdateGroup(ctx context.Context, id int64, input *Upd
 	// Claude Code 客户端限制
 	if input.ClaudeCodeOnly != nil {
 		group.ClaudeCodeOnly = *input.ClaudeCodeOnly
+	}
+	// 自动 Prompt 缓存
+	if input.EnableAutoPromptCache != nil {
+		group.EnableAutoPromptCache = *input.EnableAutoPromptCache
 	}
 	if input.FallbackGroupID != nil {
 		// 校验降级分组

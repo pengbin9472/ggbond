@@ -274,6 +274,21 @@ func (r *stubGroupRepo) BindAccountsToGroup(ctx context.Context, groupID int64, 
 func (r *stubGroupRepo) UpdateSortOrders(ctx context.Context, updates []service.GroupSortOrderUpdate) error {
 	return nil
 }
+func (r *stubGroupRepo) GetGroupMonitoringStats(context.Context) ([]service.GroupMonitoringStat, error) {
+	return nil, nil
+}
+func (r *stubGroupRepo) ComputeGroupMonitoringStats(context.Context) ([]service.GroupMonitoringStat, error) {
+	return nil, nil
+}
+func (r *stubGroupRepo) UpsertGroupMonitoringStats(context.Context, []service.GroupMonitoringStat) error {
+	return nil
+}
+func (r *stubGroupRepo) InsertGroupMonitoringHistory(context.Context, []service.GroupMonitoringStat) error {
+	return nil
+}
+func (r *stubGroupRepo) GetGroupMonitoringHistory(context.Context, int64, int) ([]service.MonitoringHistoryPoint, error) {
+	return nil, nil
+}
 
 type stubUsageLogRepo struct{}
 

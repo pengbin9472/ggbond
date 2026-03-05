@@ -55,6 +55,7 @@ func (r *groupRepository) Create(ctx context.Context, groupIn *service.Group) er
 		SetNillableSoraVideoPricePerRequestHd(groupIn.SoraVideoPricePerRequestHD).
 		SetDefaultValidityDays(groupIn.DefaultValidityDays).
 		SetClaudeCodeOnly(groupIn.ClaudeCodeOnly).
+		SetEnableAutoPromptCache(groupIn.EnableAutoPromptCache).
 		SetNillableFallbackGroupID(groupIn.FallbackGroupID).
 		SetNillableFallbackGroupIDOnInvalidRequest(groupIn.FallbackGroupIDOnInvalidRequest).
 		SetModelRoutingEnabled(groupIn.ModelRoutingEnabled).
@@ -123,6 +124,7 @@ func (r *groupRepository) Update(ctx context.Context, groupIn *service.Group) er
 		SetNillableSoraVideoPricePerRequestHd(groupIn.SoraVideoPricePerRequestHD).
 		SetDefaultValidityDays(groupIn.DefaultValidityDays).
 		SetClaudeCodeOnly(groupIn.ClaudeCodeOnly).
+		SetEnableAutoPromptCache(groupIn.EnableAutoPromptCache).
 		SetModelRoutingEnabled(groupIn.ModelRoutingEnabled).
 		SetMcpXMLInject(groupIn.MCPXMLInject).
 		SetSoraStorageQuotaBytes(groupIn.SoraStorageQuotaBytes)
@@ -664,4 +666,352 @@ func (r *groupRepository) UpdateSortOrders(ctx context.Context, updates []servic
 		}
 	}
 	return nil
+}
+
+// GetGroupMonitoringStats 获取所有分组的账户监控统计
+func (r *groupRepository) GetGroupMonitoringStats(ctx context.Context) ([]service.GroupMonitoringStat, error) {
+	query := `
+		SELECT
+			g.id,
+			g.name,
+			g.platform,
+			g.rate_multiplier,
+			g.sort_order,
+			COALESCE(gms.total_accounts, 0) as total_accounts,
+			COALESCE(gms.normal_accounts, 0) as normal_accounts,
+			COALESCE(gms.error_accounts, 0) as error_accounts,
+			COALESCE(gms.ratelimit_accounts, 0) as ratelimit_accounts,
+			COALESCE(gms.overload_accounts, 0) as overload_accounts,
+			COALESCE(gms.disabled_accounts, 0) as disabled_accounts,
+			COALESCE(gms.availability_rate, -1) as availability_rate,
+			COALESCE(gms.cache_hit_rate, -1) as cache_hit_rate,
+			COALESCE(gms.avg_response_time, 0) as avg_response_time
+		FROM groups g
+		LEFT JOIN group_monitoring_stats gms ON g.id = gms.group_id
+		WHERE g.deleted_at IS NULL AND g.status = 'active'
+		ORDER BY g.sort_order ASC, g.id ASC
+	`
+
+	rows, err := r.sql.QueryContext(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var stats []service.GroupMonitoringStat
+	for rows.Next() {
+		var stat service.GroupMonitoringStat
+		err := rows.Scan(
+			&stat.GroupID,
+			&stat.GroupName,
+			&stat.Platform,
+			&stat.RateMultiplier,
+			&stat.SortOrder,
+			&stat.TotalAccounts,
+			&stat.NormalAccounts,
+			&stat.ErrorAccounts,
+			&stat.RateLimitAccounts,
+			&stat.OverloadAccounts,
+			&stat.DisabledAccounts,
+			&stat.AvailabilityRate,
+			&stat.CacheHitRate,
+			&stat.AvgResponseTime,
+		)
+		if err != nil {
+			return nil, err
+		}
+		stats = append(stats, stat)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return stats, nil
+}
+
+// UpsertGroupMonitoringStats 更新或插入分组监控统计
+func (r *groupRepository) UpsertGroupMonitoringStats(ctx context.Context, stats []service.GroupMonitoringStat) error {
+	if len(stats) == 0 {
+		return nil
+	}
+
+	query := `
+		INSERT INTO group_monitoring_stats (
+			group_id, total_accounts, normal_accounts, error_accounts,
+			ratelimit_accounts, overload_accounts, disabled_accounts,
+			availability_rate, cache_hit_rate, avg_response_time, updated_at
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW())
+		ON CONFLICT (group_id)
+		DO UPDATE SET
+			total_accounts = EXCLUDED.total_accounts,
+			normal_accounts = EXCLUDED.normal_accounts,
+			error_accounts = EXCLUDED.error_accounts,
+			ratelimit_accounts = EXCLUDED.ratelimit_accounts,
+			overload_accounts = EXCLUDED.overload_accounts,
+			disabled_accounts = EXCLUDED.disabled_accounts,
+			availability_rate = EXCLUDED.availability_rate,
+			cache_hit_rate = EXCLUDED.cache_hit_rate,
+			avg_response_time = EXCLUDED.avg_response_time,
+			updated_at = NOW()
+	`
+
+	for _, stat := range stats {
+		_, err := r.sql.ExecContext(ctx, query,
+			stat.GroupID,
+			stat.TotalAccounts,
+			stat.NormalAccounts,
+			stat.ErrorAccounts,
+			stat.RateLimitAccounts,
+			stat.OverloadAccounts,
+			stat.DisabledAccounts,
+			stat.AvailabilityRate,
+			stat.CacheHitRate,
+			stat.AvgResponseTime,
+		)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// InsertGroupMonitoringHistory 插入分组监控历史记录
+func (r *groupRepository) InsertGroupMonitoringHistory(ctx context.Context, stats []service.GroupMonitoringStat) error {
+	if len(stats) == 0 {
+		return nil
+	}
+
+	query := `
+		INSERT INTO group_monitoring_history (
+			group_id, total_accounts, normal_accounts, error_accounts,
+			ratelimit_accounts, overload_accounts, availability_rate, cache_hit_rate, recorded_at
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, date_trunc_immutable('minute', NOW()))
+		ON CONFLICT (group_id, date_trunc_immutable('minute', recorded_at)) DO UPDATE SET
+			total_accounts = EXCLUDED.total_accounts,
+			normal_accounts = EXCLUDED.normal_accounts,
+			error_accounts = EXCLUDED.error_accounts,
+			ratelimit_accounts = EXCLUDED.ratelimit_accounts,
+			overload_accounts = EXCLUDED.overload_accounts,
+			availability_rate = EXCLUDED.availability_rate,
+			cache_hit_rate = EXCLUDED.cache_hit_rate
+	`
+
+	for _, stat := range stats {
+		_, err := r.sql.ExecContext(ctx, query,
+			stat.GroupID,
+			stat.TotalAccounts,
+			stat.NormalAccounts,
+			stat.ErrorAccounts,
+			stat.RateLimitAccounts,
+			stat.OverloadAccounts,
+			stat.AvailabilityRate,
+			stat.CacheHitRate,
+		)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// GetGroupMonitoringHistory 获取分组监控历史数据
+func (r *groupRepository) GetGroupMonitoringHistory(ctx context.Context, groupID int64, limit int) ([]service.MonitoringHistoryPoint, error) {
+	if limit <= 0 {
+		limit = 100
+	}
+
+	// 先按时间倒序取最新的 N 条，然后在应用层反转为升序（用于图表展示）
+	query := `
+		SELECT
+			EXTRACT(EPOCH FROM recorded_at)::bigint as recorded_at,
+			availability_rate,
+			cache_hit_rate
+		FROM group_monitoring_history
+		WHERE group_id = $1
+		ORDER BY recorded_at DESC
+		LIMIT $2
+	`
+
+	rows, err := r.sql.QueryContext(ctx, query, groupID, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var points []service.MonitoringHistoryPoint
+	for rows.Next() {
+		var point service.MonitoringHistoryPoint
+		if err := rows.Scan(&point.RecordedAt, &point.AvailabilityRate, &point.CacheHitRate); err != nil {
+			return nil, err
+		}
+		points = append(points, point)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+
+	// 反转为升序（最旧到最新），用于图表从左到右展示
+	for i, j := 0, len(points)-1; i < j; i, j = i+1, j-1 {
+		points[i], points[j] = points[j], points[i]
+	}
+
+	return points, nil
+}
+
+// ComputeGroupMonitoringStats 从 accounts 表和 usage_logs 表实时计算分组监控统计
+func (r *groupRepository) ComputeGroupMonitoringStats(ctx context.Context) ([]service.GroupMonitoringStat, error) {
+	// 第一步：查询账户状态
+	accountQuery := `
+		SELECT
+			g.id,
+			g.name,
+			g.platform,
+			g.rate_multiplier,
+			g.sort_order,
+			COUNT(DISTINCT ag.account_id) as total_accounts,
+			COUNT(DISTINCT CASE
+				WHEN a.schedulable = true AND a.status = 'active'
+					AND (a.rate_limit_reset_at IS NULL OR a.rate_limit_reset_at <= NOW())
+					AND (a.overload_until IS NULL OR a.overload_until <= NOW())
+				THEN ag.account_id
+			END) as normal_accounts,
+			COUNT(DISTINCT CASE
+				WHEN a.status = 'error'
+				THEN ag.account_id
+			END) as error_accounts,
+			COUNT(DISTINCT CASE
+				WHEN a.rate_limit_reset_at IS NOT NULL AND a.rate_limit_reset_at > NOW()
+				THEN ag.account_id
+			END) as ratelimit_accounts,
+			COUNT(DISTINCT CASE
+				WHEN a.overload_until IS NOT NULL AND a.overload_until > NOW()
+				THEN ag.account_id
+			END) as overload_accounts,
+			COUNT(DISTINCT CASE
+				WHEN a.schedulable = false OR a.status != 'active'
+				THEN ag.account_id
+			END) as disabled_accounts
+		FROM groups g
+		LEFT JOIN account_groups ag ON g.id = ag.group_id
+		LEFT JOIN accounts a ON ag.account_id = a.id AND a.deleted_at IS NULL
+		WHERE g.deleted_at IS NULL AND g.status = 'active'
+		GROUP BY g.id, g.name, g.platform, g.rate_multiplier, g.sort_order
+		ORDER BY g.sort_order ASC, g.id ASC
+	`
+
+	rows, err := r.sql.QueryContext(ctx, accountQuery)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var stats []service.GroupMonitoringStat
+	groupIDs := make([]int64, 0)
+	for rows.Next() {
+		var stat service.GroupMonitoringStat
+		err := rows.Scan(
+			&stat.GroupID,
+			&stat.GroupName,
+			&stat.Platform,
+			&stat.RateMultiplier,
+			&stat.SortOrder,
+			&stat.TotalAccounts,
+			&stat.NormalAccounts,
+			&stat.ErrorAccounts,
+			&stat.RateLimitAccounts,
+			&stat.OverloadAccounts,
+			&stat.DisabledAccounts,
+		)
+		if err != nil {
+			return nil, err
+		}
+		stat.AvailabilityRate = -1
+		stat.CacheHitRate = -1
+		stats = append(stats, stat)
+		groupIDs = append(groupIDs, stat.GroupID)
+	}
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+
+	if len(groupIDs) == 0 {
+		return stats, nil
+	}
+
+	// 第二步：计算可用率（基于账户状态）
+	for i := range stats {
+		if stats[i].TotalAccounts > 0 {
+			stats[i].AvailabilityRate = float64(stats[i].NormalAccounts) / float64(stats[i].TotalAccounts) * 100
+		}
+	}
+
+	// 第三步：从 usage_logs 聚合最近 1 小时的缓存命中率和响应时间
+	usageQuery := `
+		SELECT
+			group_id,
+			COALESCE(SUM(cache_read_tokens), 0) as total_cache_read,
+			COALESCE(SUM(input_tokens + cache_read_tokens), 0) as total_input_with_cache,
+			COALESCE(AVG(duration_ms) FILTER (WHERE duration_ms > 0), 0) as avg_duration
+		FROM usage_logs
+		WHERE created_at >= NOW() - INTERVAL '1 hour'
+			AND group_id = ANY($1)
+		GROUP BY group_id
+	`
+
+	usageRows, err := r.sql.QueryContext(ctx, usageQuery, pq.Array(groupIDs))
+	if err != nil {
+		// 如果 usage_logs 查询失败，不影响账户状态统计
+		return stats, nil
+	}
+	defer usageRows.Close()
+
+	// 构建 group_id -> usage 数据的映射
+	type usageData struct {
+		cacheRead      int64
+		inputWithCache int64
+		avgDuration    float64
+	}
+	usageMap := make(map[int64]*usageData)
+
+	for usageRows.Next() {
+		var groupID int64
+		var ud usageData
+		err := usageRows.Scan(
+			&groupID,
+			&ud.cacheRead,
+			&ud.inputWithCache,
+			&ud.avgDuration,
+		)
+		if err != nil {
+			continue
+		}
+		usageMap[groupID] = &ud
+	}
+
+	// 第四步：合并 usage 数据到 stats
+	for i := range stats {
+		ud, ok := usageMap[stats[i].GroupID]
+		if !ok {
+			continue
+		}
+
+		// 缓存命中率 = cache_read_tokens / (input_tokens + cache_read_tokens) × 100
+		if ud.inputWithCache > 0 {
+			stats[i].CacheHitRate = float64(ud.cacheRead) / float64(ud.inputWithCache) * 100
+			if stats[i].CacheHitRate > 100 {
+				stats[i].CacheHitRate = 100
+			}
+		}
+
+		// 平均响应时间
+		if ud.avgDuration > 0 {
+			stats[i].AvgResponseTime = int(ud.avgDuration)
+		}
+	}
+
+	return stats, nil
 }

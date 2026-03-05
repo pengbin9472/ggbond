@@ -179,6 +179,21 @@ func (s *groupRepoStub) GetAccountIDsByGroupIDs(ctx context.Context, groupIDs []
 func (s *groupRepoStub) UpdateSortOrders(ctx context.Context, updates []GroupSortOrderUpdate) error {
 	return nil
 }
+func (s *groupRepoStub) GetGroupMonitoringStats(context.Context) ([]GroupMonitoringStat, error) {
+	panic("unexpected GetGroupMonitoringStats call")
+}
+func (s *groupRepoStub) ComputeGroupMonitoringStats(context.Context) ([]GroupMonitoringStat, error) {
+	panic("unexpected ComputeGroupMonitoringStats call")
+}
+func (s *groupRepoStub) UpsertGroupMonitoringStats(context.Context, []GroupMonitoringStat) error {
+	panic("unexpected UpsertGroupMonitoringStats call")
+}
+func (s *groupRepoStub) InsertGroupMonitoringHistory(context.Context, []GroupMonitoringStat) error {
+	panic("unexpected InsertGroupMonitoringHistory call")
+}
+func (s *groupRepoStub) GetGroupMonitoringHistory(context.Context, int64, int) ([]MonitoringHistoryPoint, error) {
+	panic("unexpected GetGroupMonitoringHistory call")
+}
 
 type proxyRepoStub struct {
 	deleteErr    error

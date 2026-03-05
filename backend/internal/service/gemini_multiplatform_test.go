@@ -234,6 +234,21 @@ func (m *mockGroupRepoForGemini) GetAccountIDsByGroupIDs(ctx context.Context, gr
 func (m *mockGroupRepoForGemini) UpdateSortOrders(ctx context.Context, updates []GroupSortOrderUpdate) error {
 	return nil
 }
+func (m *mockGroupRepoForGemini) GetGroupMonitoringStats(context.Context) ([]GroupMonitoringStat, error) {
+	return nil, nil
+}
+func (m *mockGroupRepoForGemini) ComputeGroupMonitoringStats(context.Context) ([]GroupMonitoringStat, error) {
+	return nil, nil
+}
+func (m *mockGroupRepoForGemini) UpsertGroupMonitoringStats(context.Context, []GroupMonitoringStat) error {
+	return nil
+}
+func (m *mockGroupRepoForGemini) InsertGroupMonitoringHistory(context.Context, []GroupMonitoringStat) error {
+	return nil
+}
+func (m *mockGroupRepoForGemini) GetGroupMonitoringHistory(context.Context, int64, int) ([]MonitoringHistoryPoint, error) {
+	return nil, nil
+}
 
 var _ GroupRepository = (*mockGroupRepoForGemini)(nil)
 

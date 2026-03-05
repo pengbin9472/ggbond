@@ -377,6 +377,10 @@ func (h *GatewayHandler) Messages(c *gin.Context) {
 			// 转发请求 - 根据账号平台分流
 			var result *service.ForwardResult
 			requestCtx := c.Request.Context()
+			// 使用调度解析后的有效分组更新 context（fallback/ClaudeCode 降级后可能与原始分组不同）
+			if selection.Group != nil {
+				requestCtx = context.WithValue(requestCtx, ctxkey.Group, selection.Group)
+			}
 			if fs.SwitchCount > 0 {
 				requestCtx = service.WithAccountSwitchCount(requestCtx, fs.SwitchCount, h.metadataBridgeEnabled())
 			}
@@ -569,6 +573,10 @@ func (h *GatewayHandler) Messages(c *gin.Context) {
 			// 转发请求 - 根据账号平台分流
 			var result *service.ForwardResult
 			requestCtx := c.Request.Context()
+			// 使用调度解析后的有效分组更新 context（fallback/ClaudeCode 降级后可能与原始分组不同）
+			if selection.Group != nil {
+				requestCtx = context.WithValue(requestCtx, ctxkey.Group, selection.Group)
+			}
 			if fs.SwitchCount > 0 {
 				requestCtx = service.WithAccountSwitchCount(requestCtx, fs.SwitchCount, h.metadataBridgeEnabled())
 			}

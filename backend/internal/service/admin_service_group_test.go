@@ -119,6 +119,21 @@ func (s *groupRepoStubForAdmin) GetAccountIDsByGroupIDs(_ context.Context, _ []i
 func (s *groupRepoStubForAdmin) UpdateSortOrders(_ context.Context, _ []GroupSortOrderUpdate) error {
 	return nil
 }
+func (s *groupRepoStubForAdmin) GetGroupMonitoringStats(_ context.Context) ([]GroupMonitoringStat, error) {
+	panic("unexpected GetGroupMonitoringStats call")
+}
+func (s *groupRepoStubForAdmin) ComputeGroupMonitoringStats(_ context.Context) ([]GroupMonitoringStat, error) {
+	panic("unexpected ComputeGroupMonitoringStats call")
+}
+func (s *groupRepoStubForAdmin) UpsertGroupMonitoringStats(_ context.Context, _ []GroupMonitoringStat) error {
+	panic("unexpected UpsertGroupMonitoringStats call")
+}
+func (s *groupRepoStubForAdmin) InsertGroupMonitoringHistory(_ context.Context, _ []GroupMonitoringStat) error {
+	panic("unexpected InsertGroupMonitoringHistory call")
+}
+func (s *groupRepoStubForAdmin) GetGroupMonitoringHistory(context.Context, int64, int) ([]MonitoringHistoryPoint, error) {
+	panic("unexpected GetGroupMonitoringHistory call")
+}
 
 // TestAdminService_CreateGroup_WithImagePricing 测试创建分组时 ImagePrice 字段正确传递
 func TestAdminService_CreateGroup_WithImagePricing(t *testing.T) {
@@ -402,6 +417,21 @@ func (s *groupRepoStubForFallbackCycle) GetAccountIDsByGroupIDs(_ context.Contex
 func (s *groupRepoStubForFallbackCycle) UpdateSortOrders(_ context.Context, _ []GroupSortOrderUpdate) error {
 	return nil
 }
+func (s *groupRepoStubForFallbackCycle) GetGroupMonitoringStats(_ context.Context) ([]GroupMonitoringStat, error) {
+	panic("unexpected GetGroupMonitoringStats call")
+}
+func (s *groupRepoStubForFallbackCycle) ComputeGroupMonitoringStats(_ context.Context) ([]GroupMonitoringStat, error) {
+	panic("unexpected ComputeGroupMonitoringStats call")
+}
+func (s *groupRepoStubForFallbackCycle) UpsertGroupMonitoringStats(_ context.Context, _ []GroupMonitoringStat) error {
+	panic("unexpected UpsertGroupMonitoringStats call")
+}
+func (s *groupRepoStubForFallbackCycle) InsertGroupMonitoringHistory(_ context.Context, _ []GroupMonitoringStat) error {
+	panic("unexpected InsertGroupMonitoringHistory call")
+}
+func (s *groupRepoStubForFallbackCycle) GetGroupMonitoringHistory(context.Context, int64, int) ([]MonitoringHistoryPoint, error) {
+	panic("unexpected GetGroupMonitoringHistory call")
+}
 
 type groupRepoStubForInvalidRequestFallback struct {
 	groups  map[int64]*Group
@@ -476,6 +506,21 @@ func (s *groupRepoStubForInvalidRequestFallback) BindAccountsToGroup(_ context.C
 
 func (s *groupRepoStubForInvalidRequestFallback) UpdateSortOrders(_ context.Context, _ []GroupSortOrderUpdate) error {
 	return nil
+}
+func (s *groupRepoStubForInvalidRequestFallback) GetGroupMonitoringStats(_ context.Context) ([]GroupMonitoringStat, error) {
+	panic("unexpected GetGroupMonitoringStats call")
+}
+func (s *groupRepoStubForInvalidRequestFallback) ComputeGroupMonitoringStats(_ context.Context) ([]GroupMonitoringStat, error) {
+	panic("unexpected ComputeGroupMonitoringStats call")
+}
+func (s *groupRepoStubForInvalidRequestFallback) UpsertGroupMonitoringStats(_ context.Context, _ []GroupMonitoringStat) error {
+	panic("unexpected UpsertGroupMonitoringStats call")
+}
+func (s *groupRepoStubForInvalidRequestFallback) InsertGroupMonitoringHistory(_ context.Context, _ []GroupMonitoringStat) error {
+	panic("unexpected InsertGroupMonitoringHistory call")
+}
+func (s *groupRepoStubForInvalidRequestFallback) GetGroupMonitoringHistory(context.Context, int64, int) ([]MonitoringHistoryPoint, error) {
+	panic("unexpected GetGroupMonitoringHistory call")
 }
 
 func TestAdminService_CreateGroup_InvalidRequestFallbackRejectsUnsupportedPlatform(t *testing.T) {

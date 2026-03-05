@@ -85,6 +85,9 @@ type Group struct {
 	// Sora 存储配额
 	SoraStorageQuotaBytes int64 `json:"sora_storage_quota_bytes"`
 
+	// 自动 Prompt 缓存（仅 Anthropic 平台）
+	EnableAutoPromptCache bool `json:"enable_auto_prompt_cache"`
+
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 }

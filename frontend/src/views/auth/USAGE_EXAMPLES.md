@@ -45,7 +45,7 @@ This document provides practical examples of how to use the authentication views
 // User interactions:
 // 1. Navigate to /register
 // 2. Enter username: "jane_smith"
-// 3. Enter email: "jane@example.com"
+// 3. Enter email: "[email]"
 // 4. Enter password: "SecurePass123"
 // 5. Enter confirm password: "SecurePass123"
 // 6. Click "Create Account"
@@ -170,7 +170,7 @@ async function register() {
   try {
     await authStore.register({
       username: 'jane_smith',
-      email: 'jane@example.com',
+      email: '[email]',
       password: 'SecurePass123'
     })
 
@@ -203,7 +203,7 @@ async function register() {
 ```typescript
 // Valid inputs
 ✅ Username: "jane_smith" (3-50 chars, alphanumeric + _ -)
-✅ Email: "jane@example.com" (valid format)
+✅ Email: "[email]" (valid format)
 ✅ Password: "SecurePass123" (8+ chars, letters + numbers)
 ✅ Confirm: "SecurePass123" (matches password)
 
@@ -325,7 +325,7 @@ test('user can register successfully', async ({ page }) => {
 
   // Fill in registration form
   await page.fill('#username', 'new_user')
-  await page.fill('#email', 'new_user@example.com')
+  await page.fill('#email', '[email]')
   await page.fill('#password', 'SecurePass123')
   await page.fill('#confirmPassword', 'SecurePass123')
 

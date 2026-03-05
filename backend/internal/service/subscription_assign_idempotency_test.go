@@ -55,6 +55,21 @@ func (groupRepoNoop) BindAccountsToGroup(context.Context, int64, []int64) error 
 func (groupRepoNoop) UpdateSortOrders(context.Context, []GroupSortOrderUpdate) error {
 	panic("unexpected UpdateSortOrders call")
 }
+func (groupRepoNoop) GetGroupMonitoringStats(context.Context) ([]GroupMonitoringStat, error) {
+	panic("unexpected GetGroupMonitoringStats call")
+}
+func (groupRepoNoop) ComputeGroupMonitoringStats(context.Context) ([]GroupMonitoringStat, error) {
+	panic("unexpected ComputeGroupMonitoringStats call")
+}
+func (groupRepoNoop) UpsertGroupMonitoringStats(context.Context, []GroupMonitoringStat) error {
+	panic("unexpected UpsertGroupMonitoringStats call")
+}
+func (groupRepoNoop) InsertGroupMonitoringHistory(context.Context, []GroupMonitoringStat) error {
+	panic("unexpected InsertGroupMonitoringHistory call")
+}
+func (groupRepoNoop) GetGroupMonitoringHistory(context.Context, int64, int) ([]MonitoringHistoryPoint, error) {
+	panic("unexpected GetGroupMonitoringHistory call")
+}
 
 type subscriptionGroupRepoStub struct {
 	groupRepoNoop

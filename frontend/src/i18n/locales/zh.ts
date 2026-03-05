@@ -260,6 +260,7 @@ export default {
     announcements: '公告',
     apiKeys: 'API 密钥',
     usage: '使用记录',
+    monitoring: '分组监控',
     redeem: '兑换',
     profile: '个人资料',
     users: '用户管理',
@@ -439,6 +440,22 @@ export default {
   // Groups (shared)
   groups: {
     subscription: '订阅'
+  },
+
+  // Monitoring
+  monitoring: {
+    title: '分组监控',
+    description: '查看各分组的可用状态',
+    online: '正常',
+    offline: '异常',
+    totalGroupsCount: '个分组',
+    availabilityRate: '可用率',
+    cacheHitRate: '缓存命中率',
+    notCollected: '尚未获取',
+    noGroups: '暂无监控数据',
+    noGroupsDescription: '系统中还没有配置任何分组',
+    loadError: '加载监控数据失败',
+    showHistory: '点击查看历史'
   },
 
   // API Keys
@@ -1432,6 +1449,10 @@ export default {
         fallbackGroup: '降级分组',
         fallbackHint: '非 Claude Code 请求将使用此分组，留空则直接拒绝',
         noFallback: '不降级（直接拒绝）'
+      },
+      autoPromptCache: {
+        title: '自动 Prompt 缓存',
+        hint: '启用后，网关会自动为 system 和 messages 中的文本内容添加缓存标记，利用 Anthropic 的 Prompt Caching 功能降低成本'
       },
       invalidRequestFallback: {
         title: '无效请求兜底分组',
@@ -3740,6 +3761,12 @@ export default {
         minVersion: '最低版本号',
         minVersionPlaceholder: '例如 2.1.63',
         minVersionHint: '拒绝低于此版本的 Claude Code 客户端请求（semver 格式）。留空则不检查版本。'
+      },
+      autoPromptCache: {
+        title: '自动 Prompt 缓存',
+        description: '自动为 Anthropic API 请求启用 Prompt Caching，降低 API 成本并提升响应速度',
+        enableAutoPromptCache: '启用自动 Prompt 缓存',
+        enableAutoPromptCacheHint: '启用后，网关会自动为 system 和 messages 中的长文本内容添加缓存标记，利用 Anthropic 的 Prompt Caching 功能'
       },
       site: {
         title: '站点设置',

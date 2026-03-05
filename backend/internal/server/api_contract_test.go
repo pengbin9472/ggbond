@@ -192,6 +192,7 @@ func TestAPIContracts(t *testing.T) {
 							"sora_video_price_per_request": null,
 							"sora_video_price_per_request_hd": null,
 							"claude_code_only": false,
+						"enable_auto_prompt_cache": false,
 						"fallback_group_id": null,
 						"fallback_group_id_on_invalid_request": null,
 						"created_at": "2025-01-02T03:04:05Z",
@@ -916,6 +917,21 @@ func (stubGroupRepo) GetAccountIDsByGroupIDs(ctx context.Context, groupIDs []int
 
 func (stubGroupRepo) UpdateSortOrders(ctx context.Context, updates []service.GroupSortOrderUpdate) error {
 	return nil
+}
+func (stubGroupRepo) GetGroupMonitoringStats(context.Context) ([]service.GroupMonitoringStat, error) {
+	return nil, nil
+}
+func (stubGroupRepo) ComputeGroupMonitoringStats(context.Context) ([]service.GroupMonitoringStat, error) {
+	return nil, nil
+}
+func (stubGroupRepo) UpsertGroupMonitoringStats(context.Context, []service.GroupMonitoringStat) error {
+	return nil
+}
+func (stubGroupRepo) InsertGroupMonitoringHistory(context.Context, []service.GroupMonitoringStat) error {
+	return nil
+}
+func (stubGroupRepo) GetGroupMonitoringHistory(context.Context, int64, int) ([]service.MonitoringHistoryPoint, error) {
+	return nil, nil
 }
 
 type stubAccountRepo struct {

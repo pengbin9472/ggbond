@@ -87,6 +87,21 @@ func (f *fakeGroupRepo) BindAccountsToGroup(context.Context, int64, []int64) err
 func (f *fakeGroupRepo) UpdateSortOrders(context.Context, []service.GroupSortOrderUpdate) error {
 	return nil
 }
+func (f *fakeGroupRepo) GetGroupMonitoringStats(context.Context) ([]service.GroupMonitoringStat, error) {
+	return nil, nil
+}
+func (f *fakeGroupRepo) ComputeGroupMonitoringStats(context.Context) ([]service.GroupMonitoringStat, error) {
+	return nil, nil
+}
+func (f *fakeGroupRepo) UpsertGroupMonitoringStats(context.Context, []service.GroupMonitoringStat) error {
+	return nil
+}
+func (f *fakeGroupRepo) InsertGroupMonitoringHistory(context.Context, []service.GroupMonitoringStat) error {
+	return nil
+}
+func (f *fakeGroupRepo) GetGroupMonitoringHistory(context.Context, int64, int) ([]service.MonitoringHistoryPoint, error) {
+	return nil, nil
+}
 
 type fakeConcurrencyCache struct{}
 

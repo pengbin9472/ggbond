@@ -237,3 +237,18 @@ type AccountUsageStatsResponse struct {
 	Summary AccountUsageSummary   `json:"summary"`
 	Models  []ModelStat           `json:"models"`
 }
+
+// GroupMonitoringStat represents monitoring statistics for a single group
+type GroupMonitoringStat struct {
+	GroupID           int64   `json:"group_id"`
+	GroupName         string  `json:"group_name"`
+	Platform          string  `json:"platform"`
+	TotalAccounts     int     `json:"total_accounts"`
+	NormalAccounts    int     `json:"normal_accounts"`
+	ErrorAccounts     int     `json:"error_accounts"`
+	RateLimitAccounts int     `json:"ratelimit_accounts"`
+	OverloadAccounts  int     `json:"overload_accounts"`
+	DisabledAccounts  int     `json:"disabled_accounts"`
+	RateMultiplier    float64 `json:"rate_m"`
+	SortOrder         int     `json:"sort_order"`
+}

@@ -148,7 +148,7 @@ Centered: Both horizontally and vertically
 │  │                                     │   │
 │  │  Email                              │   │
 │  │  ┌────────────────────────────────┐ │   │
-│  │  │ your.email@example.com       │ │   │
+│  │  │ [email]                      │ │   │
 │  │  └────────────────────────────────┘ │   │
 │  │                                     │   │
 │  │  Password                           │   │
@@ -220,7 +220,7 @@ Centered: Both horizontally and vertically
 ┌─────────────────────────────────────────────┐
 │  ┌────────────────────────────────┐         │
 │  │  Username: jane_smith          │         │
-│  │  Email: jane@example.com       │         │
+│  │  Email: [email]                │         │
 │  │  Password: ••••••••••••        │         │
 │  │  Confirm: ••••••••••••         │         │
 │  │                                │         │
