@@ -283,7 +283,8 @@ export default {
     mySubscriptions: '我的订阅',
     buySubscription: '充值/订阅',
     docs: '文档',
-    sora: 'Sora 创作'
+    sora: 'Sora 创作',
+    tutorial: '使用教程'
   },
 
   // Auth
@@ -4331,6 +4332,11 @@ export default {
     }
   },
 
+  // 使用教程
+  tutorial: {
+    title: '使用教程',
+    description: '查看各种 CLI 工具的安装和配置教程'
+  },
   // Sora 创作
   sora: {
     title: 'Sora 创作',

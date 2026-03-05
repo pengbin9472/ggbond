@@ -82,9 +82,10 @@
       </div>
     </div>
 
-    <!-- 迷你历史图表 -->
+    <!-- 历史趋势图表 -->
     <div
-      class="mt-3.5 pt-3 border-t border-gray-200 dark:border-gray-700 cursor-pointer"
+      class="mt-3.5 pt-3 border-t border-gray-200 dark:border-gray-700"
+      :class="{ 'cursor-pointer': !history }"
       @click="onToggleHistory"
     >
       <template v-if="history && history.length > 1">
@@ -103,26 +104,136 @@
             </span>
           </div>
         </div>
-        <svg :viewBox="`0 0 ${chartWidth} ${chartHeight}`" class="w-full" style="height: 40px">
-          <!-- 可用率折线 -->
-          <polyline
-            :points="availabilityPoints"
-            fill="none"
-            stroke="#3b82f6"
-            stroke-width="1.5"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          />
-          <!-- 缓存命中率折线 -->
-          <polyline
-            :points="cacheHitPoints"
-            fill="none"
-            stroke="#22c55e"
-            stroke-width="1.5"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          />
-        </svg>
+
+        <!-- 交互式图表容器 -->
+        <div class="relative" ref="chartContainerRef">
+          <svg
+            ref="svgRef"
+            :viewBox="`0 0 ${svgWidth} ${svgTotalHeight}`"
+            class="w-full select-none"
+            preserveAspectRatio="xMidYMid meet"
+            @mousemove="onSvgMouseMove"
+            @mouseleave="hoveredIndex = -1"
+          >
+            <!-- 水平网格线 -->
+            <line
+              v-for="i in 3"
+              :key="'grid-' + i"
+              :x1="0"
+              :y1="svgPaddingTop + (svgPlotHeight / 4) * i"
+              :x2="svgWidth"
+              :y2="svgPaddingTop + (svgPlotHeight / 4) * i"
+              stroke="currentColor"
+              class="text-gray-100 dark:text-gray-700/50"
+              stroke-width="0.5"
+            />
+
+            <!-- 可用率区域填充 -->
+            <path
+              v-if="availabilityAreaPath"
+              :d="availabilityAreaPath"
+              fill="#3b82f6"
+              fill-opacity="0.06"
+            />
+
+            <!-- 缓存命中率区域填充 -->
+            <path
+              v-if="cacheHitAreaPath"
+              :d="cacheHitAreaPath"
+              fill="#22c55e"
+              fill-opacity="0.06"
+            />
+
+            <!-- 可用率平滑曲线 -->
+            <path
+              v-if="availabilityLinePath"
+              :d="availabilityLinePath"
+              fill="none"
+              stroke="#3b82f6"
+              stroke-width="1.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+
+            <!-- 缓存命中率平滑曲线 -->
+            <path
+              v-if="cacheHitLinePath"
+              :d="cacheHitLinePath"
+              fill="none"
+              stroke="#22c55e"
+              stroke-width="1.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+
+            <!-- 悬浮竖直虚线 -->
+            <line
+              v-if="hoveredIndex >= 0"
+              :x1="getPointX(hoveredIndex)"
+              :y1="svgPaddingTop"
+              :x2="getPointX(hoveredIndex)"
+              :y2="svgPaddingTop + svgPlotHeight"
+              stroke="currentColor"
+              class="text-gray-300 dark:text-gray-500"
+              stroke-width="0.5"
+              stroke-dasharray="2,2"
+            />
+
+            <!-- 悬浮圆点指示器 -->
+            <template v-if="hoveredIndex >= 0 && chartData">
+              <circle
+                v-if="chartData[hoveredIndex]?.availability_rate >= 0"
+                :cx="getPointX(hoveredIndex)"
+                :cy="computeY(chartData[hoveredIndex].availability_rate)"
+                r="2.5"
+                fill="white"
+                stroke="#3b82f6"
+                stroke-width="1.5"
+              />
+              <circle
+                v-if="chartData[hoveredIndex]?.cache_hit_rate >= 0"
+                :cx="getPointX(hoveredIndex)"
+                :cy="computeY(chartData[hoveredIndex].cache_hit_rate)"
+                r="2.5"
+                fill="white"
+                stroke="#22c55e"
+                stroke-width="1.5"
+              />
+            </template>
+
+            <!-- X 轴时间标签 -->
+            <text
+              v-for="label in xAxisLabels"
+              :key="'t-' + label.index"
+              :x="label.x"
+              :y="svgTotalHeight - 1"
+              text-anchor="middle"
+              class="fill-gray-400 dark:fill-gray-500"
+              style="font-size: 7px; font-family: system-ui, sans-serif"
+            >{{ label.text }}</text>
+          </svg>
+
+          <!-- 悬浮 Tooltip -->
+          <div
+            v-if="hoveredIndex >= 0 && tooltipData"
+            class="absolute z-10 pointer-events-none"
+            :style="tooltipStyle"
+          >
+            <div class="bg-gray-800/95 dark:bg-black/90 backdrop-blur-sm text-white rounded-lg shadow-xl px-3 py-2 text-[11px] whitespace-nowrap border border-gray-700/50">
+              <div class="font-medium text-gray-300 mb-1.5 text-[10px]">{{ tooltipData.time }}</div>
+              <div class="flex items-center gap-1.5 mb-0.5">
+                <span class="w-1.5 h-1.5 rounded-full bg-blue-400 flex-shrink-0"></span>
+                <span class="text-gray-300">{{ t('monitoring.availabilityRate') }}</span>
+                <span class="font-semibold ml-2">{{ tooltipData.availability }}</span>
+              </div>
+              <div class="flex items-center gap-1.5">
+                <span class="w-1.5 h-1.5 rounded-full bg-green-400 flex-shrink-0"></span>
+                <span class="text-gray-300">{{ t('monitoring.cacheHitRate') }}</span>
+                <span class="font-semibold ml-2">{{ tooltipData.cacheHit }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
       </template>
       <template v-else-if="historyLoading">
         <div class="flex items-center justify-center py-2">
@@ -141,7 +252,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { GroupMonitoringStat, MonitoringHistoryPoint } from '@/types'
 
@@ -156,68 +267,213 @@ const props = defineProps<Props>()
 const emit = defineEmits<{ 'load-history': [] }>()
 
 const historyLoading = ref(false)
+const hoveredIndex = ref(-1)
+const chartContainerRef = ref<HTMLElement | null>(null)
+const svgRef = ref<SVGSVGElement | null>(null)
 
 const onToggleHistory = async () => {
   if (props.history) return
   historyLoading.value = true
   emit('load-history')
-  // loading 状态会在 history prop 更新后通过 watch 自动消失
-  // 但为安全起见设置一个超时
   setTimeout(() => { historyLoading.value = false }, 5000)
 }
 
-// 当 history 数据到达时关闭 loading
-import { watch } from 'vue'
 watch(() => props.history, (val) => {
   if (val) historyLoading.value = false
 })
 
-const chartWidth = 200
-const chartHeight = 40
+// ── SVG 图表尺寸 ──
+const svgWidth = 300
+const svgPaddingTop = 6
+const svgPaddingBottom = 16 // 留给时间标签
+const svgTotalHeight = 80
+const svgPlotHeight = svgTotalHeight - svgPaddingTop - svgPaddingBottom
 
-// 是否在线（有正常账户即为在线）
-const isOnline = computed(() => {
-  return props.group.normal_accounts > 0
+// ── 过滤有效数据（至少 availability_rate 或 cache_hit_rate >= 0）──
+const chartData = computed(() => {
+  if (!props.history || props.history.length < 2) return null
+  return props.history
 })
 
-// 生成 SVG 折线的 points 字符串（自适应 Y 轴）
-const makePoints = (data: MonitoringHistoryPoint[], field: 'availability_rate' | 'cache_hit_rate'): string => {
-  const validData = data.filter(d => d[field] >= 0)
-  if (validData.length < 2) return ''
+// ── Y 轴范围（共享的 min/max）──
+const yRange = computed(() => {
+  if (!chartData.value) return { min: 0, max: 100 }
 
-  const values = validData.map(d => d[field])
-  let min = Math.min(...values)
-  let max = Math.max(...values)
+  const allValues: number[] = []
+  for (const d of chartData.value) {
+    if (d.availability_rate >= 0) allValues.push(d.availability_rate)
+    if (d.cache_hit_rate >= 0) allValues.push(d.cache_hit_rate)
+  }
 
-  // 数据无波动时，上下扩展 5% 的范围，确保线画在中间
+  if (allValues.length === 0) return { min: 0, max: 100 }
+
+  let min = Math.min(...allValues)
+  let max = Math.max(...allValues)
+
+  // 数据无波动时上下扩展，确保曲线在中间
   if (max - min < 1) {
     min = Math.max(0, min - 5)
     max = Math.min(100, max + 5)
   }
 
-  // 上下留 padding（图表高度的 10%）
-  const padding = chartHeight * 0.1
-  const plotHeight = chartHeight - padding * 2
-  const range = max - min || 1
+  // 留一点 padding
+  const padding = (max - min) * 0.1
+  min = Math.max(0, min - padding)
+  max = Math.min(100, max + padding)
 
-  const xStep = chartWidth / (validData.length - 1)
-  return validData
-    .map((d, i) => {
-      const x = i * xStep
-      const y = padding + plotHeight - ((d[field] - min) / range) * plotHeight
-      return `${x.toFixed(1)},${y.toFixed(1)}`
-    })
-    .join(' ')
-}
-
-const availabilityPoints = computed(() => {
-  if (!props.history) return ''
-  return makePoints(props.history, 'availability_rate')
+  return { min, max }
 })
 
-const cacheHitPoints = computed(() => {
-  if (!props.history) return ''
-  return makePoints(props.history, 'cache_hit_rate')
+// ── 坐标计算 ──
+const getPointX = (index: number): number => {
+  if (!chartData.value || chartData.value.length < 2) return 0
+  return (index / (chartData.value.length - 1)) * svgWidth
+}
+
+const computeY = (value: number): number => {
+  const { min, max } = yRange.value
+  const range = max - min || 1
+  return svgPaddingTop + svgPlotHeight - ((value - min) / range) * svgPlotHeight
+}
+
+// ── Catmull-Rom 样条曲线 ──
+const smoothLine = (points: { x: number; y: number }[]): string => {
+  if (points.length < 2) return ''
+  if (points.length === 2) {
+    return `M${points[0].x.toFixed(1)},${points[0].y.toFixed(1)}L${points[1].x.toFixed(1)},${points[1].y.toFixed(1)}`
+  }
+
+  let d = `M${points[0].x.toFixed(1)},${points[0].y.toFixed(1)}`
+  const tension = 0.3
+
+  for (let i = 0; i < points.length - 1; i++) {
+    const p0 = points[Math.max(0, i - 1)]
+    const p1 = points[i]
+    const p2 = points[i + 1]
+    const p3 = points[Math.min(points.length - 1, i + 2)]
+
+    const cp1x = p1.x + (p2.x - p0.x) * tension / 3
+    const cp1y = p1.y + (p2.y - p0.y) * tension / 3
+    const cp2x = p2.x - (p3.x - p1.x) * tension / 3
+    const cp2y = p2.y - (p3.y - p1.y) * tension / 3
+
+    d += ` C${cp1x.toFixed(1)},${cp1y.toFixed(1)} ${cp2x.toFixed(1)},${cp2y.toFixed(1)} ${p2.x.toFixed(1)},${p2.y.toFixed(1)}`
+  }
+
+  return d
+}
+
+// ── 生成折线路径和区域填充路径 ──
+const makeLinePath = (field: 'availability_rate' | 'cache_hit_rate'): string => {
+  if (!chartData.value) return ''
+  const points: { x: number; y: number }[] = []
+  for (let i = 0; i < chartData.value.length; i++) {
+    const val = chartData.value[i][field]
+    if (val >= 0) {
+      points.push({ x: getPointX(i), y: computeY(val) })
+    }
+  }
+  return smoothLine(points)
+}
+
+const makeAreaPath = (field: 'availability_rate' | 'cache_hit_rate'): string => {
+  if (!chartData.value) return ''
+  const points: { x: number; y: number }[] = []
+  for (let i = 0; i < chartData.value.length; i++) {
+    const val = chartData.value[i][field]
+    if (val >= 0) {
+      points.push({ x: getPointX(i), y: computeY(val) })
+    }
+  }
+  if (points.length < 2) return ''
+
+  const linePath = smoothLine(points)
+  const bottomY = svgPaddingTop + svgPlotHeight
+  return `${linePath} L${points[points.length - 1].x.toFixed(1)},${bottomY} L${points[0].x.toFixed(1)},${bottomY} Z`
+}
+
+const availabilityLinePath = computed(() => makeLinePath('availability_rate'))
+const cacheHitLinePath = computed(() => makeLinePath('cache_hit_rate'))
+const availabilityAreaPath = computed(() => makeAreaPath('availability_rate'))
+const cacheHitAreaPath = computed(() => makeAreaPath('cache_hit_rate'))
+
+// ── X 轴时间标签 ──
+const formatTimestamp = (ts: number): string => {
+  // 兼容秒级和毫秒级时间戳
+  const d = new Date(ts > 1e12 ? ts : ts * 1000)
+  const h = d.getHours().toString().padStart(2, '0')
+  const m = d.getMinutes().toString().padStart(2, '0')
+  return `${h}:${m}`
+}
+
+const xAxisLabels = computed(() => {
+  if (!chartData.value || chartData.value.length < 2) return []
+
+  const total = chartData.value.length
+  const labelCount = Math.min(5, total)
+  const labels: { x: number; text: string; index: number }[] = []
+
+  for (let i = 0; i < labelCount; i++) {
+    const dataIndex = Math.round((i / (labelCount - 1)) * (total - 1))
+    const point = chartData.value[dataIndex]
+    if (point) {
+      labels.push({
+        x: getPointX(dataIndex),
+        text: formatTimestamp(point.recorded_at),
+        index: dataIndex
+      })
+    }
+  }
+
+  return labels
+})
+
+// ── 鼠标悬浮交互 ──
+const onSvgMouseMove = (e: MouseEvent) => {
+  const svg = svgRef.value
+  if (!svg || !chartData.value || chartData.value.length < 2) return
+
+  const rect = svg.getBoundingClientRect()
+  const xRatio = (e.clientX - rect.left) / rect.width
+  const svgX = xRatio * svgWidth
+
+  const step = svgWidth / (chartData.value.length - 1)
+  const idx = Math.round(svgX / step)
+  hoveredIndex.value = Math.max(0, Math.min(chartData.value.length - 1, idx))
+}
+
+// ── Tooltip 数据 ──
+const tooltipData = computed(() => {
+  if (hoveredIndex.value < 0 || !chartData.value) return null
+  const point = chartData.value[hoveredIndex.value]
+  if (!point) return null
+
+  return {
+    time: formatTimestamp(point.recorded_at),
+    availability: point.availability_rate >= 0 ? point.availability_rate.toFixed(1) + '%' : '--',
+    cacheHit: point.cache_hit_rate >= 0 ? point.cache_hit_rate.toFixed(1) + '%' : '--'
+  }
+})
+
+// ── Tooltip 定位样式 ──
+const tooltipStyle = computed(() => {
+  if (hoveredIndex.value < 0 || !chartData.value) return {}
+
+  const total = chartData.value.length
+  const xPercent = (hoveredIndex.value / (total - 1)) * 100
+
+  // 超过 65% 时 tooltip 翻转到左侧显示
+  const isRight = xPercent > 65
+  return {
+    left: `${xPercent}%`,
+    top: '0px',
+    transform: isRight ? 'translateX(-100%) translateX(-8px)' : 'translateX(8px)'
+  }
+})
+
+// ── 通用工具函数 ──
+const isOnline = computed(() => {
+  return props.group.normal_accounts > 0
 })
 
 const getPlatformLabel = (platform: string): string => {

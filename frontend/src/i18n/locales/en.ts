@@ -283,7 +283,8 @@ export default {
     mySubscriptions: 'My Subscriptions',
     buySubscription: 'Recharge / Subscription',
     docs: 'Docs',
-    sora: 'Sora Studio'
+    sora: 'Sora Studio',
+    tutorial: 'Tutorial'
   },
 
   // Auth
@@ -4137,6 +4138,11 @@ export default {
     }
   },
 
+  // Tutorial
+  tutorial: {
+    title: 'Tutorial',
+    description: 'View installation and configuration tutorials for CLI tools'
+  },
   // Sora Studio
   sora: {
     title: 'Sora Studio',
