@@ -125,6 +125,11 @@ const loadData = async () => {
     const response = await monitoringAPI.getGroupMonitoring()
     groups.value = response.groups || []
     historyMap.value = {}
+
+    // 自动加载所有分组的历史数据
+    await Promise.allSettled(
+      groups.value.map(g => loadGroupHistory(g.group_id))
+    )
   } catch (error) {
     appStore.showError(t('monitoring.loadError'))
     console.error('Error loading group monitoring data:', error)
