@@ -7,21 +7,26 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
   packages: write
 
 jobs:
-  build-and-push:
+  build-and-release:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v6
 
       - name: Set version
+        id: version
         run: |
           SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
-          echo "test-${SHORT_SHA}" > backend/cmd/server/VERSION
+          VERSION="test-${SHORT_SHA}"
+          echo "${VERSION}" > backend/cmd/server/VERSION
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          echo "short_sha=${SHORT_SHA}" >> $GITHUB_OUTPUT
 
+      # Build frontend
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
@@ -42,6 +47,83 @@ jobs:
         run: pnpm run build
         working-directory: frontend
 
+      # Build Go binaries
+      - name: Setup Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: backend/go.mod
+          cache-dependency-path: backend/go.sum
+
+      - name: Build binaries
+        run: |
+          cd backend
+          LDFLAGS="-s -w -X main.Commit=${{ github.sha }} -X main.Date=$(date -u +%Y-%m-%dT%H:%M:%SZ) -X main.BuildType=test"
+
+          # linux/amd64
+          echo "Building linux/amd64..."
+          CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -tags=embed -ldflags="${LDFLAGS}" -o ../dist/sub2api_linux_amd64/sub2api ./cmd/server
+
+          # linux/arm64
+          echo "Building linux/arm64..."
+          CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -tags=embed -ldflags="${LDFLAGS}" -o ../dist/sub2api_linux_arm64/sub2api ./cmd/server
+
+      - name: Create archives and checksums
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          cd dist
+
+          # Copy deploy files into each archive directory
+          for dir in sub2api_linux_*/; do
+            cp -r ../deploy "$dir/"
+            cp ../LICENSE* "$dir/" 2>/dev/null || true
+            cp ../README* "$dir/" 2>/dev/null || true
+          done
+
+          # Create tar.gz archives
+          tar -czf "sub2api_${VERSION}_linux_amd64.tar.gz" -C sub2api_linux_amd64 .
+          tar -czf "sub2api_${VERSION}_linux_arm64.tar.gz" -C sub2api_linux_arm64 .
+
+          # Generate checksums
+          sha256sum sub2api_${VERSION}_*.tar.gz > checksums.txt
+
+          echo "Archives created:"
+          ls -lh *.tar.gz checksums.txt
+
+      # Create GitHub Release
+      - name: Delete existing test release
+        run: |
+          gh release delete test --yes 2>/dev/null || true
+          git push origin :refs/tags/test 2>/dev/null || true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create GitHub Release
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          gh release create test \
+            --title "Sub2API Test (${VERSION})" \
+            --notes "Test build from \`test\` branch @ ${{ github.sha }}
+
+          > This is an automated test release. Not for production use.
+
+          **Version:** \`${VERSION}\`
+          **Commit:** [\`${{ steps.version.outputs.short_sha }}\`](${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }})
+
+          ## Install
+
+          \`\`\`bash
+          curl -sSL https://raw.githubusercontent.com/${{ github.repository }}/test/deploy/install.sh | sudo bash -s -- install -v test
+          \`\`\`
+          " \
+            --target test \
+            --prerelease \
+            dist/sub2api_${VERSION}_linux_amd64.tar.gz \
+            dist/sub2api_${VERSION}_linux_arm64.tar.gz \
+            dist/checksums.txt
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # Build and push Docker image
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
 
