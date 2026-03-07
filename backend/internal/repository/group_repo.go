@@ -829,6 +829,7 @@ func (r *groupRepository) GetGroupMonitoringHistory(ctx context.Context, groupID
 			cache_hit_rate
 		FROM group_monitoring_history
 		WHERE group_id = $1
+			AND recorded_at >= NOW() - INTERVAL '1 hour'
 		ORDER BY recorded_at DESC
 		LIMIT $2
 	`
