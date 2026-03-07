@@ -825,14 +825,14 @@ func (r *groupRepository) GetGroupMonitoringHistory(ctx context.Context, groupID
 		limit = 100
 	}
 
-	// 先按时间倒序取最新的 N 条，然后在应用层反转为升序（用于图表展示）
+	// 先按时间倒序取最新的 N 条（限定最近1小时），然后在应用层反转为升序（用于图表展示）
 	query := `
 		SELECT
 			EXTRACT(EPOCH FROM recorded_at)::bigint as recorded_at,
 			availability_rate,
 			cache_hit_rate
 		FROM group_monitoring_history
-		WHERE group_id = $1
+		WHERE group_id = $1 AND recorded_at >= NOW() - INTERVAL '1 hour'
 		ORDER BY recorded_at DESC
 		LIMIT $2
 	`
