@@ -21,7 +21,7 @@ type GroupMonitoringService struct {
 func NewGroupMonitoringService(groupRepo GroupRepository) *GroupMonitoringService {
 	return &GroupMonitoringService{
 		groupRepo: groupRepo,
-		interval:  5 * time.Minute, // 默认每5分钟更新一次
+		interval:  2 * time.Minute, // 默认每2分钟更新一次
 		stopCh:    make(chan struct{}),
 	}
 }
