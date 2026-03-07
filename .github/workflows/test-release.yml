@@ -61,11 +61,11 @@ jobs:
 
           # linux/amd64
           echo "Building linux/amd64..."
-          CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -tags=embed -ldflags="${LDFLAGS}" -o ../dist/sub2api_linux_amd64/sub2api ./cmd/server
+          CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -tags=embed -ldflags="${LDFLAGS}" -o ../dist/ggbond_linux_amd64/ggbond ./cmd/server
 
           # linux/arm64
           echo "Building linux/arm64..."
-          CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -tags=embed -ldflags="${LDFLAGS}" -o ../dist/sub2api_linux_arm64/sub2api ./cmd/server
+          CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -tags=embed -ldflags="${LDFLAGS}" -o ../dist/ggbond_linux_arm64/ggbond ./cmd/server
 
       - name: Create archives and checksums
         run: |
@@ -73,18 +73,18 @@ jobs:
           cd dist
 
           # Copy deploy files into each archive directory
-          for dir in sub2api_linux_*/; do
+          for dir in ggbond_linux_*/; do
             cp -r ../deploy "$dir/"
             cp ../LICENSE* "$dir/" 2>/dev/null || true
             cp ../README* "$dir/" 2>/dev/null || true
           done
 
           # Create tar.gz archives
-          tar -czf "sub2api_${VERSION}_linux_amd64.tar.gz" -C sub2api_linux_amd64 .
-          tar -czf "sub2api_${VERSION}_linux_arm64.tar.gz" -C sub2api_linux_arm64 .
+          tar -czf "ggbond_${VERSION}_linux_amd64.tar.gz" -C ggbond_linux_amd64 .
+          tar -czf "ggbond_${VERSION}_linux_arm64.tar.gz" -C ggbond_linux_arm64 .
 
           # Generate checksums
-          sha256sum sub2api_${VERSION}_*.tar.gz > checksums.txt
+          sha256sum ggbond_${VERSION}_*.tar.gz > checksums.txt
 
           echo "Archives created:"
           ls -lh *.tar.gz checksums.txt
@@ -101,7 +101,7 @@ jobs:
         run: |
           VERSION="${{ steps.version.outputs.version }}"
           gh release create test \
-            --title "Sub2API Test (${VERSION})" \
+            --title "GGbond Test (${VERSION})" \
             --notes "Test build from \`test\` branch @ ${{ github.sha }}
 
           > This is an automated test release. Not for production use.
@@ -117,8 +117,8 @@ jobs:
           " \
             --target test \
             --prerelease \
-            dist/sub2api_${VERSION}_linux_amd64.tar.gz \
-            dist/sub2api_${VERSION}_linux_arm64.tar.gz \
+            dist/ggbond_${VERSION}_linux_amd64.tar.gz \
+            dist/ggbond_${VERSION}_linux_arm64.tar.gz \
             dist/checksums.txt
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -149,7 +149,7 @@ jobs:
           platforms: linux/amd64
           push: true
           tags: |
-            ghcr.io/${{ steps.lowercase.outputs.owner }}/sub2api:test
-            ghcr.io/${{ steps.lowercase.outputs.owner }}/sub2api:test-${{ github.sha }}
+            ghcr.io/${{ steps.lowercase.outputs.owner }}/ggbond:test
+            ghcr.io/${{ steps.lowercase.outputs.owner }}/ggbond:test-${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
