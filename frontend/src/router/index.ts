@@ -154,6 +154,18 @@ const routes: RouteRecordRaw[] = [
     }
   },
   {
+    path: '/monitoring',
+    name: 'Monitoring',
+    component: () => import('@/views/MonitoringView.vue'),
+    meta: {
+      requiresAuth: true,
+      requiresAdmin: false,
+      title: 'Group Monitoring',
+      titleKey: 'monitoring.title',
+      descriptionKey: 'monitoring.description'
+    }
+  },
+  {
     path: '/redeem',
     name: 'Redeem',
     component: () => import('@/views/user/RedeemView.vue'),
@@ -263,17 +275,6 @@ const routes: RouteRecordRaw[] = [
       title: 'Ops Monitoring',
       titleKey: 'admin.ops.title',
       descriptionKey: 'admin.ops.description'
-    }
-  },
-  {
-    path: '/admin/group-monitoring',
-    name: 'AdminGroupMonitoring',
-    component: () => import('@/views/admin/GroupMonitoringView.vue'),
-    meta: {
-      requiresAuth: true,
-      requiresAdmin: true,
-      title: 'Group Monitoring',
-      titleKey: 'nav.groupMonitoring'
     }
   },
   {

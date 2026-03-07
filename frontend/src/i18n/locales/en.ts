@@ -353,7 +353,7 @@ export default {
     docs: 'Docs',
     sora: 'Sora Studio',
     tutorial: 'Tutorial',
-    groupMonitoring: 'Group Monitoring'
+    monitoring: 'Monitoring'
   },
 
   // Auth
@@ -522,6 +522,22 @@ export default {
   // Groups (shared)
   groups: {
     subscription: 'Sub'
+  },
+
+  // Monitoring
+  monitoring: {
+    title: 'Group Monitoring',
+    description: 'View availability status of each group',
+    online: 'Online',
+    offline: 'Offline',
+    totalGroupsCount: 'groups',
+    availabilityRate: 'Availability',
+    cacheHitRate: 'Cache Hit Rate',
+    notCollected: 'Not collected',
+    noGroups: 'No monitoring data',
+    noGroupsDescription: 'No groups have been configured in the system yet',
+    loadError: 'Failed to load monitoring data',
+    showHistory: 'Click to view history'
   },
 
   // API Keys

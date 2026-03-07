@@ -353,7 +353,7 @@ export default {
     docs: '文档',
     sora: 'Sora 创作',
     tutorial: '使用教程',
-    groupMonitoring: '分组监控'
+    monitoring: '分组监控'
   },
 
   // Auth
@@ -522,6 +522,22 @@ export default {
   // Groups (shared)
   groups: {
     subscription: '订阅'
+  },
+
+  // Monitoring
+  monitoring: {
+    title: '分组监控',
+    description: '查看各分组的可用状态',
+    online: '正常',
+    offline: '异常',
+    totalGroupsCount: '个分组',
+    availabilityRate: '可用率',
+    cacheHitRate: '缓存命中率',
+    notCollected: '尚未获取',
+    noGroups: '暂无监控数据',
+    noGroupsDescription: '系统中还没有配置任何分组',
+    loadError: '加载监控数据失败',
+    showHistory: '点击查看历史'
   },
 
   // API Keys
