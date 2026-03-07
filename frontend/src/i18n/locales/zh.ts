@@ -351,7 +351,9 @@ export default {
     mySubscriptions: '我的订阅',
     buySubscription: '充值/订阅',
     docs: '文档',
-    sora: 'Sora 创作'
+    sora: 'Sora 创作',
+    tutorial: '使用教程',
+    groupMonitoring: '分组监控'
   },
 
   // Auth

@@ -351,7 +351,9 @@ export default {
     mySubscriptions: 'My Subscriptions',
     buySubscription: 'Recharge / Subscription',
     docs: 'Docs',
-    sora: 'Sora Studio'
+    sora: 'Sora Studio',
+    tutorial: 'Tutorial',
+    groupMonitoring: 'Group Monitoring'
   },
 
   // Auth
