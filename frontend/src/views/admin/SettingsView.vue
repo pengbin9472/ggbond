@@ -1095,9 +1095,21 @@
               <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
                 {{ t('admin.settings.purchaseChannel.urlHint') }}
               </p>
-              <p class="mt-2 text-xs text-amber-600 dark:text-amber-400">
-                {{ t('admin.settings.purchaseChannel.iframeWarning') }}
-              </p>
+            </div>
+
+            <!-- Image -->
+            <div>
+              <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                {{ t('admin.settings.purchaseChannel.image') }}
+              </label>
+              <ImageUpload
+                v-model="form.purchase_channel_image"
+                mode="image"
+                :upload-label="t('admin.settings.site.uploadImage')"
+                :remove-label="t('admin.settings.site.remove')"
+                :hint="t('admin.settings.purchaseChannel.imageHint')"
+                :max-size="500 * 1024"
+              />
             </div>
           </div>
         </div>
@@ -1605,6 +1617,7 @@ const form = reactive<SettingsForm>({
   purchase_subscription_url: '',
   purchase_channel_enabled: false,
   purchase_channel_url: '',
+  purchase_channel_image: '',
   sora_client_enabled: false,
   custom_menu_items: [] as Array<{id: string; label: string; icon_svg: string; url: string; visibility: 'user' | 'admin'; sort_order: number}>,
   smtp_host: '',
@@ -1882,6 +1895,7 @@ async function saveSettings() {
       purchase_subscription_url: form.purchase_subscription_url,
       purchase_channel_enabled: form.purchase_channel_enabled,
       purchase_channel_url: form.purchase_channel_url,
+      purchase_channel_image: form.purchase_channel_image,
       sora_client_enabled: form.sora_client_enabled,
       custom_menu_items: form.custom_menu_items,
       smtp_host: form.smtp_host,

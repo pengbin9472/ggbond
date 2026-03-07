@@ -41,6 +41,7 @@ export interface SystemSettings {
   purchase_subscription_url: string
   purchase_channel_enabled: boolean
   purchase_channel_url: string
+  purchase_channel_image: string
   sora_client_enabled: boolean
   custom_menu_items: CustomMenuItem[]
   // SMTP settings
@@ -109,6 +110,7 @@ export interface UpdateSettingsRequest {
   purchase_subscription_url?: string
   purchase_channel_enabled?: boolean
   purchase_channel_url?: string
+  purchase_channel_image?: string
   sora_client_enabled?: boolean
   custom_menu_items?: CustomMenuItem[]
   smtp_host?: string

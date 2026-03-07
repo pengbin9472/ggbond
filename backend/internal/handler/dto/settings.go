@@ -55,6 +55,7 @@ type SystemSettings struct {
 	PurchaseSubscriptionURL     string           `json:"purchase_subscription_url"`
 	PurchaseChannelEnabled      bool             `json:"purchase_channel_enabled"`
 	PurchaseChannelURL          string           `json:"purchase_channel_url"`
+	PurchaseChannelImage        string           `json:"purchase_channel_image"`
 	SoraClientEnabled           bool             `json:"sora_client_enabled"`
 	CustomMenuItems             []CustomMenuItem `json:"custom_menu_items"`
 
@@ -112,6 +113,7 @@ type PublicSettings struct {
 	PurchaseSubscriptionURL          string           `json:"purchase_subscription_url"`
 	PurchaseChannelEnabled           bool             `json:"purchase_channel_enabled"`
 	PurchaseChannelURL               string           `json:"purchase_channel_url"`
+	PurchaseChannelImage             string           `json:"purchase_channel_image"`
 	CustomMenuItems                  []CustomMenuItem `json:"custom_menu_items"`
 	LinuxDoOAuthEnabled              bool             `json:"linuxdo_oauth_enabled"`
 	SoraClientEnabled                bool             `json:"sora_client_enabled"`

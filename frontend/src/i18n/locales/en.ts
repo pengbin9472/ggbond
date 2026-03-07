@@ -3816,14 +3816,14 @@ export default {
       },
       purchaseChannel: {
         title: 'Purchase Channel Page',
-        description: 'Show a "Purchase Channel" entry in the sidebar and open the configured URL in an iframe',
+        description: 'Show a "Purchase Channel" entry in the sidebar for users to view shop info and link',
         enabled: 'Show Purchase Channel Entry',
         enabledHint: 'Only shown in standard mode (not simple mode)',
-        url: 'Purchase Channel URL',
-        urlPlaceholder: 'https://example.com/channel',
-        urlHint: 'Must be an absolute http(s) URL',
-        iframeWarning:
-          '⚠️ iframe note: Some websites block embedding via X-Frame-Options or CSP (frame-ancestors). If the page is blank, provide an "Open in new tab" alternative.',
+        url: 'Shop URL',
+        urlPlaceholder: 'https://example.com/shop',
+        urlHint: 'Must be an absolute http(s) URL. Users can copy or click to open.',
+        image: 'Shop Poster Image',
+        imageHint: 'Upload a shop poster image, recommended width ≤500px, max 500KB',
       },
       soraClient: {
         title: 'Sora Client',
@@ -4142,8 +4142,10 @@ export default {
 
   purchaseChannel: {
     title: 'Purchase Channel',
-    description: 'View purchase channel information via the embedded page',
-    openInNewTab: 'Open in new tab',
+    description: 'View purchase channel information',
+    openShop: 'Open Shop',
+    copyLink: 'Copy Link',
+    copied: 'Copied',
     notEnabledTitle: 'Feature not enabled',
     notEnabledDesc: 'The administrator has not enabled the purchase channel entry. Please contact admin.',
     notConfiguredTitle: 'Purchase channel URL not configured',

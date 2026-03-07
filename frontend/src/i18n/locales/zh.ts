@@ -3991,14 +3991,14 @@ export default {
       },
       purchaseChannel: {
         title: '购买渠道页面',
-        description: '在侧边栏展示”购买渠道”入口，并在页面内通过 iframe 打开指定链接',
+        description: '在侧边栏展示”购买渠道”入口，用户可查看店铺信息和链接',
         enabled: '显示购买渠道入口',
         enabledHint: '仅在标准模式（非简单模式）下展示',
-        url: '购买渠道页面 URL',
-        urlPlaceholder: 'https://example.com/channel',
-        urlHint: '必须是完整的 http(s) 链接',
-        iframeWarning:
-          '⚠️ iframe 提示：部分网站会通过 X-Frame-Options 或 CSP（frame-ancestors）禁止被 iframe 嵌入，出现空白时可引导用户使用”新窗口打开”。',
+        url: '店铺链接',
+        urlPlaceholder: 'https://example.com/shop',
+        urlHint: '必须是完整的 http(s) 链接，用户可复制或点击打开',
+        image: '店铺海报图片',
+        imageHint: '上传店铺海报图片，建议宽度不超过 500px，最大 500KB',
       },
       soraClient: {
         title: 'Sora 客户端',
@@ -4315,8 +4315,10 @@ export default {
 
   purchaseChannel: {
     title: '购买渠道',
-    description: '通过内嵌页面查看购买渠道信息',
-    openInNewTab: '新窗口打开',
+    description: '查看购买渠道信息',
+    openShop: '打开店铺',
+    copyLink: '复制链接',
+    copied: '已复制',
     notEnabledTitle: '该功能未开启',
     notEnabledDesc: '管理员暂未开启购买渠道入口，请联系管理员。',
     notConfiguredTitle: '购买渠道链接未配置',

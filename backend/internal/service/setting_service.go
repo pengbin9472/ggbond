@@ -127,6 +127,7 @@ func (s *SettingService) GetPublicSettings(ctx context.Context) (*PublicSettings
 		SettingKeyPurchaseSubscriptionURL,
 		SettingKeyPurchaseChannelEnabled,
 		SettingKeyPurchaseChannelURL,
+		SettingKeyPurchaseChannelImage,
 		SettingKeySoraClientEnabled,
 		SettingKeyCustomMenuItems,
 		SettingKeyLinuxDoConnectEnabled,
@@ -173,6 +174,7 @@ func (s *SettingService) GetPublicSettings(ctx context.Context) (*PublicSettings
 		PurchaseSubscriptionURL:          strings.TrimSpace(settings[SettingKeyPurchaseSubscriptionURL]),
 		PurchaseChannelEnabled:           settings[SettingKeyPurchaseChannelEnabled] == "true",
 		PurchaseChannelURL:               strings.TrimSpace(settings[SettingKeyPurchaseChannelURL]),
+		PurchaseChannelImage:             settings[SettingKeyPurchaseChannelImage],
 		SoraClientEnabled:                settings[SettingKeySoraClientEnabled] == "true",
 		CustomMenuItems:                  settings[SettingKeyCustomMenuItems],
 		LinuxDoOAuthEnabled:              linuxDoEnabled,
@@ -226,6 +228,7 @@ func (s *SettingService) GetPublicSettingsForInjection(ctx context.Context) (any
 		PurchaseSubscriptionURL          string          `json:"purchase_subscription_url,omitempty"`
 		PurchaseChannelEnabled           bool            `json:"purchase_channel_enabled"`
 		PurchaseChannelURL               string          `json:"purchase_channel_url,omitempty"`
+		PurchaseChannelImage             string          `json:"purchase_channel_image,omitempty"`
 		SoraClientEnabled                bool            `json:"sora_client_enabled"`
 		CustomMenuItems                  json.RawMessage `json:"custom_menu_items"`
 		LinuxDoOAuthEnabled              bool            `json:"linuxdo_oauth_enabled"`
@@ -252,6 +255,7 @@ func (s *SettingService) GetPublicSettingsForInjection(ctx context.Context) (any
 		PurchaseSubscriptionURL:          settings.PurchaseSubscriptionURL,
 		PurchaseChannelEnabled:           settings.PurchaseChannelEnabled,
 		PurchaseChannelURL:               settings.PurchaseChannelURL,
+		PurchaseChannelImage:             settings.PurchaseChannelImage,
 		SoraClientEnabled:                settings.SoraClientEnabled,
 		CustomMenuItems:                  filterUserVisibleMenuItems(settings.CustomMenuItems),
 		LinuxDoOAuthEnabled:              settings.LinuxDoOAuthEnabled,
@@ -439,6 +443,7 @@ func (s *SettingService) UpdateSettings(ctx context.Context, settings *SystemSet
 	updates[SettingKeyPurchaseSubscriptionURL] = strings.TrimSpace(settings.PurchaseSubscriptionURL)
 	updates[SettingKeyPurchaseChannelEnabled] = strconv.FormatBool(settings.PurchaseChannelEnabled)
 	updates[SettingKeyPurchaseChannelURL] = strings.TrimSpace(settings.PurchaseChannelURL)
+	updates[SettingKeyPurchaseChannelImage] = settings.PurchaseChannelImage
 	updates[SettingKeySoraClientEnabled] = strconv.FormatBool(settings.SoraClientEnabled)
 	updates[SettingKeyCustomMenuItems] = settings.CustomMenuItems
 
@@ -671,6 +676,7 @@ func (s *SettingService) InitializeDefaultSettings(ctx context.Context) error {
 		SettingKeyPurchaseSubscriptionURL:          "",
 		SettingKeyPurchaseChannelEnabled:           "false",
 		SettingKeyPurchaseChannelURL:               "",
+		SettingKeyPurchaseChannelImage:             "",
 		SettingKeySoraClientEnabled:                "false",
 		SettingKeyCustomMenuItems:                  "[]",
 		SettingKeyDefaultConcurrency:               strconv.Itoa(s.cfg.Default.UserConcurrency),
@@ -736,6 +742,7 @@ func (s *SettingService) parseSettings(settings map[string]string) *SystemSettin
 		PurchaseSubscriptionURL:          strings.TrimSpace(settings[SettingKeyPurchaseSubscriptionURL]),
 		PurchaseChannelEnabled:           settings[SettingKeyPurchaseChannelEnabled] == "true",
 		PurchaseChannelURL:               strings.TrimSpace(settings[SettingKeyPurchaseChannelURL]),
+		PurchaseChannelImage:             settings[SettingKeyPurchaseChannelImage],
 		SoraClientEnabled:                settings[SettingKeySoraClientEnabled] == "true",
 		CustomMenuItems:                  settings[SettingKeyCustomMenuItems],
 	}

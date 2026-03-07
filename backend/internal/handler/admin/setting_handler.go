@@ -172,6 +172,7 @@ type UpdateSettingsRequest struct {
 	PurchaseSubscriptionURL     *string               `json:"purchase_subscription_url"`
 	PurchaseChannelEnabled      *bool                 `json:"purchase_channel_enabled"`
 	PurchaseChannelURL          *string               `json:"purchase_channel_url"`
+	PurchaseChannelImage   *string `json:"purchase_channel_image"`
 	SoraClientEnabled           bool                  `json:"sora_client_enabled"`
 	CustomMenuItems             *[]dto.CustomMenuItem `json:"custom_menu_items"`
 
@@ -334,6 +335,11 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		channelURL = strings.TrimSpace(*req.PurchaseChannelURL)
 	}
 
+	channelImage := previousSettings.PurchaseChannelImage
+	if req.PurchaseChannelImage != nil {
+		channelImage = *req.PurchaseChannelImage
+	}
+
 	if channelEnabled {
 		if channelURL == "" {
 			response.BadRequest(c, "Purchase Channel URL is required when enabled")
@@ -489,6 +495,7 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		PurchaseSubscriptionURL:          purchaseURL,
 		PurchaseChannelEnabled:           channelEnabled,
 		PurchaseChannelURL:               channelURL,
+		PurchaseChannelImage:             channelImage,
 		SoraClientEnabled:                req.SoraClientEnabled,
 		CustomMenuItems:                  customMenuJSON,
 		DefaultConcurrency:               req.DefaultConcurrency,
@@ -766,6 +773,9 @@ func diffSettings(before *service.SystemSettings, after *service.SystemSettings,
 	}
 	if before.PurchaseChannelURL != after.PurchaseChannelURL {
 		changed = append(changed, "purchase_channel_url")
+	}
+	if before.PurchaseChannelImage != after.PurchaseChannelImage {
+		changed = append(changed, "purchase_channel_image")
 	}
 	if before.CustomMenuItems != after.CustomMenuItems {
 		changed = append(changed, "custom_menu_items")

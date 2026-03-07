@@ -118,6 +118,7 @@ const (
 	SettingKeyPurchaseSubscriptionURL     = "purchase_subscription_url"     // "购买订阅"页面 URL（作为 iframe src）
 	SettingKeyPurchaseChannelEnabled      = "purchase_channel_enabled"      // 是否展示"购买渠道"页面入口
 	SettingKeyPurchaseChannelURL          = "purchase_channel_url"          // "购买渠道"页面 URL（作为 iframe src）
+	SettingKeyPurchaseChannelImage           = "purchase_channel_image"          // "购买渠道"页面展示图片（base64）
 	SettingKeyCustomMenuItems             = "custom_menu_items"             // 自定义菜单项（JSON 数组）
 
 	// 默认配置

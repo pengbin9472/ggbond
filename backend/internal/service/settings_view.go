@@ -42,6 +42,7 @@ type SystemSettings struct {
 	PurchaseSubscriptionURL     string
 	PurchaseChannelEnabled      bool
 	PurchaseChannelURL          string
+	PurchaseChannelImage        string
 	SoraClientEnabled           bool
 	CustomMenuItems             string // JSON array of custom menu items
 
@@ -101,6 +102,7 @@ type PublicSettings struct {
 	PurchaseSubscriptionURL     string
 	PurchaseChannelEnabled      bool
 	PurchaseChannelURL          string
+	PurchaseChannelImage string
 	SoraClientEnabled           bool
 	CustomMenuItems             string // JSON array of custom menu items
 
