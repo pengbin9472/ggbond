@@ -12,11 +12,11 @@ import (
 	"sync"
 	"time"
 
-	httppool "github.com/Wei-Shaw/sub2api/internal/pkg/httpclient"
-	openaipkg "github.com/Wei-Shaw/sub2api/internal/pkg/openai"
-	"github.com/Wei-Shaw/sub2api/internal/pkg/pagination"
-	"github.com/Wei-Shaw/sub2api/internal/pkg/timezone"
-	"github.com/Wei-Shaw/sub2api/internal/pkg/usagestats"
+	httppool "github.com/pengbin9472/ggbond/internal/pkg/httpclient"
+	openaipkg "github.com/pengbin9472/ggbond/internal/pkg/openai"
+	"github.com/pengbin9472/ggbond/internal/pkg/pagination"
+	"github.com/pengbin9472/ggbond/internal/pkg/timezone"
+	"github.com/pengbin9472/ggbond/internal/pkg/usagestats"
 	"golang.org/x/sync/errgroup"
 	"golang.org/x/sync/singleflight"
 )

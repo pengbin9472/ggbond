@@ -1,7 +1,7 @@
 package handler
 
 import (
-	"github.com/Wei-Shaw/sub2api/internal/handler/admin"
+	"github.com/pengbin9472/ggbond/internal/handler/admin"
 )
 
 // AdminHandlers contains all admin-related HTTP handlers
@@ -46,6 +46,7 @@ type Handlers struct {
 	SoraClient    *SoraClientHandler
 	Setting       *SettingHandler
 	Totp          *TotpHandler
+	Monitoring    *MonitoringHandler
 }
 
 // BuildInfo contains build-time information

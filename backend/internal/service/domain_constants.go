@@ -1,6 +1,6 @@
 package service
 
-import "github.com/Wei-Shaw/sub2api/internal/domain"
+import "github.com/pengbin9472/ggbond/internal/domain"
 
 // Status constants
 const (

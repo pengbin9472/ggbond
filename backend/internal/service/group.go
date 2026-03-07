@@ -64,6 +64,33 @@ type Group struct {
 	AccountCount  int64
 }
 
+// GroupMonitoringStat 分组监控统计
+type GroupMonitoringStat struct {
+	GroupID           int64   `json:"group_id"`
+	GroupName         string  `json:"group_name"`
+	Platform          string  `json:"platform"`
+	TotalAccounts     int     `json:"total_accounts"`
+	NormalAccounts    int     `json:"normal_accounts"`
+	ErrorAccounts     int     `json:"error_accounts"`
+	RateLimitAccounts int     `json:"ratelimit_accounts"`
+	OverloadAccounts  int     `json:"overload_accounts"`
+	DisabledAccounts  int     `json:"disabled_accounts"`
+	RateMultiplier    float64 `json:"rate_multiplier"`
+	SortOrder         int     `json:"sort_order"`
+
+	// 从 usage_logs 聚合的性能指标
+	AvailabilityRate float64 `json:"availability_rate"` // 可用率百分比，-1 表示无数据
+	CacheHitRate     float64 `json:"cache_hit_rate"`    // 缓存命中率百分比，-1 表示无数据
+	AvgResponseTime  int     `json:"avg_response_time"` // 平均响应时间（毫秒）
+}
+
+// MonitoringHistoryPoint 监控历史数据点
+type MonitoringHistoryPoint struct {
+	AvailabilityRate float64 `json:"availability_rate"`
+	CacheHitRate     float64 `json:"cache_hit_rate"`
+	RecordedAt       int64   `json:"recorded_at"` // unix timestamp
+}
+
 func (g *Group) IsActive() bool {
 	return g.Status == StatusActive
 }

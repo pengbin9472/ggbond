@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	infraerrors "github.com/Wei-Shaw/sub2api/internal/pkg/errors"
-	"github.com/Wei-Shaw/sub2api/internal/pkg/pagination"
+	infraerrors "github.com/pengbin9472/ggbond/internal/pkg/errors"
+	"github.com/pengbin9472/ggbond/internal/pkg/pagination"
 )
 
 var (
@@ -35,6 +35,16 @@ type GroupRepository interface {
 	BindAccountsToGroup(ctx context.Context, groupID int64, accountIDs []int64) error
 	// UpdateSortOrders 批量更新分组排序
 	UpdateSortOrders(ctx context.Context, updates []GroupSortOrderUpdate) error
+	// GetGroupMonitoringStats 获取所有分组的账户监控统计（从缓存表读取）
+	GetGroupMonitoringStats(ctx context.Context) ([]GroupMonitoringStat, error)
+	// ComputeGroupMonitoringStats 实时计算分组监控统计（从 accounts 表和 usage_logs 表）
+	ComputeGroupMonitoringStats(ctx context.Context) ([]GroupMonitoringStat, error)
+	// UpsertGroupMonitoringStats 更新或插入分组监控统计
+	UpsertGroupMonitoringStats(ctx context.Context, stats []GroupMonitoringStat) error
+	// InsertGroupMonitoringHistory 插入分组监控历史记录
+	InsertGroupMonitoringHistory(ctx context.Context, stats []GroupMonitoringStat) error
+	// GetGroupMonitoringHistory 获取分组监控历史数据
+	GetGroupMonitoringHistory(ctx context.Context, groupID int64, limit int) ([]MonitoringHistoryPoint, error)
 }
 
 // GroupSortOrderUpdate 分组排序更新

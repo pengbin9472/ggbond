@@ -19,12 +19,12 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Wei-Shaw/sub2api/internal/config"
-	"github.com/Wei-Shaw/sub2api/internal/pkg/claude"
-	"github.com/Wei-Shaw/sub2api/internal/pkg/geminicli"
-	"github.com/Wei-Shaw/sub2api/internal/pkg/openai"
-	"github.com/Wei-Shaw/sub2api/internal/util/soraerror"
-	"github.com/Wei-Shaw/sub2api/internal/util/urlvalidator"
+	"github.com/pengbin9472/ggbond/internal/config"
+	"github.com/pengbin9472/ggbond/internal/pkg/claude"
+	"github.com/pengbin9472/ggbond/internal/pkg/geminicli"
+	"github.com/pengbin9472/ggbond/internal/pkg/openai"
+	"github.com/pengbin9472/ggbond/internal/util/soraerror"
+	"github.com/pengbin9472/ggbond/internal/util/urlvalidator"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 )

@@ -22,9 +22,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Wei-Shaw/sub2api/internal/pkg/proxyurl"
-	"github.com/Wei-Shaw/sub2api/internal/pkg/proxyutil"
-	"github.com/Wei-Shaw/sub2api/internal/util/urlvalidator"
+	"github.com/pengbin9472/ggbond/internal/pkg/proxyurl"
+	"github.com/pengbin9472/ggbond/internal/pkg/proxyutil"
+	"github.com/pengbin9472/ggbond/internal/util/urlvalidator"
 )
 
 // Transport 连接池默认配置

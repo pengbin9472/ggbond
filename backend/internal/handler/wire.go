@@ -1,8 +1,8 @@
 package handler
 
 import (
-	"github.com/Wei-Shaw/sub2api/internal/handler/admin"
-	"github.com/Wei-Shaw/sub2api/internal/service"
+	"github.com/pengbin9472/ggbond/internal/handler/admin"
+	"github.com/pengbin9472/ggbond/internal/service"
 
 	"github.com/google/wire"
 )
@@ -84,6 +84,7 @@ func ProvideHandlers(
 	soraClientHandler *SoraClientHandler,
 	settingHandler *SettingHandler,
 	totpHandler *TotpHandler,
+	monitoringHandler *MonitoringHandler,
 	_ *service.IdempotencyCoordinator,
 	_ *service.IdempotencyCleanupService,
 ) *Handlers {
@@ -102,6 +103,7 @@ func ProvideHandlers(
 		SoraClient:    soraClientHandler,
 		Setting:       settingHandler,
 		Totp:          totpHandler,
+		Monitoring:    monitoringHandler,
 	}
 }
 
@@ -120,6 +122,9 @@ var ProviderSet = wire.NewSet(
 	NewSoraGatewayHandler,
 	NewTotpHandler,
 	ProvideSettingHandler,
+
+	// Monitoring handler
+	NewMonitoringHandler,
 
 	// Admin handlers
 	admin.NewDashboardHandler,

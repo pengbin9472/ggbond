@@ -1133,6 +1133,31 @@ export interface GroupStat {
   actual_cost: number // 实际扣除
 }
 
+// ==================== Group Monitoring Types ====================
+
+export interface GroupMonitoringStat {
+  group_id: number
+  group_name: string
+  platform: string
+  total_accounts: number
+  normal_accounts: number
+  error_accounts: number
+  ratelimit_accounts: number
+  overload_accounts: number
+  disabled_accounts: number
+  rate_multiplier: number
+  sort_order: number
+  availability_rate: number
+  cache_hit_rate: number
+  avg_response_time: number
+}
+
+export interface MonitoringHistoryPoint {
+  availability_rate: number
+  cache_hit_rate: number
+  recorded_at: number
+}
+
 export interface UserUsageTrendPoint {
   date: string
   user_id: number

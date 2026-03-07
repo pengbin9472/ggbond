@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Wei-Shaw/sub2api/internal/pkg/proxyurl"
+	"github.com/pengbin9472/ggbond/internal/pkg/proxyurl"
 
 	"github.com/imroc/req/v3"
 )
