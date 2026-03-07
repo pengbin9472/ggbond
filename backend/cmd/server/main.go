@@ -7,6 +7,7 @@ import (
 	_ "embed"
 	"errors"
 	"flag"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -64,7 +65,7 @@ func main() {
 	flag.Parse()
 
 	if *showVersion {
-		log.Printf("Sub2API %s (commit: %s, built: %s)\n", Version, Commit, Date)
+		fmt.Printf("GGbond %s (commit: %s, built: %s)\n", Version, Commit, Date)
 		return
 	}
 
