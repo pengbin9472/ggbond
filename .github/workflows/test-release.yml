@@ -112,7 +112,7 @@ jobs:
           ## Install
 
           \`\`\`bash
-          curl -sSL https://raw.githubusercontent.com/${{ github.repository }}/test/deploy/install.sh | sudo bash -s -- install -v test
+          curl -sSL https://raw.githubusercontent.com/${{ github.repository }}/test/deploy/install-test.sh | sudo bash -s -- upgrade
           \`\`\`
           " \
             --target test \
