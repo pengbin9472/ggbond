@@ -480,8 +480,8 @@ get_latest_version() {
         exit 1
     fi
 
-    # Extract version from asset name (e.g., ggbond_test-abc1234_linux_amd64.tar.gz -> test-abc1234)
-    LATEST_VERSION=$(echo "$release_info" | grep -o '"name": *"ggbond_test-[a-f0-9]*_' | head -1 | sed 's/"name": *"ggbond_//;s/_$//')
+    # Extract version from asset name (e.g., ggbond_test-v0.0.1_linux_amd64.tar.gz -> test-v0.0.1)
+    LATEST_VERSION=$(echo "$release_info" | grep -o '"name": *"ggbond_test-v[0-9.]*_' | head -1 | sed 's/"name": *"ggbond_//;s/_$//')
 
     if [ -z "$LATEST_VERSION" ]; then
         print_error "$(msg 'failed_get_version')"
@@ -562,7 +562,7 @@ validate_version() {
 # Get current installed version
 get_current_version() {
     if [ -f "$INSTALL_DIR/ggbond" ]; then
-        "$INSTALL_DIR/ggbond" --version 2>/dev/null | grep -oE '(v?[0-9]+\.[0-9]+\.[0-9]+|test-[a-f0-9]+)' | head -1 || echo "unknown"
+        "$INSTALL_DIR/ggbond" --version 2>/dev/null | grep -oE '(test-v[0-9]+\.[0-9]+\.[0-9]+|v?[0-9]+\.[0-9]+\.[0-9]+)' | head -1 || echo "unknown"
     else
         echo "not_installed"
     fi
@@ -837,7 +837,8 @@ upgrade() {
     # Set permissions
     chown "$SERVICE_USER:$SERVICE_USER" "$INSTALL_DIR/ggbond"
 
-    # Start service
+    # Reload systemd and start service
+    systemctl daemon-reload
     print_info "$(msg 'starting_service')"
     systemctl start ggbond
 

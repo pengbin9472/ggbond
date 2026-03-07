@@ -820,7 +820,8 @@ upgrade() {
     # Set permissions
     chown "$SERVICE_USER:$SERVICE_USER" "$INSTALL_DIR/ggbond"
 
-    # Start service
+    # Reload systemd and start service
+    systemctl daemon-reload
     print_info "$(msg 'starting_service')"
     systemctl start ggbond
 
