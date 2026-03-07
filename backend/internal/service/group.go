@@ -78,6 +78,10 @@ type GroupMonitoringStat struct {
 	RateMultiplier    float64 `json:"rate_multiplier"`
 	SortOrder         int     `json:"sort_order"`
 
+	// 权限过滤用字段（不序列化到 JSON）
+	IsExclusive      bool   `json:"-"`
+	SubscriptionType string `json:"-"`
+
 	// 从 usage_logs 聚合的性能指标
 	AvailabilityRate float64 `json:"availability_rate"` // 可用率百分比，-1 表示无数据
 	CacheHitRate     float64 `json:"cache_hit_rate"`    // 缓存命中率百分比，-1 表示无数据

@@ -675,6 +675,8 @@ func (r *groupRepository) GetGroupMonitoringStats(ctx context.Context) ([]servic
 			g.platform,
 			g.rate_multiplier,
 			g.sort_order,
+			g.is_exclusive,
+			g.subscription_type,
 			COALESCE(gms.total_accounts, 0) as total_accounts,
 			COALESCE(gms.normal_accounts, 0) as normal_accounts,
 			COALESCE(gms.error_accounts, 0) as error_accounts,
@@ -705,6 +707,8 @@ func (r *groupRepository) GetGroupMonitoringStats(ctx context.Context) ([]servic
 			&stat.Platform,
 			&stat.RateMultiplier,
 			&stat.SortOrder,
+			&stat.IsExclusive,
+			&stat.SubscriptionType,
 			&stat.TotalAccounts,
 			&stat.NormalAccounts,
 			&stat.ErrorAccounts,
@@ -829,7 +833,6 @@ func (r *groupRepository) GetGroupMonitoringHistory(ctx context.Context, groupID
 			cache_hit_rate
 		FROM group_monitoring_history
 		WHERE group_id = $1
-			AND recorded_at >= NOW() - INTERVAL '1 hour'
 		ORDER BY recorded_at DESC
 		LIMIT $2
 	`
@@ -871,6 +874,8 @@ func (r *groupRepository) ComputeGroupMonitoringStats(ctx context.Context) ([]se
 			g.platform,
 			g.rate_multiplier,
 			g.sort_order,
+			g.is_exclusive,
+			g.subscription_type,
 			COUNT(DISTINCT ag.account_id) as total_accounts,
 			COUNT(DISTINCT CASE
 				WHEN a.schedulable = true AND a.status = 'active'
@@ -898,7 +903,7 @@ func (r *groupRepository) ComputeGroupMonitoringStats(ctx context.Context) ([]se
 		LEFT JOIN account_groups ag ON g.id = ag.group_id
 		LEFT JOIN accounts a ON ag.account_id = a.id AND a.deleted_at IS NULL
 		WHERE g.deleted_at IS NULL AND g.status = 'active'
-		GROUP BY g.id, g.name, g.platform, g.rate_multiplier, g.sort_order
+		GROUP BY g.id, g.name, g.platform, g.rate_multiplier, g.sort_order, g.is_exclusive, g.subscription_type
 		ORDER BY g.sort_order ASC, g.id ASC
 	`
 
@@ -918,6 +923,8 @@ func (r *groupRepository) ComputeGroupMonitoringStats(ctx context.Context) ([]se
 			&stat.Platform,
 			&stat.RateMultiplier,
 			&stat.SortOrder,
+			&stat.IsExclusive,
+			&stat.SubscriptionType,
 			&stat.TotalAccounts,
 			&stat.NormalAccounts,
 			&stat.ErrorAccounts,
