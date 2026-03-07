@@ -353,6 +353,7 @@ export default {
     docs: 'Docs',
     sora: 'Sora Studio',
     tutorial: 'Tutorial',
+    purchaseChannel: 'Purchase Channel',
     monitoring: 'Monitoring'
   },
 
@@ -3813,6 +3814,17 @@ export default {
         integrationDoc: 'Payment Integration Docs',
         integrationDocHint: 'Covers endpoint specs, idempotency semantics, and code samples'
       },
+      purchaseChannel: {
+        title: 'Purchase Channel Page',
+        description: 'Show a "Purchase Channel" entry in the sidebar and open the configured URL in an iframe',
+        enabled: 'Show Purchase Channel Entry',
+        enabledHint: 'Only shown in standard mode (not simple mode)',
+        url: 'Purchase Channel URL',
+        urlPlaceholder: 'https://example.com/channel',
+        urlHint: 'Must be an absolute http(s) URL',
+        iframeWarning:
+          '⚠️ iframe note: Some websites block embedding via X-Frame-Options or CSP (frame-ancestors). If the page is blank, provide an "Open in new tab" alternative.',
+      },
       soraClient: {
         title: 'Sora Client',
         description: 'Control whether to show the Sora client entry in the sidebar',
@@ -4126,6 +4138,16 @@ export default {
     notConfiguredTitle: 'Recharge / Subscription URL not configured',
     notConfiguredDesc:
       'The administrator enabled the entry but has not configured a recharge/subscription URL. Please contact admin.'
+  },
+
+  purchaseChannel: {
+    title: 'Purchase Channel',
+    description: 'View purchase channel information via the embedded page',
+    openInNewTab: 'Open in new tab',
+    notEnabledTitle: 'Feature not enabled',
+    notEnabledDesc: 'The administrator has not enabled the purchase channel entry. Please contact admin.',
+    notConfiguredTitle: 'Purchase channel URL not configured',
+    notConfiguredDesc: 'The administrator enabled the entry but has not configured a purchase channel URL. Please contact admin.'
   },
 
   // Custom Page (iframe embed)

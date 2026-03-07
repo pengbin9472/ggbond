@@ -1057,6 +1057,51 @@
           </div>
         </div>
 
+        <!-- Purchase Channel -->
+        <div class="card">
+          <div class="border-b border-gray-100 px-6 py-4 dark:border-dark-700">
+            <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+              {{ t('admin.settings.purchaseChannel.title') }}
+            </h2>
+            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+              {{ t('admin.settings.purchaseChannel.description') }}
+            </p>
+          </div>
+          <div class="space-y-6 p-6">
+            <!-- Enable Toggle -->
+            <div class="flex items-center justify-between">
+              <div>
+                <label class="font-medium text-gray-900 dark:text-white">{{
+                  t('admin.settings.purchaseChannel.enabled')
+                }}</label>
+                <p class="text-sm text-gray-500 dark:text-gray-400">
+                  {{ t('admin.settings.purchaseChannel.enabledHint') }}
+                </p>
+              </div>
+              <Toggle v-model="form.purchase_channel_enabled" />
+            </div>
+
+            <!-- URL -->
+            <div>
+              <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                {{ t('admin.settings.purchaseChannel.url') }}
+              </label>
+              <input
+                v-model="form.purchase_channel_url"
+                type="url"
+                class="input font-mono text-sm"
+                :placeholder="t('admin.settings.purchaseChannel.urlPlaceholder')"
+              />
+              <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
+                {{ t('admin.settings.purchaseChannel.urlHint') }}
+              </p>
+              <p class="mt-2 text-xs text-amber-600 dark:text-amber-400">
+                {{ t('admin.settings.purchaseChannel.iframeWarning') }}
+              </p>
+            </div>
+          </div>
+        </div>
+
         <!-- Sora Client Toggle -->
         <div class="card">
           <div class="border-b border-gray-100 px-6 py-4 dark:border-dark-700">
@@ -1558,6 +1603,8 @@ const form = reactive<SettingsForm>({
   hide_ccs_import_button: false,
   purchase_subscription_enabled: false,
   purchase_subscription_url: '',
+  purchase_channel_enabled: false,
+  purchase_channel_url: '',
   sora_client_enabled: false,
   custom_menu_items: [] as Array<{id: string; label: string; icon_svg: string; url: string; visibility: 'user' | 'admin'; sort_order: number}>,
   smtp_host: '',
@@ -1833,6 +1880,8 @@ async function saveSettings() {
       hide_ccs_import_button: form.hide_ccs_import_button,
       purchase_subscription_enabled: form.purchase_subscription_enabled,
       purchase_subscription_url: form.purchase_subscription_url,
+      purchase_channel_enabled: form.purchase_channel_enabled,
+      purchase_channel_url: form.purchase_channel_url,
       sora_client_enabled: form.sora_client_enabled,
       custom_menu_items: form.custom_menu_items,
       smtp_host: form.smtp_host,

@@ -170,6 +170,8 @@ type UpdateSettingsRequest struct {
 	HideCcsImportButton         bool                  `json:"hide_ccs_import_button"`
 	PurchaseSubscriptionEnabled *bool                 `json:"purchase_subscription_enabled"`
 	PurchaseSubscriptionURL     *string               `json:"purchase_subscription_url"`
+	PurchaseChannelEnabled      *bool                 `json:"purchase_channel_enabled"`
+	PurchaseChannelURL          *string               `json:"purchase_channel_url"`
 	SoraClientEnabled           bool                  `json:"sora_client_enabled"`
 	CustomMenuItems             *[]dto.CustomMenuItem `json:"custom_menu_items"`
 
@@ -322,6 +324,32 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		}
 	}
 
+	// "购买渠道"页面配置验证
+	channelEnabled := previousSettings.PurchaseChannelEnabled
+	if req.PurchaseChannelEnabled != nil {
+		channelEnabled = *req.PurchaseChannelEnabled
+	}
+	channelURL := previousSettings.PurchaseChannelURL
+	if req.PurchaseChannelURL != nil {
+		channelURL = strings.TrimSpace(*req.PurchaseChannelURL)
+	}
+
+	if channelEnabled {
+		if channelURL == "" {
+			response.BadRequest(c, "Purchase Channel URL is required when enabled")
+			return
+		}
+		if err := config.ValidateAbsoluteHTTPURL(channelURL); err != nil {
+			response.BadRequest(c, "Purchase Channel URL must be an absolute http(s) URL")
+			return
+		}
+	} else if channelURL != "" {
+		if err := config.ValidateAbsoluteHTTPURL(channelURL); err != nil {
+			response.BadRequest(c, "Purchase Channel URL must be an absolute http(s) URL")
+			return
+		}
+	}
+
 	// 自定义菜单项验证
 	const (
 		maxCustomMenuItems    = 20
@@ -459,6 +487,8 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		HideCcsImportButton:              req.HideCcsImportButton,
 		PurchaseSubscriptionEnabled:      purchaseEnabled,
 		PurchaseSubscriptionURL:          purchaseURL,
+		PurchaseChannelEnabled:           channelEnabled,
+		PurchaseChannelURL:               channelURL,
 		SoraClientEnabled:                req.SoraClientEnabled,
 		CustomMenuItems:                  customMenuJSON,
 		DefaultConcurrency:               req.DefaultConcurrency,
@@ -730,6 +760,12 @@ func diffSettings(before *service.SystemSettings, after *service.SystemSettings,
 	}
 	if before.PurchaseSubscriptionURL != after.PurchaseSubscriptionURL {
 		changed = append(changed, "purchase_subscription_url")
+	}
+	if before.PurchaseChannelEnabled != after.PurchaseChannelEnabled {
+		changed = append(changed, "purchase_channel_enabled")
+	}
+	if before.PurchaseChannelURL != after.PurchaseChannelURL {
+		changed = append(changed, "purchase_channel_url")
 	}
 	if before.CustomMenuItems != after.CustomMenuItems {
 		changed = append(changed, "custom_menu_items")

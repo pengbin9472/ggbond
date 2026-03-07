@@ -225,6 +225,18 @@ const routes: RouteRecordRaw[] = [
     }
   },
   {
+    path: '/purchase-channel',
+    name: 'PurchaseChannel',
+    component: () => import('@/views/user/PurchaseChannelView.vue'),
+    meta: {
+      requiresAuth: true,
+      requiresAdmin: false,
+      title: 'Purchase Channel',
+      titleKey: 'purchaseChannel.title',
+      descriptionKey: 'purchaseChannel.description'
+    }
+  },
+  {
     path: '/sora',
     name: 'Sora',
     component: () => import('@/views/user/SoraView.vue'),

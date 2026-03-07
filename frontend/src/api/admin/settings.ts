@@ -39,6 +39,8 @@ export interface SystemSettings {
   hide_ccs_import_button: boolean
   purchase_subscription_enabled: boolean
   purchase_subscription_url: string
+  purchase_channel_enabled: boolean
+  purchase_channel_url: string
   sora_client_enabled: boolean
   custom_menu_items: CustomMenuItem[]
   // SMTP settings
@@ -105,6 +107,8 @@ export interface UpdateSettingsRequest {
   hide_ccs_import_button?: boolean
   purchase_subscription_enabled?: boolean
   purchase_subscription_url?: string
+  purchase_channel_enabled?: boolean
+  purchase_channel_url?: string
   sora_client_enabled?: boolean
   custom_menu_items?: CustomMenuItem[]
   smtp_host?: string
