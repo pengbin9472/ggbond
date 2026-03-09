@@ -759,6 +759,12 @@ func (a *Account) GetOpenAIUserAgent() string {
 	return a.GetCredential("user_agent")
 }
 
+// GetUserAgent 返回账号配置的自定义 User-Agent，不限平台。
+// 如果未配置，返回空字符串（调用方应透传客户端 User-Agent）。
+func (a *Account) GetUserAgent() string {
+	return a.GetCredential("user_agent")
+}
+
 func (a *Account) GetChatGPTAccountID() string {
 	if !a.IsOpenAIOAuth() {
 		return ""
