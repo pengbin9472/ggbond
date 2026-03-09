@@ -786,6 +786,13 @@
         <ProxySelector v-model="form.proxy_id" :proxies="proxies" />
       </div>
 
+      <div>
+        <label class="input-label">{{ t('admin.accounts.customUserAgent') }}</label>
+        <input v-model="customUserAgent" type="text" class="input"
+          :placeholder="t('admin.accounts.customUserAgentPlaceholder')" />
+        <p class="input-hint">{{ t('admin.accounts.customUserAgentHint') }}</p>
+      </div>
+
       <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <div>
           <label class="input-label">{{ t('admin.accounts.concurrency') }}</label>
@@ -1487,6 +1494,7 @@ const customErrorCodesEnabled = ref(false)
 const selectedErrorCodes = ref<number[]>([])
 const customErrorCodeInput = ref<number | null>(null)
 const interceptWarmupRequests = ref(false)
+const customUserAgent = ref('')
 const autoPauseOnExpired = ref(false)
 const mixedScheduling = ref(false) // For antigravity accounts: enable mixed scheduling
 const antigravityModelRestrictionMode = ref<'whitelist' | 'mapping'>('whitelist')
@@ -1666,6 +1674,7 @@ watch(
       // Load intercept warmup requests setting (applies to all account types)
       const credentials = newAccount.credentials as Record<string, unknown> | undefined
       interceptWarmupRequests.value = credentials?.intercept_warmup_requests === true
+      customUserAgent.value = (credentials?.user_agent as string) || ''
       autoPauseOnExpired.value = newAccount.auto_pause_on_expired === true
 
       // Load mixed scheduling setting (only for antigravity accounts)
@@ -2303,6 +2312,14 @@ const handleSubmit = async () => {
         return
       }
 
+      // Apply custom User-Agent
+      const ua = customUserAgent.value.trim()
+      if (ua) {
+        newCredentials.user_agent = ua
+      } else {
+        delete newCredentials.user_agent
+      }
+
       updatePayload.credentials = newCredentials
     } else if (props.account.type === 'upstream') {
       const currentCredentials = (props.account.credentials as Record<string, unknown>) || {}
@@ -2321,6 +2338,14 @@ const handleSubmit = async () => {
         return
       }
 
+      // Apply custom User-Agent
+      const uaUpstream = customUserAgent.value.trim()
+      if (uaUpstream) {
+        newCredentials.user_agent = uaUpstream
+      } else {
+        delete newCredentials.user_agent
+      }
+
       updatePayload.credentials = newCredentials
     } else {
       // For oauth/setup-token types, only update intercept_warmup_requests if changed
@@ -2330,6 +2355,14 @@ const handleSubmit = async () => {
       applyInterceptWarmup(newCredentials, interceptWarmupRequests.value, 'edit')
       if (!applyTempUnschedConfig(newCredentials)) {
         return
+      }
+
+      // Apply custom User-Agent
+      const uaOauth = customUserAgent.value.trim()
+      if (uaOauth) {
+        newCredentials.user_agent = uaOauth
+      } else {
+        delete newCredentials.user_agent
       }
 
       updatePayload.credentials = newCredentials
