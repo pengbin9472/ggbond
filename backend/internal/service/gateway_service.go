@@ -4646,6 +4646,11 @@ func (s *GatewayService) buildUpstreamRequestAnthropicAPIKeyPassthrough(
 		}
 	}
 
+	// Apply custom User-Agent if configured, overriding the client's UA
+	if customUA := account.GetUserAgent(); customUA != "" {
+		req.Header.Set("User-Agent", customUA)
+	}
+
 	// 覆盖入站鉴权残留，并注入上游认证
 	req.Header.Del("authorization")
 	req.Header.Del("x-api-key")
@@ -5056,6 +5061,13 @@ func (s *GatewayService) buildUpstreamRequest(ctx context.Context, c *gin.Contex
 			for _, v := range values {
 				req.Header.Add(key, v)
 			}
+		}
+	}
+
+	// Apply custom User-Agent if configured (API Key accounts only; OAuth will be overridden by mimic/fingerprint)
+	if account.Type == AccountTypeAPIKey {
+		if customUA := account.GetUserAgent(); customUA != "" {
+			req.Header.Set("User-Agent", customUA)
 		}
 	}
 
