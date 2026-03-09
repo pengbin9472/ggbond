@@ -1888,6 +1888,13 @@
         <ProxySelector v-model="form.proxy_id" :proxies="proxies" />
       </div>
 
+      <div>
+        <label class="input-label">{{ t('admin.accounts.customUserAgent') }}</label>
+        <input v-model="customUserAgent" type="text" class="input"
+          :placeholder="t('admin.accounts.customUserAgentPlaceholder')" />
+        <p class="input-hint">{{ t('admin.accounts.customUserAgentHint') }}</p>
+      </div>
+
       <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <div>
           <label class="input-label">{{ t('admin.accounts.concurrency') }}</label>
@@ -2789,6 +2796,8 @@ const form = reactive({
   expires_at: null as number | null
 })
 
+const customUserAgent = ref('')
+
 // Helper to check if current type needs OAuth flow
 const isOAuthFlow = computed(() => {
   // Antigravity upstream 类型不需要 OAuth 流程
@@ -3146,6 +3155,15 @@ const applyTempUnschedConfig = (credentials: Record<string, unknown>) => {
   return true
 }
 
+const applyCustomUserAgent = (credentials: Record<string, unknown>) => {
+  const ua = customUserAgent.value.trim()
+  if (ua) {
+    credentials.user_agent = ua
+  } else {
+    delete credentials.user_agent
+  }
+}
+
 const splitTempUnschedKeywords = (value: string) => {
   return value
     .split(/[,;]/)
@@ -3260,6 +3278,7 @@ const resetForm = () => {
   form.platform = 'anthropic'
   form.type = 'oauth'
   form.credentials = {}
+  customUserAgent.value = ''
   form.proxy_id = null
   form.concurrency = 10
   form.load_factor = null
@@ -3623,6 +3642,7 @@ const handleImportAccessToken = async (accessTokenInput: string) => {
         const credentials: Record<string, unknown> = {
           access_token: accessTokens[i],
         }
+        applyCustomUserAgent(credentials)
         const soraExtra = buildSoraExtra()
 
         const accountName = accessTokens.length > 1 ? `${form.name} #${i + 1}` : form.name
@@ -3686,6 +3706,7 @@ const createAccountAndFinish = async (
   if (!applyTempUnschedConfig(credentials)) {
     return
   }
+  applyCustomUserAgent(credentials)
   // Inject quota_limit for apikey accounts
   let finalExtra = extra
   if (type === 'apikey' && editQuotaLimit.value != null && editQuotaLimit.value > 0) {
@@ -3751,6 +3772,7 @@ const handleOpenAIExchange = async (authCode: string) => {
     if (!applyTempUnschedConfig(credentials)) {
       return
     }
+    applyCustomUserAgent(credentials)
 
     let openaiAccountId: string | number | undefined
 
@@ -3854,6 +3876,7 @@ const handleOpenAIValidateRT = async (refreshTokenInput: string) => {
         }
 
         const credentials = oauthClient.buildCredentials(tokenInfo)
+        applyCustomUserAgent(credentials)
         const oauthExtra = oauthClient.buildExtraInfo(tokenInfo) as Record<string, unknown> | undefined
         const extra = buildOpenAIExtra(oauthExtra)
 
@@ -3984,6 +4007,7 @@ const handleSoraValidateST = async (sessionTokenInput: string) => {
 
         const credentials = oauthClient.buildCredentials(tokenInfo)
         credentials.session_token = sessionTokens[i]
+        applyCustomUserAgent(credentials)
         const oauthExtra = oauthClient.buildExtraInfo(tokenInfo) as Record<string, unknown> | undefined
         const soraExtra = buildSoraExtra(oauthExtra)
 
@@ -4072,7 +4096,8 @@ const handleAntigravityValidateRT = async (refreshTokenInput: string) => {
         }
 
         const credentials = antigravityOAuth.buildCredentials(tokenInfo)
-        
+        applyCustomUserAgent(credentials)
+
         // Generate account name with index for batch
         const accountName = refreshTokens.length > 1 ? `${form.name} #${i + 1}` : form.name
 
@@ -4396,6 +4421,7 @@ const handleCookieAuth = async (sessionKey: string) => {
 
         const credentials: Record<string, unknown> = { ...tokenInfo }
         applyInterceptWarmup(credentials, interceptWarmupRequests.value, 'create')
+        applyCustomUserAgent(credentials)
         if (tempUnschedEnabled.value) {
           credentials.temp_unschedulable_enabled = true
           credentials.temp_unschedulable_rules = tempUnschedPayload
