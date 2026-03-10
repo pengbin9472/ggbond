@@ -534,7 +534,7 @@ export default {
     degraded: 'Degraded',
     unknown: 'Unknown',
     totalGroupsCount: 'groups',
-    availabilityRate: '1h Probe Availability',
+    availabilityRate: 'Availability',
     cacheHitRate: 'Cache Hit Rate',
     lastProbe: 'Last Probe',
     notCollected: 'Not collected',

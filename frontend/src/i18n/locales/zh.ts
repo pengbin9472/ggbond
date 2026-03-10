@@ -534,7 +534,7 @@ export default {
     degraded: '波动',
     unknown: '未知',
     totalGroupsCount: '个分组',
-    availabilityRate: '1小时探针可用率',
+    availabilityRate: '可用率',
     cacheHitRate: '缓存命中率',
     lastProbe: '最近探针',
     notCollected: '尚未获取',

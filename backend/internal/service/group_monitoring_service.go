@@ -3,6 +3,8 @@ package service
 import (
 	"context"
 	"fmt"
+	"sort"
+	"strings"
 	"sync"
 	"time"
 
@@ -10,7 +12,6 @@ import (
 	"github.com/pengbin9472/ggbond/internal/pkg/ctxkey"
 	"github.com/pengbin9472/ggbond/internal/pkg/geminicli"
 	"github.com/pengbin9472/ggbond/internal/pkg/logger"
-	"github.com/pengbin9472/ggbond/internal/pkg/openai"
 )
 
 // GroupMonitoringService 分组监控服务
@@ -163,7 +164,6 @@ func (s *GroupMonitoringService) probeOneGroup(parent context.Context, group Gro
 
 	probe := GroupMonitoringProbeResult{
 		GroupID:  group.ID,
-		Model:    defaultProbeModel(group.Platform),
 		Success:  false,
 		ProbedAt: time.Now(),
 	}
@@ -175,7 +175,7 @@ func (s *GroupMonitoringService) probeOneGroup(parent context.Context, group Gro
 	}
 
 	start := time.Now()
-	account, err := s.gatewaySvc.SelectAccountForModel(selectCtx, &groupID, "", probe.Model)
+	account, err := s.gatewaySvc.SelectAccountForModel(selectCtx, &groupID, "", "")
 	if err != nil {
 		probe.LatencyMs = time.Since(start).Milliseconds()
 		probe.ErrorMessage = fmt.Sprintf("select account failed: %v", err)
@@ -186,6 +186,7 @@ func (s *GroupMonitoringService) probeOneGroup(parent context.Context, group Gro
 	}
 
 	probe.AccountID = &account.ID
+	probe.Model = s.resolveProbeModel(selectCtx, account, group.Platform)
 	result, err := s.accountTestSvc.RunTestBackground(probeCtx, account.ID, probe.Model)
 	probe.LatencyMs = time.Since(start).Milliseconds()
 	if result != nil && result.LatencyMs > 0 {
@@ -205,10 +206,58 @@ func (s *GroupMonitoringService) probeOneGroup(parent context.Context, group Gro
 	}
 }
 
+func (s *GroupMonitoringService) resolveProbeModel(ctx context.Context, account *Account, platform string) string {
+	if account == nil {
+		return defaultProbeModel(platform)
+	}
+
+	for _, candidate := range preferredProbeModels(platform) {
+		if s.gatewaySvc != nil && s.gatewaySvc.isModelSupportedByAccountWithContext(ctx, account, candidate) {
+			return candidate
+		}
+	}
+
+	mapping := account.GetModelMapping()
+	if len(mapping) > 0 {
+		keys := make([]string, 0, len(mapping))
+		for key := range mapping {
+			key = strings.TrimSpace(key)
+			if key != "" {
+				keys = append(keys, key)
+			}
+		}
+		sort.Strings(keys)
+		for _, key := range keys {
+			if s.gatewaySvc != nil && s.gatewaySvc.isModelSupportedByAccountWithContext(ctx, account, key) {
+				return key
+			}
+		}
+	}
+
+	return defaultProbeModel(platform)
+}
+
+func preferredProbeModels(platform string) []string {
+	switch platform {
+	case PlatformOpenAI:
+		return []string{"gpt-4o-mini", "gpt-4.1-mini", "gpt-4.1", "gpt-5.1", "gpt-5.1-codex"}
+	case PlatformGemini:
+		return []string{geminicli.DefaultTestModel, "gemini-2.5-flash", "gemini-2.5-pro"}
+	case PlatformAntigravity:
+		return []string{"claude-sonnet-4-5", "gemini-3-flash", "claude-haiku-4-5"}
+	case PlatformSora:
+		return []string{"sora2-landscape-10s", "prompt-enhance-short-10s"}
+	case PlatformAnthropic:
+		fallthrough
+	default:
+		return []string{claude.DefaultTestModel, "claude-sonnet-4-5", "claude-haiku-4-5"}
+	}
+}
+
 func defaultProbeModel(platform string) string {
 	switch platform {
 	case PlatformOpenAI:
-		return openai.DefaultTestModel
+		return "gpt-4o-mini"
 	case PlatformGemini:
 		return geminicli.DefaultTestModel
 	case PlatformAntigravity:
