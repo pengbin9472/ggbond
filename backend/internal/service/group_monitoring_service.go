@@ -21,6 +21,7 @@ type GroupMonitoringService struct {
 	accountTestSvc  *AccountTestService
 	interval        time.Duration
 	probeTimeout    time.Duration
+	maxProbeModels  int
 	maxProbeWorkers int
 	stopCh          chan struct{}
 	cancelCtx       context.CancelFunc
@@ -33,8 +34,9 @@ func NewGroupMonitoringService(groupRepo GroupRepository, gatewaySvc *GatewaySer
 		groupRepo:       groupRepo,
 		gatewaySvc:      gatewaySvc,
 		accountTestSvc:  accountTestSvc,
-		interval:        time.Minute,
-		probeTimeout:    20 * time.Second,
+		interval:        3 * time.Minute,
+		probeTimeout:    12 * time.Second,
+		maxProbeModels:  2,
 		maxProbeWorkers: 4,
 		stopCh:          make(chan struct{}),
 	}
@@ -176,9 +178,12 @@ func (s *GroupMonitoringService) probeOneGroup(parent context.Context, group Gro
 
 	start := time.Now()
 	probeModels := s.resolveGroupProbeModels(selectCtx, group)
+	if s.maxProbeModels > 0 && len(probeModels) > s.maxProbeModels {
+		probeModels = probeModels[:s.maxProbeModels]
+	}
 	var (
-		account      *Account
-		err          error
+		account       *Account
+		err           error
 		selectedModel string
 	)
 	var lastProbeErr string
