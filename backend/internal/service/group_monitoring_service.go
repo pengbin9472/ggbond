@@ -177,53 +177,56 @@ func (s *GroupMonitoringService) probeOneGroup(parent context.Context, group Gro
 	start := time.Now()
 	probeModels := s.resolveGroupProbeModels(selectCtx, group)
 	var (
-		account         *Account
-		err             error
-		firstSelectErr  error
-		selectedModel   string
+		account      *Account
+		err          error
+		selectedModel string
 	)
+	var lastProbeErr string
 	for _, candidate := range probeModels {
 		selectedModel = candidate
 		account, err = s.gatewaySvc.SelectAccountForModel(selectCtx, &groupID, "", candidate)
-		if err == nil {
+		if err != nil {
+			lastProbeErr = fmt.Sprintf("select account failed for model %s: %v", candidate, err)
+			continue
+		}
+
+		probe.AccountID = &account.ID
+		probe.Model = candidate
+		result, testErr := s.accountTestSvc.RunTestBackground(probeCtx, account.ID, candidate)
+		probe.LatencyMs = time.Since(start).Milliseconds()
+		if result != nil && result.LatencyMs > 0 {
+			probe.LatencyMs = result.LatencyMs
+		}
+		if testErr != nil {
+			lastProbeErr = testErr.Error()
+			continue
+		}
+		if result != nil && result.Status == "success" {
+			probe.Success = true
+			probe.ErrorMessage = ""
 			break
 		}
-		if firstSelectErr == nil {
-			firstSelectErr = fmt.Errorf("probe model %s: %w", candidate, err)
+		if result != nil {
+			lastProbeErr = result.ErrorMessage
 		}
-	}
-	if err != nil {
-		probe.LatencyMs = time.Since(start).Milliseconds()
-		probe.Model = selectedModel
-		if firstSelectErr != nil {
-			probe.ErrorMessage = fmt.Sprintf("select account failed: %v", firstSelectErr)
-		} else {
-			probe.ErrorMessage = fmt.Sprintf("select account failed: %v", err)
-		}
-		if recErr := s.groupRepo.RecordGroupMonitoringProbe(parent, probe); recErr != nil {
-			logger.LegacyPrintf("group_monitoring", "Failed to record failed probe for group=%d: %v", group.ID, recErr)
-		}
-		return
 	}
 
-	probe.AccountID = &account.ID
-	probe.Model = selectedModel
-	result, err := s.accountTestSvc.RunTestBackground(probeCtx, account.ID, probe.Model)
-	probe.LatencyMs = time.Since(start).Milliseconds()
-	if result != nil && result.LatencyMs > 0 {
-		probe.LatencyMs = result.LatencyMs
-	}
-	if err != nil {
-		probe.ErrorMessage = err.Error()
-	} else if result != nil {
-		probe.Success = result.Status == "success"
-		if !probe.Success {
-			probe.ErrorMessage = result.ErrorMessage
+	if !probe.Success {
+		probe.LatencyMs = time.Since(start).Milliseconds()
+		probe.Model = selectedModel
+		if strings.TrimSpace(lastProbeErr) != "" {
+			probe.ErrorMessage = lastProbeErr
+		} else if err != nil {
+			probe.ErrorMessage = err.Error()
 		}
 	}
 
 	if recErr := s.groupRepo.RecordGroupMonitoringProbe(parent, probe); recErr != nil {
-		logger.LegacyPrintf("group_monitoring", "Failed to record probe for group=%d account=%d: %v", group.ID, account.ID, recErr)
+		if account != nil {
+			logger.LegacyPrintf("group_monitoring", "Failed to record probe for group=%d account=%d: %v", group.ID, account.ID, recErr)
+		} else {
+			logger.LegacyPrintf("group_monitoring", "Failed to record probe for group=%d: %v", group.ID, recErr)
+		}
 	}
 }
 
