@@ -202,12 +202,7 @@ func (s *AccountTestService) testClaudeAccountConnection(c *gin.Context, account
 
 	// For API Key accounts with model mapping, map the model
 	if account.Type == "apikey" {
-		mapping := account.GetModelMapping()
-		if len(mapping) > 0 {
-			if mappedModel, exists := mapping[testModelID]; exists {
-				testModelID = mappedModel
-			}
-		}
+		testModelID = account.GetMappedModel(testModelID)
 	}
 
 	// Determine authentication method and API URL
@@ -317,12 +312,7 @@ func (s *AccountTestService) testOpenAIAccountConnection(c *gin.Context, account
 
 	// For API Key accounts with model mapping, map the model
 	if account.Type == "apikey" {
-		mapping := account.GetModelMapping()
-		if len(mapping) > 0 {
-			if mappedModel, exists := mapping[testModelID]; exists {
-				testModelID = mappedModel
-			}
-		}
+		testModelID = account.GetMappedModel(testModelID)
 	}
 
 	// Determine authentication method and API URL
@@ -427,12 +417,7 @@ func (s *AccountTestService) testGeminiAccountConnection(c *gin.Context, account
 
 	// For API Key accounts with model mapping, map the model
 	if account.Type == AccountTypeAPIKey {
-		mapping := account.GetModelMapping()
-		if len(mapping) > 0 {
-			if mappedModel, exists := mapping[testModelID]; exists {
-				testModelID = mappedModel
-			}
-		}
+		testModelID = account.GetMappedModel(testModelID)
 	}
 
 	// Set SSE headers

@@ -175,10 +175,31 @@ func (s *GroupMonitoringService) probeOneGroup(parent context.Context, group Gro
 	}
 
 	start := time.Now()
-	account, err := s.gatewaySvc.SelectAccountForModel(selectCtx, &groupID, "", "")
+	probeModels := s.resolveGroupProbeModels(selectCtx, group)
+	var (
+		account         *Account
+		err             error
+		firstSelectErr  error
+		selectedModel   string
+	)
+	for _, candidate := range probeModels {
+		selectedModel = candidate
+		account, err = s.gatewaySvc.SelectAccountForModel(selectCtx, &groupID, "", candidate)
+		if err == nil {
+			break
+		}
+		if firstSelectErr == nil {
+			firstSelectErr = fmt.Errorf("probe model %s: %w", candidate, err)
+		}
+	}
 	if err != nil {
 		probe.LatencyMs = time.Since(start).Milliseconds()
-		probe.ErrorMessage = fmt.Sprintf("select account failed: %v", err)
+		probe.Model = selectedModel
+		if firstSelectErr != nil {
+			probe.ErrorMessage = fmt.Sprintf("select account failed: %v", firstSelectErr)
+		} else {
+			probe.ErrorMessage = fmt.Sprintf("select account failed: %v", err)
+		}
 		if recErr := s.groupRepo.RecordGroupMonitoringProbe(parent, probe); recErr != nil {
 			logger.LegacyPrintf("group_monitoring", "Failed to record failed probe for group=%d: %v", group.ID, recErr)
 		}
@@ -186,7 +207,7 @@ func (s *GroupMonitoringService) probeOneGroup(parent context.Context, group Gro
 	}
 
 	probe.AccountID = &account.ID
-	probe.Model = s.resolveProbeModel(selectCtx, account, group.Platform)
+	probe.Model = selectedModel
 	result, err := s.accountTestSvc.RunTestBackground(probeCtx, account.ID, probe.Model)
 	probe.LatencyMs = time.Since(start).Milliseconds()
 	if result != nil && result.LatencyMs > 0 {
@@ -206,35 +227,75 @@ func (s *GroupMonitoringService) probeOneGroup(parent context.Context, group Gro
 	}
 }
 
-func (s *GroupMonitoringService) resolveProbeModel(ctx context.Context, account *Account, platform string) string {
-	if account == nil {
-		return defaultProbeModel(platform)
+func (s *GroupMonitoringService) resolveGroupProbeModels(ctx context.Context, group Group) []string {
+	candidates := make([]string, 0)
+	seen := make(map[string]struct{})
+	add := func(model string) {
+		model = strings.TrimSpace(model)
+		if model == "" {
+			return
+		}
+		if _, exists := seen[model]; exists {
+			return
+		}
+		seen[model] = struct{}{}
+		candidates = append(candidates, model)
 	}
 
-	for _, candidate := range preferredProbeModels(platform) {
-		if s.gatewaySvc != nil && s.gatewaySvc.isModelSupportedByAccountWithContext(ctx, account, candidate) {
-			return candidate
+	availableModels := []string(nil)
+	if s.gatewaySvc != nil {
+		availableModels = s.gatewaySvc.GetAvailableModels(ctx, &group.ID, group.Platform)
+	}
+
+	for _, candidate := range preferredProbeModels(group.Platform) {
+		if len(availableModels) == 0 || groupSupportsProbeModel(availableModels, candidate) {
+			add(candidate)
 		}
 	}
 
-	mapping := account.GetModelMapping()
-	if len(mapping) > 0 {
-		keys := make([]string, 0, len(mapping))
-		for key := range mapping {
-			key = strings.TrimSpace(key)
-			if key != "" {
-				keys = append(keys, key)
+	if len(availableModels) > 0 {
+		exactModels := make([]string, 0, len(availableModels))
+		for _, model := range availableModels {
+			model = strings.TrimSpace(model)
+			if model == "" || isWildcardModelPattern(model) {
+				continue
 			}
+			exactModels = append(exactModels, model)
 		}
-		sort.Strings(keys)
-		for _, key := range keys {
-			if s.gatewaySvc != nil && s.gatewaySvc.isModelSupportedByAccountWithContext(ctx, account, key) {
-				return key
-			}
+		sort.Strings(exactModels)
+		for _, model := range exactModels {
+			add(model)
 		}
 	}
 
-	return defaultProbeModel(platform)
+	if len(candidates) == 0 {
+		add(defaultProbeModel(group.Platform))
+	}
+	return candidates
+}
+
+func groupSupportsProbeModel(availableModels []string, candidate string) bool {
+	candidate = strings.TrimSpace(candidate)
+	if candidate == "" {
+		return false
+	}
+	for _, model := range availableModels {
+		model = strings.TrimSpace(model)
+		if model == "" {
+			continue
+		}
+		if model == candidate {
+			return true
+		}
+		if isWildcardModelPattern(model) && matchWildcard(model, candidate) {
+			return true
+		}
+	}
+	return false
+}
+
+func isWildcardModelPattern(model string) bool {
+	return strings.Contains(model, "*")
 }
 
 func preferredProbeModels(platform string) []string {
