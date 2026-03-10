@@ -536,9 +536,6 @@ const formatLastProbe = (): string => {
   const d = new Date(props.group.last_probe_at * 1000)
   const hh = d.getHours().toString().padStart(2, '0')
   const mm = d.getMinutes().toString().padStart(2, '0')
-  if (props.group.last_probe_error) {
-    return `${hh}:${mm} · ${props.group.last_probe_error}`
-  }
   if (props.group.last_probe_latency_ms > 0) {
     return `${hh}:${mm} · ${props.group.last_probe_latency_ms}ms`
   }
