@@ -82,10 +82,15 @@ type GroupMonitoringStat struct {
 	IsExclusive      bool   `json:"-"`
 	SubscriptionType string `json:"-"`
 
-	// 从 usage_logs 聚合的性能指标
-	AvailabilityRate float64 `json:"availability_rate"` // 可用率百分比，-1 表示无数据
-	CacheHitRate     float64 `json:"cache_hit_rate"`    // 缓存命中率百分比，-1 表示无数据
-	AvgResponseTime  int     `json:"avg_response_time"` // 平均响应时间（毫秒）
+	// 监控指标
+	AvailabilityRate   float64 `json:"availability_rate"`     // 最近 1 小时探针成功率百分比，-1 表示无数据
+	CacheHitRate       float64 `json:"cache_hit_rate"`        // 缓存命中率百分比，-1 表示无数据
+	AvgResponseTime    int     `json:"avg_response_time"`     // 平均响应时间（毫秒）
+	ProbeStatus        string  `json:"probe_status"`          // online/degraded/offline/unknown
+	LastProbeAt        int64   `json:"last_probe_at"`         // unix timestamp，0 表示无数据
+	LastProbeSuccessAt int64   `json:"last_probe_success_at"` // unix timestamp，0 表示无数据
+	LastProbeLatencyMs int     `json:"last_probe_latency_ms"`
+	LastProbeError     string  `json:"last_probe_error"`
 }
 
 // MonitoringHistoryPoint 监控历史数据点
@@ -93,6 +98,16 @@ type MonitoringHistoryPoint struct {
 	AvailabilityRate float64 `json:"availability_rate"`
 	CacheHitRate     float64 `json:"cache_hit_rate"`
 	RecordedAt       int64   `json:"recorded_at"` // unix timestamp
+}
+
+type GroupMonitoringProbeResult struct {
+	GroupID      int64
+	AccountID    *int64
+	Model        string
+	Success      bool
+	LatencyMs    int64
+	ErrorMessage string
+	ProbedAt     time.Time
 }
 
 func (g *Group) IsActive() bool {

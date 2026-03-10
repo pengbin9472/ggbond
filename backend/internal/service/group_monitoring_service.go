@@ -2,27 +2,40 @@ package service
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"time"
 
+	"github.com/pengbin9472/ggbond/internal/pkg/claude"
+	"github.com/pengbin9472/ggbond/internal/pkg/ctxkey"
+	"github.com/pengbin9472/ggbond/internal/pkg/geminicli"
 	"github.com/pengbin9472/ggbond/internal/pkg/logger"
+	"github.com/pengbin9472/ggbond/internal/pkg/openai"
 )
 
 // GroupMonitoringService 分组监控服务
 type GroupMonitoringService struct {
-	groupRepo GroupRepository
-	interval  time.Duration
-	stopCh    chan struct{}
-	cancelCtx context.CancelFunc
-	wg        sync.WaitGroup
+	groupRepo       GroupRepository
+	gatewaySvc      *GatewayService
+	accountTestSvc  *AccountTestService
+	interval        time.Duration
+	probeTimeout    time.Duration
+	maxProbeWorkers int
+	stopCh          chan struct{}
+	cancelCtx       context.CancelFunc
+	wg              sync.WaitGroup
 }
 
 // NewGroupMonitoringService 创建分组监控服务
-func NewGroupMonitoringService(groupRepo GroupRepository) *GroupMonitoringService {
+func NewGroupMonitoringService(groupRepo GroupRepository, gatewaySvc *GatewayService, accountTestSvc *AccountTestService) *GroupMonitoringService {
 	return &GroupMonitoringService{
-		groupRepo: groupRepo,
-		interval:  2 * time.Minute, // 默认每2分钟更新一次
-		stopCh:    make(chan struct{}),
+		groupRepo:       groupRepo,
+		gatewaySvc:      gatewaySvc,
+		accountTestSvc:  accountTestSvc,
+		interval:        time.Minute,
+		probeTimeout:    20 * time.Second,
+		maxProbeWorkers: 4,
+		stopCh:          make(chan struct{}),
 	}
 }
 
@@ -77,24 +90,27 @@ func (s *GroupMonitoringService) aggregationLoop(ctx context.Context) {
 func (s *GroupMonitoringService) aggregate(ctx context.Context) {
 	start := time.Now()
 
-	// 为每次聚合设置 30 秒超时，避免 DB 慢查询阻塞退出
-	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	// 为每次聚合设置超时，避免探针或 DB 慢查询阻塞退出
+	ctx, cancel := context.WithTimeout(ctx, 90*time.Second)
 	defer cancel()
 
-	// 1. 从 accounts 表实时计算统计数据
+	// 1. 对活跃分组执行主动探针
+	s.runGroupProbes(ctx)
+
+	// 2. 从 accounts 表和探针结果计算统计数据
 	stats, err := s.groupRepo.ComputeGroupMonitoringStats(ctx)
 	if err != nil {
 		logger.LegacyPrintf("group_monitoring", "Failed to compute monitoring stats: %v", err)
 		return
 	}
 
-	// 2. 更新统计表
+	// 3. 更新统计表
 	if err := s.groupRepo.UpsertGroupMonitoringStats(ctx, stats); err != nil {
 		logger.LegacyPrintf("group_monitoring", "Failed to upsert monitoring stats: %v", err)
 		return
 	}
 
-	// 3. 插入历史记录（用于趋势图表）
+	// 4. 插入历史记录（用于趋势图表）
 	if err := s.groupRepo.InsertGroupMonitoringHistory(ctx, stats); err != nil {
 		logger.LegacyPrintf("group_monitoring", "Failed to insert monitoring history: %v", err)
 		return
@@ -108,4 +124,100 @@ func (s *GroupMonitoringService) aggregate(ctx context.Context) {
 func (s *GroupMonitoringService) RefreshNow(ctx context.Context) error {
 	s.aggregate(ctx)
 	return nil
+}
+
+func (s *GroupMonitoringService) runGroupProbes(ctx context.Context) {
+	if s == nil || s.groupRepo == nil || s.gatewaySvc == nil || s.accountTestSvc == nil {
+		return
+	}
+
+	groups, err := s.groupRepo.ListActive(ctx)
+	if err != nil {
+		logger.LegacyPrintf("group_monitoring", "Failed to list active groups for probes: %v", err)
+		return
+	}
+	if len(groups) == 0 {
+		return
+	}
+
+	sem := make(chan struct{}, s.maxProbeWorkers)
+	var wg sync.WaitGroup
+
+	for i := range groups {
+		group := groups[i]
+		sem <- struct{}{}
+		wg.Add(1)
+		go func(g Group) {
+			defer wg.Done()
+			defer func() { <-sem }()
+			s.probeOneGroup(ctx, g)
+		}(group)
+	}
+
+	wg.Wait()
+}
+
+func (s *GroupMonitoringService) probeOneGroup(parent context.Context, group Group) {
+	probeCtx, cancel := context.WithTimeout(parent, s.probeTimeout)
+	defer cancel()
+
+	probe := GroupMonitoringProbeResult{
+		GroupID:  group.ID,
+		Model:    defaultProbeModel(group.Platform),
+		Success:  false,
+		ProbedAt: time.Now(),
+	}
+
+	groupID := group.ID
+	selectCtx := probeCtx
+	if group.Platform == PlatformSora {
+		selectCtx = context.WithValue(selectCtx, ctxkey.ForcePlatform, PlatformSora)
+	}
+
+	start := time.Now()
+	account, err := s.gatewaySvc.SelectAccountForModel(selectCtx, &groupID, "", probe.Model)
+	if err != nil {
+		probe.LatencyMs = time.Since(start).Milliseconds()
+		probe.ErrorMessage = fmt.Sprintf("select account failed: %v", err)
+		if recErr := s.groupRepo.RecordGroupMonitoringProbe(parent, probe); recErr != nil {
+			logger.LegacyPrintf("group_monitoring", "Failed to record failed probe for group=%d: %v", group.ID, recErr)
+		}
+		return
+	}
+
+	probe.AccountID = &account.ID
+	result, err := s.accountTestSvc.RunTestBackground(probeCtx, account.ID, probe.Model)
+	probe.LatencyMs = time.Since(start).Milliseconds()
+	if result != nil && result.LatencyMs > 0 {
+		probe.LatencyMs = result.LatencyMs
+	}
+	if err != nil {
+		probe.ErrorMessage = err.Error()
+	} else if result != nil {
+		probe.Success = result.Status == "success"
+		if !probe.Success {
+			probe.ErrorMessage = result.ErrorMessage
+		}
+	}
+
+	if recErr := s.groupRepo.RecordGroupMonitoringProbe(parent, probe); recErr != nil {
+		logger.LegacyPrintf("group_monitoring", "Failed to record probe for group=%d account=%d: %v", group.ID, account.ID, recErr)
+	}
+}
+
+func defaultProbeModel(platform string) string {
+	switch platform {
+	case PlatformOpenAI:
+		return openai.DefaultTestModel
+	case PlatformGemini:
+		return geminicli.DefaultTestModel
+	case PlatformAntigravity:
+		return "claude-sonnet-4-5"
+	case PlatformSora:
+		return "sora2-landscape-10s"
+	case PlatformAnthropic:
+		fallthrough
+	default:
+		return claude.DefaultTestModel
+	}
 }

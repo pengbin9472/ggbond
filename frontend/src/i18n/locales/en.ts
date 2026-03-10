@@ -528,12 +528,15 @@ export default {
   // Monitoring
   monitoring: {
     title: 'Group Monitoring',
-    description: 'View availability status of each group',
+    description: 'View 1-hour probe availability and latest status for each group',
     online: 'Online',
     offline: 'Offline',
+    degraded: 'Degraded',
+    unknown: 'Unknown',
     totalGroupsCount: 'groups',
-    availabilityRate: 'Availability',
+    availabilityRate: '1h Probe Availability',
     cacheHitRate: 'Cache Hit Rate',
+    lastProbe: 'Last Probe',
     notCollected: 'Not collected',
     noGroups: 'No monitoring data',
     noGroupsDescription: 'No groups have been configured in the system yet',

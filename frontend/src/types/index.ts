@@ -1158,6 +1158,11 @@ export interface GroupMonitoringStat {
   availability_rate: number
   cache_hit_rate: number
   avg_response_time: number
+  probe_status: string
+  last_probe_at: number
+  last_probe_success_at: number
+  last_probe_latency_ms: number
+  last_probe_error: string
 }
 
 export interface MonitoringHistoryPoint {

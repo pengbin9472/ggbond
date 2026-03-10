@@ -7,13 +7,13 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/lib/pq"
 	dbent "github.com/pengbin9472/ggbond/ent"
 	"github.com/pengbin9472/ggbond/ent/apikey"
 	"github.com/pengbin9472/ggbond/ent/group"
 	"github.com/pengbin9472/ggbond/internal/pkg/logger"
 	"github.com/pengbin9472/ggbond/internal/pkg/pagination"
 	"github.com/pengbin9472/ggbond/internal/service"
-	"github.com/lib/pq"
 )
 
 type sqlExecutor interface {
@@ -685,7 +685,12 @@ func (r *groupRepository) GetGroupMonitoringStats(ctx context.Context) ([]servic
 			COALESCE(gms.disabled_accounts, 0) as disabled_accounts,
 			COALESCE(gms.availability_rate, -1) as availability_rate,
 			COALESCE(gms.cache_hit_rate, -1) as cache_hit_rate,
-			COALESCE(gms.avg_response_time, 0) as avg_response_time
+			COALESCE(gms.avg_response_time, 0) as avg_response_time,
+			COALESCE(gms.probe_status, 'unknown') as probe_status,
+			COALESCE(EXTRACT(EPOCH FROM gms.last_probe_at)::bigint, 0) as last_probe_at,
+			COALESCE(EXTRACT(EPOCH FROM gms.last_probe_success_at)::bigint, 0) as last_probe_success_at,
+			COALESCE(gms.last_probe_latency_ms, 0) as last_probe_latency_ms,
+			COALESCE(gms.last_probe_error, '') as last_probe_error
 		FROM groups g
 		LEFT JOIN group_monitoring_stats gms ON g.id = gms.group_id
 		WHERE g.deleted_at IS NULL AND g.status = 'active'
@@ -718,6 +723,11 @@ func (r *groupRepository) GetGroupMonitoringStats(ctx context.Context) ([]servic
 			&stat.AvailabilityRate,
 			&stat.CacheHitRate,
 			&stat.AvgResponseTime,
+			&stat.ProbeStatus,
+			&stat.LastProbeAt,
+			&stat.LastProbeSuccessAt,
+			&stat.LastProbeLatencyMs,
+			&stat.LastProbeError,
 		)
 		if err != nil {
 			return nil, err
@@ -732,6 +742,25 @@ func (r *groupRepository) GetGroupMonitoringStats(ctx context.Context) ([]servic
 	return stats, nil
 }
 
+// RecordGroupMonitoringProbe 记录一次分组主动探针结果
+func (r *groupRepository) RecordGroupMonitoringProbe(ctx context.Context, probe service.GroupMonitoringProbeResult) error {
+	query := `
+		INSERT INTO group_monitoring_probes (
+			group_id, account_id, model, success, latency_ms, error_message, probed_at
+		) VALUES ($1, $2, $3, $4, $5, $6, $7)
+	`
+	_, err := r.sql.ExecContext(ctx, query,
+		probe.GroupID,
+		probe.AccountID,
+		probe.Model,
+		probe.Success,
+		probe.LatencyMs,
+		probe.ErrorMessage,
+		probe.ProbedAt,
+	)
+	return err
+}
+
 // UpsertGroupMonitoringStats 更新或插入分组监控统计
 func (r *groupRepository) UpsertGroupMonitoringStats(ctx context.Context, stats []service.GroupMonitoringStat) error {
 	if len(stats) == 0 {
@@ -742,8 +771,15 @@ func (r *groupRepository) UpsertGroupMonitoringStats(ctx context.Context, stats 
 		INSERT INTO group_monitoring_stats (
 			group_id, total_accounts, normal_accounts, error_accounts,
 			ratelimit_accounts, overload_accounts, disabled_accounts,
-			availability_rate, cache_hit_rate, avg_response_time, updated_at
-		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW())
+			availability_rate, cache_hit_rate, avg_response_time,
+			probe_status, last_probe_at, last_probe_success_at, last_probe_latency_ms, last_probe_error,
+			updated_at
+		) VALUES (
+			$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11,
+			CASE WHEN $12 > 0 THEN to_timestamp($12) ELSE NULL END,
+			CASE WHEN $13 > 0 THEN to_timestamp($13) ELSE NULL END,
+			$14, $15, NOW()
+		)
 		ON CONFLICT (group_id)
 		DO UPDATE SET
 			total_accounts = EXCLUDED.total_accounts,
@@ -755,6 +791,11 @@ func (r *groupRepository) UpsertGroupMonitoringStats(ctx context.Context, stats 
 			availability_rate = EXCLUDED.availability_rate,
 			cache_hit_rate = EXCLUDED.cache_hit_rate,
 			avg_response_time = EXCLUDED.avg_response_time,
+			probe_status = EXCLUDED.probe_status,
+			last_probe_at = EXCLUDED.last_probe_at,
+			last_probe_success_at = EXCLUDED.last_probe_success_at,
+			last_probe_latency_ms = EXCLUDED.last_probe_latency_ms,
+			last_probe_error = EXCLUDED.last_probe_error,
 			updated_at = NOW()
 	`
 
@@ -770,6 +811,11 @@ func (r *groupRepository) UpsertGroupMonitoringStats(ctx context.Context, stats 
 			stat.AvailabilityRate,
 			stat.CacheHitRate,
 			stat.AvgResponseTime,
+			stat.ProbeStatus,
+			stat.LastProbeAt,
+			stat.LastProbeSuccessAt,
+			stat.LastProbeLatencyMs,
+			stat.LastProbeError,
 		)
 		if err != nil {
 			return err
@@ -864,7 +910,7 @@ func (r *groupRepository) GetGroupMonitoringHistory(ctx context.Context, groupID
 	return points, nil
 }
 
-// ComputeGroupMonitoringStats 从 accounts 表和 usage_logs 表实时计算分组监控统计
+// ComputeGroupMonitoringStats 从账户状态、探针结果和 usage_logs 实时计算分组监控统计
 func (r *groupRepository) ComputeGroupMonitoringStats(ctx context.Context) ([]service.GroupMonitoringStat, error) {
 	// 第一步：查询账户状态
 	accountQuery := `
@@ -937,6 +983,7 @@ func (r *groupRepository) ComputeGroupMonitoringStats(ctx context.Context) ([]se
 		}
 		stat.AvailabilityRate = -1
 		stat.CacheHitRate = -1
+		stat.ProbeStatus = "unknown"
 		stats = append(stats, stat)
 		groupIDs = append(groupIDs, stat.GroupID)
 	}
@@ -948,10 +995,113 @@ func (r *groupRepository) ComputeGroupMonitoringStats(ctx context.Context) ([]se
 		return stats, nil
 	}
 
-	// 第二步：计算可用率（基于账户状态）
+	// 第二步：从最近 1 小时探针结果聚合可用率和最新探针状态
+	probeQuery := `
+		WITH probe_window AS (
+			SELECT
+				group_id,
+				COUNT(*) FILTER (WHERE probed_at >= NOW() - INTERVAL '1 hour') as total_1h,
+				COUNT(*) FILTER (WHERE success = TRUE AND probed_at >= NOW() - INTERVAL '1 hour') as success_1h
+			FROM group_monitoring_probes
+			WHERE group_id = ANY($1)
+			GROUP BY group_id
+		),
+		latest_probe AS (
+			SELECT DISTINCT ON (group_id)
+				group_id,
+				success,
+				latency_ms,
+				error_message,
+				EXTRACT(EPOCH FROM probed_at)::bigint as probed_at
+			FROM group_monitoring_probes
+			WHERE group_id = ANY($1)
+			ORDER BY group_id, probed_at DESC
+		),
+		last_success AS (
+			SELECT
+				group_id,
+				EXTRACT(EPOCH FROM MAX(probed_at))::bigint as last_probe_success_at
+			FROM group_monitoring_probes
+			WHERE group_id = ANY($1)
+				AND success = TRUE
+			GROUP BY group_id
+		)
+		SELECT
+			COALESCE(w.group_id, l.group_id, s.group_id) as group_id,
+			COALESCE(w.total_1h, 0) as total_1h,
+			COALESCE(w.success_1h, 0) as success_1h,
+			COALESCE(l.success, FALSE) as latest_success,
+			COALESCE(l.latency_ms, 0) as latency_ms,
+			COALESCE(l.error_message, '') as error_message,
+			COALESCE(l.probed_at, 0) as last_probe_at,
+			COALESCE(s.last_probe_success_at, 0) as last_probe_success_at
+		FROM probe_window w
+		FULL OUTER JOIN latest_probe l ON w.group_id = l.group_id
+		FULL OUTER JOIN last_success s ON COALESCE(w.group_id, l.group_id) = s.group_id
+	`
+
+	probeRows, err := r.sql.QueryContext(ctx, probeQuery, pq.Array(groupIDs))
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = probeRows.Close() }()
+
+	type probeData struct {
+		total1h            int64
+		success1h          int64
+		latestSuccess      bool
+		latencyMs          int
+		errorMessage       string
+		lastProbeAt        int64
+		lastProbeSuccessAt int64
+	}
+	probeMap := make(map[int64]*probeData)
+
+	for probeRows.Next() {
+		var groupID int64
+		var pd probeData
+		if err := probeRows.Scan(
+			&groupID,
+			&pd.total1h,
+			&pd.success1h,
+			&pd.latestSuccess,
+			&pd.latencyMs,
+			&pd.errorMessage,
+			&pd.lastProbeAt,
+			&pd.lastProbeSuccessAt,
+		); err != nil {
+			return nil, err
+		}
+		probeMap[groupID] = &pd
+	}
+	if err = probeRows.Err(); err != nil {
+		return nil, err
+	}
+
 	for i := range stats {
-		if stats[i].TotalAccounts > 0 {
-			stats[i].AvailabilityRate = float64(stats[i].NormalAccounts) / float64(stats[i].TotalAccounts) * 100
+		pd, ok := probeMap[stats[i].GroupID]
+		if !ok {
+			continue
+		}
+		stats[i].LastProbeAt = pd.lastProbeAt
+		stats[i].LastProbeSuccessAt = pd.lastProbeSuccessAt
+		stats[i].LastProbeLatencyMs = pd.latencyMs
+		stats[i].LastProbeError = pd.errorMessage
+
+		if pd.total1h > 0 {
+			stats[i].AvailabilityRate = float64(pd.success1h) / float64(pd.total1h) * 100
+		}
+
+		switch {
+		case pd.lastProbeAt == 0:
+			stats[i].ProbeStatus = "unknown"
+		case pd.latestSuccess:
+			stats[i].ProbeStatus = "online"
+			stats[i].LastProbeError = ""
+		case pd.success1h > 0:
+			stats[i].ProbeStatus = "degraded"
+		default:
+			stats[i].ProbeStatus = "offline"
 		}
 	}
 

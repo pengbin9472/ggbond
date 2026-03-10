@@ -37,8 +37,10 @@ type GroupRepository interface {
 	UpdateSortOrders(ctx context.Context, updates []GroupSortOrderUpdate) error
 	// GetGroupMonitoringStats 获取所有分组的账户监控统计（从缓存表读取）
 	GetGroupMonitoringStats(ctx context.Context) ([]GroupMonitoringStat, error)
-	// ComputeGroupMonitoringStats 实时计算分组监控统计（从 accounts 表和 usage_logs 表）
+	// ComputeGroupMonitoringStats 实时计算分组监控统计（账户状态 + 探针结果 + usage_logs）
 	ComputeGroupMonitoringStats(ctx context.Context) ([]GroupMonitoringStat, error)
+	// RecordGroupMonitoringProbe 记录一次分组主动探针结果
+	RecordGroupMonitoringProbe(ctx context.Context, probe GroupMonitoringProbeResult) error
 	// UpsertGroupMonitoringStats 更新或插入分组监控统计
 	UpsertGroupMonitoringStats(ctx context.Context, stats []GroupMonitoringStat) error
 	// InsertGroupMonitoringHistory 插入分组监控历史记录

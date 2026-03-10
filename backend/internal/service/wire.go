@@ -5,9 +5,9 @@ import (
 	"database/sql"
 	"time"
 
+	"github.com/google/wire"
 	"github.com/pengbin9472/ggbond/internal/config"
 	"github.com/pengbin9472/ggbond/internal/pkg/logger"
-	"github.com/google/wire"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -322,8 +322,8 @@ func ProvideSettingService(settingRepo SettingRepository, groupRepo GroupReposit
 }
 
 // ProvideGroupMonitoringService creates and starts GroupMonitoringService
-func ProvideGroupMonitoringService(groupRepo GroupRepository) *GroupMonitoringService {
-	svc := NewGroupMonitoringService(groupRepo)
+func ProvideGroupMonitoringService(groupRepo GroupRepository, gatewaySvc *GatewayService, accountTestSvc *AccountTestService) *GroupMonitoringService {
+	svc := NewGroupMonitoringService(groupRepo, gatewaySvc, accountTestSvc)
 	svc.Start(context.Background())
 	return svc
 }

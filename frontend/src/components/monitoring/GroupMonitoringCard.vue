@@ -13,15 +13,13 @@
       </div>
       <span
         class="inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-0.5 rounded-full flex-shrink-0"
-        :class="isOnline
-          ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-          : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'"
+        :class="statusBadgeClass"
       >
         <span
           class="w-1.5 h-1.5 rounded-full"
-          :class="isOnline ? 'bg-green-500' : 'bg-red-500'"
+          :class="statusDotClass"
         ></span>
-        {{ isOnline ? t('monitoring.online') : t('monitoring.offline') }}
+        {{ statusLabel }}
       </span>
     </div>
 
@@ -32,6 +30,11 @@
         <span class="w-px h-3 bg-gray-300 dark:bg-gray-600 flex-shrink-0"></span>
         <span class="font-semibold flex-shrink-0">{{ group.rate_multiplier }}x</span>
       </template>
+    </div>
+
+    <div class="mb-3 text-[11px] text-gray-500 dark:text-gray-400">
+      <span class="font-medium">{{ t('monitoring.lastProbe') }}</span>
+      <span class="ml-1">{{ formatLastProbe() }}</span>
     </div>
 
     <!-- 可用率进度条 -->
@@ -472,8 +475,45 @@ const tooltipStyle = computed(() => {
 })
 
 // ── 通用工具函数 ──
-const isOnline = computed(() => {
-  return props.group.normal_accounts > 0
+const probeStatus = computed(() => props.group.probe_status || 'unknown')
+
+const statusLabel = computed(() => {
+  switch (probeStatus.value) {
+    case 'online':
+      return t('monitoring.online')
+    case 'degraded':
+      return t('monitoring.degraded')
+    case 'offline':
+      return t('monitoring.offline')
+    default:
+      return t('monitoring.unknown')
+  }
+})
+
+const statusBadgeClass = computed(() => {
+  switch (probeStatus.value) {
+    case 'online':
+      return 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+    case 'degraded':
+      return 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
+    case 'offline':
+      return 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+    default:
+      return 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'
+  }
+})
+
+const statusDotClass = computed(() => {
+  switch (probeStatus.value) {
+    case 'online':
+      return 'bg-green-500'
+    case 'degraded':
+      return 'bg-amber-500'
+    case 'offline':
+      return 'bg-red-500'
+    default:
+      return 'bg-gray-400'
+  }
 })
 
 const getPlatformLabel = (platform: string): string => {
@@ -489,6 +529,20 @@ const getPlatformLabel = (platform: string): string => {
 const formatRate = (rate: number): string => {
   if (rate == null || isNaN(rate) || rate < 0) return '--'
   return rate.toFixed(1) + '%'
+}
+
+const formatLastProbe = (): string => {
+  if (!props.group.last_probe_at) return t('monitoring.notCollected')
+  const d = new Date(props.group.last_probe_at * 1000)
+  const hh = d.getHours().toString().padStart(2, '0')
+  const mm = d.getMinutes().toString().padStart(2, '0')
+  if (props.group.last_probe_error) {
+    return `${hh}:${mm} · ${props.group.last_probe_error}`
+  }
+  if (props.group.last_probe_latency_ms > 0) {
+    return `${hh}:${mm} · ${props.group.last_probe_latency_ms}ms`
+  }
+  return `${hh}:${mm}`
 }
 
 const formatCacheRate = (rate: number): string => {

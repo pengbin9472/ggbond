@@ -528,12 +528,15 @@ export default {
   // Monitoring
   monitoring: {
     title: '分组监控',
-    description: '查看各分组的可用状态',
+    description: '查看各分组最近 1 小时的探针可用率与状态',
     online: '正常',
     offline: '异常',
+    degraded: '波动',
+    unknown: '未知',
     totalGroupsCount: '个分组',
-    availabilityRate: '可用率',
+    availabilityRate: '1小时探针可用率',
     cacheHitRate: '缓存命中率',
+    lastProbe: '最近探针',
     notCollected: '尚未获取',
     noGroups: '暂无监控数据',
     noGroupsDescription: '系统中还没有配置任何分组',

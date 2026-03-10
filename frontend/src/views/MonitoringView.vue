@@ -100,11 +100,11 @@ const groups = ref<GroupMonitoringStat[]>([])
 const historyMap = ref<Record<number, MonitoringHistoryPoint[]>>({})
 
 const onlineCount = computed(() => {
-  return groups.value.filter(g => g.normal_accounts > 0).length
+  return groups.value.filter(g => g.probe_status === 'online').length
 })
 
 const offlineCount = computed(() => {
-  return groups.value.length - onlineCount.value
+  return groups.value.filter(g => g.probe_status !== 'online').length
 })
 
 const loadGroupHistory = async (groupId: number) => {
