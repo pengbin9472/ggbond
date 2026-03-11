@@ -3,7 +3,9 @@ package service
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -255,12 +257,6 @@ func (s *GroupMonitoringService) resolveGroupProbeModels(ctx context.Context, gr
 		availableModels = s.gatewaySvc.GetAvailableModels(ctx, &group.ID, group.Platform)
 	}
 
-	for _, candidate := range preferredProbeModels(group.Platform) {
-		if len(availableModels) == 0 || groupSupportsProbeModel(availableModels, candidate) {
-			add(candidate)
-		}
-	}
-
 	if len(availableModels) > 0 {
 		exactModels := make([]string, 0, len(availableModels))
 		for _, model := range availableModels {
@@ -270,9 +266,17 @@ func (s *GroupMonitoringService) resolveGroupProbeModels(ctx context.Context, gr
 			}
 			exactModels = append(exactModels, model)
 		}
-		sort.Strings(exactModels)
+		sort.SliceStable(exactModels, func(i, j int) bool {
+			return compareProbeModelFreshness(exactModels[i], exactModels[j]) < 0
+		})
 		for _, model := range exactModels {
 			add(model)
+		}
+	}
+
+	for _, candidate := range preferredProbeModels(group.Platform) {
+		if len(availableModels) == 0 || groupSupportsProbeModel(availableModels, candidate) {
+			add(candidate)
 		}
 	}
 
@@ -304,6 +308,66 @@ func groupSupportsProbeModel(availableModels []string, candidate string) bool {
 
 func isWildcardModelPattern(model string) bool {
 	return strings.Contains(model, "*")
+}
+
+var probeModelNumberPattern = regexp.MustCompile(`\d+`)
+
+func compareProbeModelFreshness(left, right string) int {
+	leftDate := extractProbeModelDate(left)
+	rightDate := extractProbeModelDate(right)
+	if !leftDate.Equal(rightDate) {
+		if leftDate.After(rightDate) {
+			return -1
+		}
+		return 1
+	}
+
+	leftNums := extractProbeModelNumbers(left)
+	rightNums := extractProbeModelNumbers(right)
+	for i := 0; i < len(leftNums) && i < len(rightNums); i++ {
+		if leftNums[i] == rightNums[i] {
+			continue
+		}
+		if leftNums[i] > rightNums[i] {
+			return -1
+		}
+		return 1
+	}
+	if len(leftNums) != len(rightNums) {
+		if len(leftNums) > len(rightNums) {
+			return -1
+		}
+		return 1
+	}
+	return strings.Compare(left, right)
+}
+
+func extractProbeModelDate(model string) time.Time {
+	parts := probeModelNumberPattern.FindAllString(model, -1)
+	for i := 0; i+2 < len(parts); i++ {
+		if len(parts[i]) == 4 && len(parts[i+1]) == 2 && len(parts[i+2]) == 2 {
+			year, _ := strconv.Atoi(parts[i])
+			month, _ := strconv.Atoi(parts[i+1])
+			day, _ := strconv.Atoi(parts[i+2])
+			if year >= 2000 && month >= 1 && month <= 12 && day >= 1 && day <= 31 {
+				return time.Date(year, time.Month(month), day, 0, 0, 0, 0, time.UTC)
+			}
+		}
+	}
+	return time.Time{}
+}
+
+func extractProbeModelNumbers(model string) []int {
+	matches := probeModelNumberPattern.FindAllString(model, -1)
+	out := make([]int, 0, len(matches))
+	for _, match := range matches {
+		value, err := strconv.Atoi(match)
+		if err != nil {
+			continue
+		}
+		out = append(out, value)
+	}
+	return out
 }
 
 func preferredProbeModels(platform string) []string {
