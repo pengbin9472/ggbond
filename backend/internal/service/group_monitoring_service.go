@@ -191,30 +191,37 @@ func (s *GroupMonitoringService) probeOneGroup(parent context.Context, group Gro
 	var lastProbeErr string
 	for _, candidate := range probeModels {
 		selectedModel = candidate
-		account, err = s.gatewaySvc.SelectAccountForModel(selectCtx, &groupID, "", candidate)
-		if err != nil {
-			lastProbeErr = fmt.Sprintf("select account failed for model %s: %v", candidate, err)
-			continue
+		excludedIDs := make(map[int64]struct{})
+		for {
+			account, err = s.gatewaySvc.SelectAccountForModelWithExclusions(selectCtx, &groupID, "", candidate, excludedIDs)
+			if err != nil {
+				lastProbeErr = fmt.Sprintf("select account failed for model %s: %v", candidate, err)
+				break
+			}
+
+			probe.AccountID = &account.ID
+			probe.Model = candidate
+			result, testErr := s.accountTestSvc.RunTestBackground(probeCtx, account.ID, candidate)
+			probe.LatencyMs = time.Since(start).Milliseconds()
+			if result != nil && result.LatencyMs > 0 {
+				probe.LatencyMs = result.LatencyMs
+			}
+			if testErr == nil && result != nil && result.Status == "success" {
+				probe.Success = true
+				probe.ErrorMessage = ""
+				break
+			}
+
+			if testErr != nil {
+				lastProbeErr = testErr.Error()
+			} else if result != nil {
+				lastProbeErr = result.ErrorMessage
+			}
+			excludedIDs[account.ID] = struct{}{}
 		}
 
-		probe.AccountID = &account.ID
-		probe.Model = candidate
-		result, testErr := s.accountTestSvc.RunTestBackground(probeCtx, account.ID, candidate)
-		probe.LatencyMs = time.Since(start).Milliseconds()
-		if result != nil && result.LatencyMs > 0 {
-			probe.LatencyMs = result.LatencyMs
-		}
-		if testErr != nil {
-			lastProbeErr = testErr.Error()
-			continue
-		}
-		if result != nil && result.Status == "success" {
-			probe.Success = true
-			probe.ErrorMessage = ""
+		if probe.Success {
 			break
-		}
-		if result != nil {
-			lastProbeErr = result.ErrorMessage
 		}
 	}
 
