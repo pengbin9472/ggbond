@@ -298,34 +298,8 @@ const chartData = computed(() => {
   return props.history
 })
 
-// ── Y 轴范围（共享的 min/max）──
-const yRange = computed(() => {
-  if (!chartData.value) return { min: 0, max: 100 }
-
-  const allValues: number[] = []
-  for (const d of chartData.value) {
-    if (d.availability_rate >= 0) allValues.push(d.availability_rate)
-    if (d.cache_hit_rate >= 0) allValues.push(d.cache_hit_rate)
-  }
-
-  if (allValues.length === 0) return { min: 0, max: 100 }
-
-  let min = Math.min(...allValues)
-  let max = Math.max(...allValues)
-
-  // 数据无波动时上下扩展，确保曲线在中间
-  if (max - min < 1) {
-    min = Math.max(0, min - 5)
-    max = Math.min(100, max + 5)
-  }
-
-  // 留一点 padding
-  const padding = (max - min) * 0.1
-  min = Math.max(0, min - padding)
-  max = Math.min(100, max + padding)
-
-  return { min, max }
-})
+// ── Y 轴范围固定为 0-100，避免 50% 被动态缩放到接近底部 ──
+const yRange = computed(() => ({ min: 0, max: 100 }))
 
 // ── 坐标计算 ──
 const getPointX = (index: number): number => {
@@ -336,7 +310,8 @@ const getPointX = (index: number): number => {
 const computeY = (value: number): number => {
   const { min, max } = yRange.value
   const range = max - min || 1
-  return svgPaddingTop + svgPlotHeight - ((value - min) / range) * svgPlotHeight
+  const normalizedValue = Math.min(max, Math.max(min, value))
+  return svgPaddingTop + svgPlotHeight - ((normalizedValue - min) / range) * svgPlotHeight
 }
 
 // ── Catmull-Rom 样条曲线 ──
