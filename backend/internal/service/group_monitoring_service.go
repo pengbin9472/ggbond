@@ -160,11 +160,10 @@ func (s *GroupMonitoringService) runGroupProbes(ctx context.Context) {
 }
 
 func (s *GroupMonitoringService) probeOneGroup(parent context.Context, group Group) {
-	probeCtx, cancel := context.WithTimeout(parent, s.probeTimeout)
+	selectCtx, cancel := context.WithTimeout(parent, s.probeTimeout)
 	defer cancel()
 
 	groupID := group.ID
-	selectCtx := probeCtx
 	if group.Platform == PlatformSora {
 		selectCtx = context.WithValue(selectCtx, ctxkey.ForcePlatform, PlatformSora)
 	}
@@ -176,7 +175,7 @@ func (s *GroupMonitoringService) probeOneGroup(parent context.Context, group Gro
 			break
 		}
 
-		probe := s.probeOneAccount(selectCtx, group, account)
+		probe := s.probeOneAccount(parent, group, account)
 		excludedAccounts[account.ID] = struct{}{}
 		if recErr := s.groupRepo.RecordGroupMonitoringProbe(parent, probe); recErr != nil {
 			logger.LegacyPrintf("group_monitoring", "Failed to record probe for group=%d account=%d: %v", group.ID, account.ID, recErr)
@@ -184,7 +183,7 @@ func (s *GroupMonitoringService) probeOneGroup(parent context.Context, group Gro
 	}
 }
 
-func (s *GroupMonitoringService) probeOneAccount(probeCtx context.Context, group Group, account *Account) GroupMonitoringProbeResult {
+func (s *GroupMonitoringService) probeOneAccount(parent context.Context, group Group, account *Account) GroupMonitoringProbeResult {
 	probe := GroupMonitoringProbeResult{
 		GroupID:  group.ID,
 		Success:  false,
@@ -203,9 +202,11 @@ func (s *GroupMonitoringService) probeOneAccount(probeCtx context.Context, group
 	lastErr := ""
 	lastModel := ""
 	for _, model := range models {
+		modelCtx, cancel := context.WithTimeout(parent, s.probeTimeout)
 		lastModel = model
 		probe.Model = model
-		result, testErr := s.accountTestSvc.RunTestBackground(probeCtx, account.ID, model)
+		result, testErr := s.accountTestSvc.RunTestBackground(modelCtx, account.ID, model)
+		cancel()
 		probe.LatencyMs = time.Since(start).Milliseconds()
 		if result != nil && result.LatencyMs > 0 {
 			probe.LatencyMs = result.LatencyMs

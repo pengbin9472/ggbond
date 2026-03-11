@@ -167,7 +167,7 @@ func (s *AccountTestService) TestAccountConnection(c *gin.Context, accountID int
 	// Get account
 	account, err := s.accountRepo.GetByID(ctx, accountID)
 	if err != nil {
-		return s.sendErrorAndEnd(c, "Account not found")
+		return s.sendErrorAndEnd(c, fmt.Sprintf("get account failed: %v", err))
 	}
 
 	// Route to platform-specific test method
