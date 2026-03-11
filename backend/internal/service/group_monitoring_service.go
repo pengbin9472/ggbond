@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"fmt"
 	"regexp"
 	"sort"
 	"strconv"
@@ -23,7 +22,6 @@ type GroupMonitoringService struct {
 	accountTestSvc  *AccountTestService
 	interval        time.Duration
 	probeTimeout    time.Duration
-	maxProbeModels  int
 	maxProbeWorkers int
 	stopCh          chan struct{}
 	cancelCtx       context.CancelFunc
@@ -36,9 +34,8 @@ func NewGroupMonitoringService(groupRepo GroupRepository, gatewaySvc *GatewaySer
 		groupRepo:       groupRepo,
 		gatewaySvc:      gatewaySvc,
 		accountTestSvc:  accountTestSvc,
-		interval:        3 * time.Minute,
+		interval:        5 * time.Minute,
 		probeTimeout:    12 * time.Second,
-		maxProbeModels:  2,
 		maxProbeWorkers: 4,
 		stopCh:          make(chan struct{}),
 	}
@@ -166,85 +163,74 @@ func (s *GroupMonitoringService) probeOneGroup(parent context.Context, group Gro
 	probeCtx, cancel := context.WithTimeout(parent, s.probeTimeout)
 	defer cancel()
 
-	probe := GroupMonitoringProbeResult{
-		GroupID:  group.ID,
-		Success:  false,
-		ProbedAt: time.Now(),
-	}
-
 	groupID := group.ID
 	selectCtx := probeCtx
 	if group.Platform == PlatformSora {
 		selectCtx = context.WithValue(selectCtx, ctxkey.ForcePlatform, PlatformSora)
 	}
 
-	start := time.Now()
-	probeModels := s.resolveGroupProbeModels(selectCtx, group)
-	if s.maxProbeModels > 0 && len(probeModels) > s.maxProbeModels {
-		probeModels = probeModels[:s.maxProbeModels]
-	}
-	var (
-		account       *Account
-		err           error
-		selectedModel string
-	)
-	var lastProbeErr string
-	for _, candidate := range probeModels {
-		selectedModel = candidate
-		excludedIDs := make(map[int64]struct{})
-		for {
-			account, err = s.gatewaySvc.SelectAccountForModelWithExclusions(selectCtx, &groupID, "", candidate, excludedIDs)
-			if err != nil {
-				lastProbeErr = fmt.Sprintf("select account failed for model %s: %v", candidate, err)
-				break
-			}
-
-			probe.AccountID = &account.ID
-			probe.Model = candidate
-			result, testErr := s.accountTestSvc.RunTestBackground(probeCtx, account.ID, candidate)
-			probe.LatencyMs = time.Since(start).Milliseconds()
-			if result != nil && result.LatencyMs > 0 {
-				probe.LatencyMs = result.LatencyMs
-			}
-			if testErr == nil && result != nil && result.Status == "success" {
-				probe.Success = true
-				probe.ErrorMessage = ""
-				break
-			}
-
-			if testErr != nil {
-				lastProbeErr = testErr.Error()
-			} else if result != nil {
-				lastProbeErr = result.ErrorMessage
-			}
-			excludedIDs[account.ID] = struct{}{}
-		}
-
-		if probe.Success {
+	excludedAccounts := make(map[int64]struct{})
+	for {
+		account, err := s.gatewaySvc.SelectAccountForModelWithExclusions(selectCtx, &groupID, "", "", excludedAccounts)
+		if err != nil {
 			break
 		}
-	}
 
-	if !probe.Success {
-		probe.LatencyMs = time.Since(start).Milliseconds()
-		probe.Model = selectedModel
-		if strings.TrimSpace(lastProbeErr) != "" {
-			probe.ErrorMessage = lastProbeErr
-		} else if err != nil {
-			probe.ErrorMessage = err.Error()
-		}
-	}
-
-	if recErr := s.groupRepo.RecordGroupMonitoringProbe(parent, probe); recErr != nil {
-		if account != nil {
+		probe := s.probeOneAccount(selectCtx, group, account)
+		excludedAccounts[account.ID] = struct{}{}
+		if recErr := s.groupRepo.RecordGroupMonitoringProbe(parent, probe); recErr != nil {
 			logger.LegacyPrintf("group_monitoring", "Failed to record probe for group=%d account=%d: %v", group.ID, account.ID, recErr)
-		} else {
-			logger.LegacyPrintf("group_monitoring", "Failed to record probe for group=%d: %v", group.ID, recErr)
 		}
 	}
 }
 
-func (s *GroupMonitoringService) resolveGroupProbeModels(ctx context.Context, group Group) []string {
+func (s *GroupMonitoringService) probeOneAccount(probeCtx context.Context, group Group, account *Account) GroupMonitoringProbeResult {
+	probe := GroupMonitoringProbeResult{
+		GroupID:  group.ID,
+		Success:  false,
+		ProbedAt: time.Now(),
+	}
+	if account != nil {
+		probe.AccountID = &account.ID
+	}
+	if account == nil {
+		probe.ErrorMessage = "account is nil"
+		return probe
+	}
+
+	start := time.Now()
+	models := s.resolveAccountProbeModels(account, group.Platform)
+	lastErr := ""
+	lastModel := ""
+	for _, model := range models {
+		lastModel = model
+		probe.Model = model
+		result, testErr := s.accountTestSvc.RunTestBackground(probeCtx, account.ID, model)
+		probe.LatencyMs = time.Since(start).Milliseconds()
+		if result != nil && result.LatencyMs > 0 {
+			probe.LatencyMs = result.LatencyMs
+		}
+		if testErr == nil && result != nil && result.Status == "success" {
+			probe.Success = true
+			probe.ErrorMessage = ""
+			return probe
+		}
+		if testErr != nil {
+			lastErr = testErr.Error()
+		} else if result != nil {
+			lastErr = result.ErrorMessage
+		}
+	}
+
+	probe.Model = lastModel
+	probe.ErrorMessage = strings.TrimSpace(lastErr)
+	if probe.LatencyMs == 0 {
+		probe.LatencyMs = time.Since(start).Milliseconds()
+	}
+	return probe
+}
+
+func (s *GroupMonitoringService) resolveAccountProbeModels(account *Account, platform string) []string {
 	candidates := make([]string, 0)
 	seen := make(map[string]struct{})
 	add := func(model string) {
@@ -259,58 +245,36 @@ func (s *GroupMonitoringService) resolveGroupProbeModels(ctx context.Context, gr
 		candidates = append(candidates, model)
 	}
 
-	availableModels := []string(nil)
-	if s.gatewaySvc != nil {
-		availableModels = s.gatewaySvc.GetAvailableModels(ctx, &group.ID, group.Platform)
-	}
-
-	if len(availableModels) > 0 {
-		exactModels := make([]string, 0, len(availableModels))
-		for _, model := range availableModels {
-			model = strings.TrimSpace(model)
-			if model == "" || isWildcardModelPattern(model) {
-				continue
+	if account != nil {
+		mapping := account.GetModelMapping()
+		if len(mapping) > 0 {
+			exactModels := make([]string, 0, len(mapping))
+			for model := range mapping {
+				model = strings.TrimSpace(model)
+				if model == "" || isWildcardModelPattern(model) {
+					continue
+				}
+				exactModels = append(exactModels, model)
 			}
-			exactModels = append(exactModels, model)
-		}
-		sort.SliceStable(exactModels, func(i, j int) bool {
-			return compareProbeModelFreshness(exactModels[i], exactModels[j]) < 0
-		})
-		for _, model := range exactModels {
-			add(model)
+			sort.SliceStable(exactModels, func(i, j int) bool {
+				return compareProbeModelFreshness(exactModels[i], exactModels[j]) < 0
+			})
+			for _, model := range exactModels {
+				add(model)
+			}
 		}
 	}
 
-	for _, candidate := range preferredProbeModels(group.Platform) {
-		if len(availableModels) == 0 || groupSupportsProbeModel(availableModels, candidate) {
+	for _, candidate := range preferredProbeModels(platform) {
+		if account == nil || (s.gatewaySvc != nil && s.gatewaySvc.isModelSupportedByAccountWithContext(context.Background(), account, candidate)) {
 			add(candidate)
 		}
 	}
 
 	if len(candidates) == 0 {
-		add(defaultProbeModel(group.Platform))
+		add(defaultProbeModel(platform))
 	}
 	return candidates
-}
-
-func groupSupportsProbeModel(availableModels []string, candidate string) bool {
-	candidate = strings.TrimSpace(candidate)
-	if candidate == "" {
-		return false
-	}
-	for _, model := range availableModels {
-		model = strings.TrimSpace(model)
-		if model == "" {
-			continue
-		}
-		if model == candidate {
-			return true
-		}
-		if isWildcardModelPattern(model) && matchWildcard(model, candidate) {
-			return true
-		}
-	}
-	return false
 }
 
 func isWildcardModelPattern(model string) bool {
