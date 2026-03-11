@@ -14,20 +14,27 @@ type MonitoringHandler struct {
 	groupRepo   service.GroupRepository
 	userRepo    service.UserRepository
 	userSubRepo service.UserSubscriptionRepository
+	settingSvc  *service.SettingService
 }
 
 // NewMonitoringHandler 创建监控处理器
-func NewMonitoringHandler(groupRepo service.GroupRepository, userRepo service.UserRepository, userSubRepo service.UserSubscriptionRepository) *MonitoringHandler {
+func NewMonitoringHandler(groupRepo service.GroupRepository, userRepo service.UserRepository, userSubRepo service.UserSubscriptionRepository, settingSvc *service.SettingService) *MonitoringHandler {
 	return &MonitoringHandler{
 		groupRepo:   groupRepo,
 		userRepo:    userRepo,
 		userSubRepo: userSubRepo,
+		settingSvc:  settingSvc,
 	}
 }
 
 // GetGroupMonitoring 获取分组监控统计
 // GET /api/v1/monitoring/groups
 func (h *MonitoringHandler) GetGroupMonitoring(c *gin.Context) {
+	if h.settingSvc != nil && !h.settingSvc.IsGroupMonitoringEnabled(c.Request.Context()) {
+		response.Error(c, 404, "Group monitoring is disabled")
+		return
+	}
+
 	stats, err := h.groupRepo.GetGroupMonitoringStats(c.Request.Context())
 	if err != nil {
 		response.Error(c, 500, "Failed to get group monitoring stats")
@@ -75,6 +82,11 @@ func (h *MonitoringHandler) GetGroupMonitoring(c *gin.Context) {
 // GetGroupMonitoringHistory 获取分组监控历史数据
 // GET /api/v1/monitoring/groups/:id/history
 func (h *MonitoringHandler) GetGroupMonitoringHistory(c *gin.Context) {
+	if h.settingSvc != nil && !h.settingSvc.IsGroupMonitoringEnabled(c.Request.Context()) {
+		response.Error(c, 404, "Group monitoring is disabled")
+		return
+	}
+
 	idStr := c.Param("id")
 	groupID, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {

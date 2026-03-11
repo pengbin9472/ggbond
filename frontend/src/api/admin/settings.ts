@@ -43,6 +43,7 @@ export interface SystemSettings {
   purchase_channel_url: string
   purchase_channel_image: string
   sora_client_enabled: boolean
+  group_monitoring_enabled: boolean
   custom_menu_items: CustomMenuItem[]
   // SMTP settings
   smtp_host: string
@@ -112,6 +113,7 @@ export interface UpdateSettingsRequest {
   purchase_channel_url?: string
   purchase_channel_image?: string
   sora_client_enabled?: boolean
+  group_monitoring_enabled?: boolean
   custom_menu_items?: CustomMenuItem[]
   smtp_host?: string
   smtp_port?: number

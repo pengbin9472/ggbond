@@ -3934,6 +3934,12 @@ export default {
         subscriptionGroup: '订阅分组',
         subscriptionValidityDays: '有效期（天）'
       },
+      groupMonitoring: {
+        title: '分组监控',
+        description: '控制是否执行分组探针并向用户展示分组监控页面',
+        enabled: '启用分组监控',
+        enabledHint: '关闭后将停止后台探针与历史聚合，并隐藏侧边栏中的分组监控入口'
+      },
       claudeCode: {
         title: 'Claude Code 设置',
         description: '控制 Claude Code 客户端访问要求',

@@ -3760,6 +3760,12 @@ export default {
         subscriptionGroup: 'Subscription Group',
         subscriptionValidityDays: 'Validity (days)'
       },
+      groupMonitoring: {
+        title: 'Group Monitoring',
+        description: 'Control whether group probes run and whether the monitoring page is visible to users',
+        enabled: 'Enable Group Monitoring',
+        enabledHint: 'When disabled, background probes and history aggregation stop, and the monitoring entry is hidden from the sidebar'
+      },
       claudeCode: {
         title: 'Claude Code Settings',
         description: 'Control Claude Code client access requirements',

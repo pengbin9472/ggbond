@@ -153,6 +153,9 @@ const (
 	// SettingKeyOpsRealtimeMonitoringEnabled controls realtime features (e.g. WS/QPS push).
 	SettingKeyOpsRealtimeMonitoringEnabled = "ops_realtime_monitoring_enabled"
 
+	// SettingKeyGroupMonitoringEnabled controls the group monitoring feature (probe + UI).
+	SettingKeyGroupMonitoringEnabled = "group_monitoring_enabled"
+
 	// SettingKeyOpsQueryModeDefault controls the default query mode for ops dashboard (auto/raw/preagg).
 	SettingKeyOpsQueryModeDefault = "ops_query_mode_default"
 

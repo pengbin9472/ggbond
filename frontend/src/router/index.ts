@@ -540,6 +540,11 @@ router.beforeEach((to, _from, next) => {
     }
   }
 
+  if (to.path.startsWith('/monitoring') && appStore.cachedPublicSettings?.group_monitoring_enabled === false) {
+    next(authStore.isAdmin ? '/admin/dashboard' : '/dashboard')
+    return
+  }
+
   // All checks passed, allow navigation
   next()
 })

@@ -108,6 +108,7 @@ func (h *SettingHandler) GetSettings(c *gin.Context) {
 		PurchaseSubscriptionEnabled:          settings.PurchaseSubscriptionEnabled,
 		PurchaseSubscriptionURL:              settings.PurchaseSubscriptionURL,
 		SoraClientEnabled:                    settings.SoraClientEnabled,
+		GroupMonitoringEnabled:               settings.GroupMonitoringEnabled,
 		CustomMenuItems:                      dto.ParseCustomMenuItems(settings.CustomMenuItems),
 		DefaultConcurrency:                   settings.DefaultConcurrency,
 		DefaultBalance:                       settings.DefaultBalance,
@@ -195,6 +196,7 @@ type UpdateSettingsRequest struct {
 	// Ops monitoring (vNext)
 	OpsMonitoringEnabled         *bool   `json:"ops_monitoring_enabled"`
 	OpsRealtimeMonitoringEnabled *bool   `json:"ops_realtime_monitoring_enabled"`
+	GroupMonitoringEnabled       *bool   `json:"group_monitoring_enabled"`
 	OpsQueryModeDefault          *string `json:"ops_query_mode_default"`
 	OpsMetricsIntervalSeconds    *int    `json:"ops_metrics_interval_seconds"`
 
@@ -497,6 +499,12 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		PurchaseChannelURL:               channelURL,
 		PurchaseChannelImage:             channelImage,
 		SoraClientEnabled:                req.SoraClientEnabled,
+		GroupMonitoringEnabled: func() bool {
+			if req.GroupMonitoringEnabled != nil {
+				return *req.GroupMonitoringEnabled
+			}
+			return previousSettings.GroupMonitoringEnabled
+		}(),
 		CustomMenuItems:                  customMenuJSON,
 		DefaultConcurrency:               req.DefaultConcurrency,
 		DefaultBalance:                   req.DefaultBalance,
@@ -591,6 +599,7 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		PurchaseSubscriptionEnabled:          updatedSettings.PurchaseSubscriptionEnabled,
 		PurchaseSubscriptionURL:              updatedSettings.PurchaseSubscriptionURL,
 		SoraClientEnabled:                    updatedSettings.SoraClientEnabled,
+		GroupMonitoringEnabled:               updatedSettings.GroupMonitoringEnabled,
 		CustomMenuItems:                      dto.ParseCustomMenuItems(updatedSettings.CustomMenuItems),
 		DefaultConcurrency:                   updatedSettings.DefaultConcurrency,
 		DefaultBalance:                       updatedSettings.DefaultBalance,
@@ -749,6 +758,9 @@ func diffSettings(before *service.SystemSettings, after *service.SystemSettings,
 	}
 	if before.OpsRealtimeMonitoringEnabled != after.OpsRealtimeMonitoringEnabled {
 		changed = append(changed, "ops_realtime_monitoring_enabled")
+	}
+	if before.GroupMonitoringEnabled != after.GroupMonitoringEnabled {
+		changed = append(changed, "group_monitoring_enabled")
 	}
 	if before.OpsQueryModeDefault != after.OpsQueryModeDefault {
 		changed = append(changed, "ops_query_mode_default")

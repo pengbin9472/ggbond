@@ -331,6 +331,7 @@ export const useAppStore = defineStore('app', () => {
         purchase_channel_enabled: false,
         purchase_channel_url: '',
         purchase_channel_image: '',
+        group_monitoring_enabled: true,
         custom_menu_items: [],
         linuxdo_oauth_enabled: false,
         sora_client_enabled: false,

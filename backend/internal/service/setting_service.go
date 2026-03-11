@@ -129,6 +129,7 @@ func (s *SettingService) GetPublicSettings(ctx context.Context) (*PublicSettings
 		SettingKeyPurchaseChannelURL,
 		SettingKeyPurchaseChannelImage,
 		SettingKeySoraClientEnabled,
+		SettingKeyGroupMonitoringEnabled,
 		SettingKeyCustomMenuItems,
 		SettingKeyLinuxDoConnectEnabled,
 	}
@@ -176,6 +177,7 @@ func (s *SettingService) GetPublicSettings(ctx context.Context) (*PublicSettings
 		PurchaseChannelURL:               strings.TrimSpace(settings[SettingKeyPurchaseChannelURL]),
 		PurchaseChannelImage:             settings[SettingKeyPurchaseChannelImage],
 		SoraClientEnabled:                settings[SettingKeySoraClientEnabled] == "true",
+		GroupMonitoringEnabled:           !isFalseSettingValue(settings[SettingKeyGroupMonitoringEnabled]),
 		CustomMenuItems:                  settings[SettingKeyCustomMenuItems],
 		LinuxDoOAuthEnabled:              linuxDoEnabled,
 	}, nil
@@ -230,6 +232,7 @@ func (s *SettingService) GetPublicSettingsForInjection(ctx context.Context) (any
 		PurchaseChannelURL               string          `json:"purchase_channel_url,omitempty"`
 		PurchaseChannelImage             string          `json:"purchase_channel_image,omitempty"`
 		SoraClientEnabled                bool            `json:"sora_client_enabled"`
+		GroupMonitoringEnabled           bool            `json:"group_monitoring_enabled"`
 		CustomMenuItems                  json.RawMessage `json:"custom_menu_items"`
 		LinuxDoOAuthEnabled              bool            `json:"linuxdo_oauth_enabled"`
 		Version                          string          `json:"version,omitempty"`
@@ -257,6 +260,7 @@ func (s *SettingService) GetPublicSettingsForInjection(ctx context.Context) (any
 		PurchaseChannelURL:               settings.PurchaseChannelURL,
 		PurchaseChannelImage:             settings.PurchaseChannelImage,
 		SoraClientEnabled:                settings.SoraClientEnabled,
+		GroupMonitoringEnabled:           settings.GroupMonitoringEnabled,
 		CustomMenuItems:                  filterUserVisibleMenuItems(settings.CustomMenuItems),
 		LinuxDoOAuthEnabled:              settings.LinuxDoOAuthEnabled,
 		Version:                          s.version,
@@ -445,6 +449,7 @@ func (s *SettingService) UpdateSettings(ctx context.Context, settings *SystemSet
 	updates[SettingKeyPurchaseChannelURL] = strings.TrimSpace(settings.PurchaseChannelURL)
 	updates[SettingKeyPurchaseChannelImage] = settings.PurchaseChannelImage
 	updates[SettingKeySoraClientEnabled] = strconv.FormatBool(settings.SoraClientEnabled)
+	updates[SettingKeyGroupMonitoringEnabled] = strconv.FormatBool(settings.GroupMonitoringEnabled)
 	updates[SettingKeyCustomMenuItems] = settings.CustomMenuItems
 
 	// 默认配置
@@ -822,6 +827,7 @@ func (s *SettingService) parseSettings(settings map[string]string) *SystemSettin
 	// Ops monitoring settings (default: enabled, fail-open)
 	result.OpsMonitoringEnabled = !isFalseSettingValue(settings[SettingKeyOpsMonitoringEnabled])
 	result.OpsRealtimeMonitoringEnabled = !isFalseSettingValue(settings[SettingKeyOpsRealtimeMonitoringEnabled])
+	result.GroupMonitoringEnabled = !isFalseSettingValue(settings[SettingKeyGroupMonitoringEnabled])
 	result.OpsQueryModeDefault = string(ParseOpsQueryMode(settings[SettingKeyOpsQueryModeDefault]))
 	result.OpsMetricsIntervalSeconds = 60
 	if raw := strings.TrimSpace(settings[SettingKeyOpsMetricsIntervalSeconds]); raw != "" {
@@ -852,6 +858,19 @@ func isFalseSettingValue(value string) bool {
 	default:
 		return false
 	}
+}
+
+// IsGroupMonitoringEnabled returns whether group monitoring is enabled.
+// Defaults to enabled when the setting is absent or malformed.
+func (s *SettingService) IsGroupMonitoringEnabled(ctx context.Context) bool {
+	if s == nil || s.settingRepo == nil {
+		return true
+	}
+	value, err := s.settingRepo.GetValue(ctx, SettingKeyGroupMonitoringEnabled)
+	if err != nil {
+		return true
+	}
+	return !isFalseSettingValue(value)
 }
 
 func parseDefaultSubscriptions(raw string) []DefaultSubscriptionSetting {

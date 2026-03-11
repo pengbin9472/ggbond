@@ -786,6 +786,30 @@
             </div>
           </div>
         </div>
+
+        <div class="card">
+          <div class="border-b border-gray-100 px-6 py-4 dark:border-dark-700">
+            <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+              {{ t('admin.settings.groupMonitoring.title') }}
+            </h2>
+            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+              {{ t('admin.settings.groupMonitoring.description') }}
+            </p>
+          </div>
+          <div class="space-y-6 p-6">
+            <div class="flex items-center justify-between">
+              <div>
+                <label class="font-medium text-gray-900 dark:text-white">{{
+                  t('admin.settings.groupMonitoring.enabled')
+                }}</label>
+                <p class="text-sm text-gray-500 dark:text-gray-400">
+                  {{ t('admin.settings.groupMonitoring.enabledHint') }}
+                </p>
+              </div>
+              <Toggle v-model="form.group_monitoring_enabled" />
+            </div>
+          </div>
+        </div>
         </div><!-- /Tab: Users -->
 
         <!-- Tab: Gateway — Claude Code, Scheduling -->
@@ -1619,6 +1643,7 @@ const form = reactive<SettingsForm>({
   purchase_channel_url: '',
   purchase_channel_image: '',
   sora_client_enabled: false,
+  group_monitoring_enabled: true,
   custom_menu_items: [] as Array<{id: string; label: string; icon_svg: string; url: string; visibility: 'user' | 'admin'; sort_order: number}>,
   smtp_host: '',
   smtp_port: 587,
@@ -1897,6 +1922,7 @@ async function saveSettings() {
       purchase_channel_url: form.purchase_channel_url,
       purchase_channel_image: form.purchase_channel_image,
       sora_client_enabled: form.sora_client_enabled,
+      group_monitoring_enabled: form.group_monitoring_enabled,
       custom_menu_items: form.custom_menu_items,
       smtp_host: form.smtp_host,
       smtp_port: form.smtp_port,

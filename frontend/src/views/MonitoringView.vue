@@ -84,6 +84,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useAppStore } from '@/stores/app'
 import { monitoringAPI } from '@/api/monitoring'
@@ -94,6 +95,7 @@ import GroupMonitoringCard from '@/components/monitoring/GroupMonitoringCard.vue
 
 const { t } = useI18n()
 const appStore = useAppStore()
+const router = useRouter()
 
 const loading = ref(false)
 const groups = ref<GroupMonitoringStat[]>([])
@@ -139,6 +141,10 @@ const loadData = async () => {
 }
 
 onMounted(() => {
+  if (appStore.cachedPublicSettings?.group_monitoring_enabled === false) {
+    router.replace('/dashboard')
+    return
+  }
   loadData()
 })
 </script>

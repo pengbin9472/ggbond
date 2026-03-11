@@ -20,6 +20,7 @@ type GroupMonitoringService struct {
 	groupRepo       GroupRepository
 	gatewaySvc      *GatewayService
 	accountTestSvc  *AccountTestService
+	settingSvc      *SettingService
 	interval        time.Duration
 	probeTimeout    time.Duration
 	maxProbeWorkers int
@@ -29,11 +30,12 @@ type GroupMonitoringService struct {
 }
 
 // NewGroupMonitoringService 创建分组监控服务
-func NewGroupMonitoringService(groupRepo GroupRepository, gatewaySvc *GatewayService, accountTestSvc *AccountTestService) *GroupMonitoringService {
+func NewGroupMonitoringService(groupRepo GroupRepository, gatewaySvc *GatewayService, accountTestSvc *AccountTestService, settingSvc *SettingService) *GroupMonitoringService {
 	return &GroupMonitoringService{
 		groupRepo:       groupRepo,
 		gatewaySvc:      gatewaySvc,
 		accountTestSvc:  accountTestSvc,
+		settingSvc:      settingSvc,
 		interval:        5 * time.Minute,
 		probeTimeout:    12 * time.Second,
 		maxProbeWorkers: 4,
@@ -90,6 +92,11 @@ func (s *GroupMonitoringService) aggregationLoop(ctx context.Context) {
 
 // aggregate 执行一次聚合
 func (s *GroupMonitoringService) aggregate(ctx context.Context) {
+	if s.settingSvc != nil && !s.settingSvc.IsGroupMonitoringEnabled(ctx) {
+		logger.LegacyPrintf("group_monitoring", "Group monitoring is disabled, skipping aggregation")
+		return
+	}
+
 	start := time.Now()
 
 	// 为每次聚合设置超时，避免探针或 DB 慢查询阻塞退出

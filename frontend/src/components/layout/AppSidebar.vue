@@ -174,6 +174,9 @@ const sidebarCollapsed = computed(() => appStore.sidebarCollapsed)
 const mobileOpen = computed(() => appStore.mobileOpen)
 const isAdmin = computed(() => authStore.isAdmin)
 const isDark = ref(document.documentElement.classList.contains('dark'))
+const groupMonitoringEnabled = computed(
+  () => appStore.cachedPublicSettings?.group_monitoring_enabled !== false
+)
 
 // Site settings from appStore (cached, no flicker)
 const siteName = computed(() => appStore.siteName)
@@ -563,7 +566,9 @@ const userNavItems = computed((): NavItem[] => {
     { path: '/dashboard', label: t('nav.dashboard'), icon: DashboardIcon },
     { path: '/keys', label: t('nav.apiKeys'), icon: KeyIcon },
     { path: '/usage', label: t('nav.usage'), icon: ChartIcon, hideInSimpleMode: true },
-    { path: '/monitoring', label: t('nav.monitoring'), icon: MonitorIcon, hideInSimpleMode: true },
+    ...(groupMonitoringEnabled.value
+      ? [{ path: '/monitoring', label: t('nav.monitoring'), icon: MonitorIcon, hideInSimpleMode: true }]
+      : []),
     { path: '/subscriptions', label: t('nav.mySubscriptions'), icon: CreditCardIcon, hideInSimpleMode: true },
     ...(appStore.cachedPublicSettings?.sora_client_enabled
       ? [{ path: '/sora', label: t('nav.sora'), icon: SoraIcon }]
@@ -606,7 +611,9 @@ const personalNavItems = computed((): NavItem[] => {
   const items: NavItem[] = [
     { path: '/keys', label: t('nav.apiKeys'), icon: KeyIcon },
     { path: '/usage', label: t('nav.usage'), icon: ChartIcon, hideInSimpleMode: true },
-    { path: '/monitoring', label: t('nav.monitoring'), icon: MonitorIcon, hideInSimpleMode: true },
+    ...(groupMonitoringEnabled.value
+      ? [{ path: '/monitoring', label: t('nav.monitoring'), icon: MonitorIcon, hideInSimpleMode: true }]
+      : []),
     { path: '/subscriptions', label: t('nav.mySubscriptions'), icon: CreditCardIcon, hideInSimpleMode: true },
     ...(appStore.cachedPublicSettings?.sora_client_enabled
       ? [{ path: '/sora', label: t('nav.sora'), icon: SoraIcon }]

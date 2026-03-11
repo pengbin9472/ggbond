@@ -106,6 +106,7 @@ export interface PublicSettings {
   purchase_channel_enabled: boolean
   purchase_channel_url: string
   purchase_channel_image: string
+  group_monitoring_enabled: boolean
   custom_menu_items: CustomMenuItem[]
   linuxdo_oauth_enabled: boolean
   sora_client_enabled: boolean

@@ -57,6 +57,7 @@ type SystemSettings struct {
 	PurchaseChannelURL          string           `json:"purchase_channel_url"`
 	PurchaseChannelImage        string           `json:"purchase_channel_image"`
 	SoraClientEnabled           bool             `json:"sora_client_enabled"`
+	GroupMonitoringEnabled      bool             `json:"group_monitoring_enabled"`
 	CustomMenuItems             []CustomMenuItem `json:"custom_menu_items"`
 
 	DefaultConcurrency   int                          `json:"default_concurrency"`
@@ -114,6 +115,7 @@ type PublicSettings struct {
 	PurchaseChannelEnabled           bool             `json:"purchase_channel_enabled"`
 	PurchaseChannelURL               string           `json:"purchase_channel_url"`
 	PurchaseChannelImage             string           `json:"purchase_channel_image"`
+	GroupMonitoringEnabled           bool             `json:"group_monitoring_enabled"`
 	CustomMenuItems                  []CustomMenuItem `json:"custom_menu_items"`
 	LinuxDoOAuthEnabled              bool             `json:"linuxdo_oauth_enabled"`
 	SoraClientEnabled                bool             `json:"sora_client_enabled"`

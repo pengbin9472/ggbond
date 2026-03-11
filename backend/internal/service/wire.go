@@ -322,8 +322,8 @@ func ProvideSettingService(settingRepo SettingRepository, groupRepo GroupReposit
 }
 
 // ProvideGroupMonitoringService creates and starts GroupMonitoringService
-func ProvideGroupMonitoringService(groupRepo GroupRepository, gatewaySvc *GatewayService, accountTestSvc *AccountTestService) *GroupMonitoringService {
-	svc := NewGroupMonitoringService(groupRepo, gatewaySvc, accountTestSvc)
+func ProvideGroupMonitoringService(groupRepo GroupRepository, gatewaySvc *GatewayService, accountTestSvc *AccountTestService, settingSvc *SettingService) *GroupMonitoringService {
+	svc := NewGroupMonitoringService(groupRepo, gatewaySvc, accountTestSvc, settingSvc)
 	svc.Start(context.Background())
 	return svc
 }

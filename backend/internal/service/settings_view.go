@@ -64,6 +64,7 @@ type SystemSettings struct {
 	// Ops monitoring (vNext)
 	OpsMonitoringEnabled         bool
 	OpsRealtimeMonitoringEnabled bool
+	GroupMonitoringEnabled       bool
 	OpsQueryModeDefault          string
 	OpsMetricsIntervalSeconds    int
 
@@ -104,6 +105,7 @@ type PublicSettings struct {
 	PurchaseChannelURL          string
 	PurchaseChannelImage string
 	SoraClientEnabled           bool
+	GroupMonitoringEnabled      bool
 	CustomMenuItems             string // JSON array of custom menu items
 
 	LinuxDoOAuthEnabled bool
