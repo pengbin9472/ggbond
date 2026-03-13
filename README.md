@@ -74,13 +74,13 @@ One-click installation script that downloads pre-built binaries from GitHub Rele
 #### Installation Steps
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/Wei-Shaw/sub2api/main/deploy/install.sh | sudo bash
+curl -sSL https://raw.githubusercontent.com/pengbin9472/ggbond/main/deploy/install.sh | sudo bash
 ```
 
 The script will:
 1. Detect your system architecture
 2. Download the latest release
-3. Install binary to `/opt/sub2api`
+3. Install binary to `/opt/ggbond`
 4. Create systemd service
 5. Configure system user and permissions
 
@@ -88,10 +88,10 @@ The script will:
 
 ```bash
 # 1. Start the service
-sudo systemctl start sub2api
+sudo systemctl start ggbond
 
 # 2. Enable auto-start on boot
-sudo systemctl enable sub2api
+sudo systemctl enable ggbond
 
 # 3. Open Setup Wizard in browser
 # http://YOUR_SERVER_IP:8080
@@ -115,16 +115,16 @@ The web interface will:
 
 ```bash
 # Check status
-sudo systemctl status sub2api
+sudo systemctl status ggbond
 
 # View logs
-sudo journalctl -u sub2api -f
+sudo journalctl -u ggbond -f
 
 # Restart service
-sudo systemctl restart sub2api
+sudo systemctl restart ggbond
 
 # Uninstall
-curl -sSL https://raw.githubusercontent.com/Wei-Shaw/sub2api/main/deploy/install.sh | sudo bash -s -- uninstall -y
+curl -sSL https://raw.githubusercontent.com/pengbin9472/ggbond/main/deploy/install.sh | sudo bash -s -- uninstall -y
 ```
 
 ---
@@ -144,20 +144,20 @@ Use the automated deployment script for easy setup:
 
 ```bash
 # Create deployment directory
-mkdir -p sub2api-deploy && cd sub2api-deploy
+mkdir -p ggbond-deploy && cd ggbond-deploy
 
 # Download and run deployment preparation script
-curl -sSL https://raw.githubusercontent.com/Wei-Shaw/sub2api/main/deploy/docker-deploy.sh | bash
+curl -sSL https://raw.githubusercontent.com/pengbin9472/ggbond/main/deploy/docker-deploy.sh | bash
 
 # Start services
-docker-compose -f docker-compose.local.yml up -d
+docker-compose up -d
 
 # View logs
-docker-compose -f docker-compose.local.yml logs -f sub2api
+docker-compose logs -f ggbond
 ```
 
 **What the script does:**
-- Downloads `docker-compose.local.yml` and `.env.example`
+- Downloads `docker-compose.local.yml` (saved as `docker-compose.yml`) and `.env.example`
 - Generates secure credentials (JWT_SECRET, TOTP_ENCRYPTION_KEY, POSTGRES_PASSWORD)
 - Creates `.env` file with auto-generated secrets
 - Creates data directories (uses local directories for easy backup/migration)
@@ -169,8 +169,8 @@ If you prefer manual setup:
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/Wei-Shaw/sub2api.git
-cd sub2api/deploy
+git clone https://github.com/pengbin9472/ggbond.git
+cd ggbond/deploy
 
 # 2. Copy environment configuration
 cp .env.example .env
@@ -226,7 +226,7 @@ docker-compose up -d
 docker-compose -f docker-compose.local.yml ps
 
 # 7. View logs
-docker-compose -f docker-compose.local.yml logs -f sub2api
+docker-compose -f docker-compose.local.yml logs -f ggbond
 ```
 
 #### Deployment Versions
@@ -244,7 +244,7 @@ Open `http://YOUR_SERVER_IP:8080` in your browser.
 
 If admin password was auto-generated, find it in logs:
 ```bash
-docker-compose -f docker-compose.local.yml logs sub2api | grep "admin password"
+docker-compose -f docker-compose.local.yml logs ggbond | grep "admin password"
 ```
 
 #### Upgrade
@@ -263,14 +263,14 @@ When using `docker-compose.local.yml`, migrate to a new server easily:
 # On source server
 docker-compose -f docker-compose.local.yml down
 cd ..
-tar czf sub2api-complete.tar.gz sub2api-deploy/
+tar czf ggbond-complete.tar.gz ggbond-deploy/
 
 # Transfer to new server
-scp sub2api-complete.tar.gz user@new-server:/path/
+scp ggbond-complete.tar.gz user@new-server:/path/
 
 # On new server
-tar xzf sub2api-complete.tar.gz
-cd sub2api-deploy/
+tar xzf ggbond-complete.tar.gz
+cd ggbond-deploy/
 docker-compose -f docker-compose.local.yml up -d
 ```
 
@@ -308,8 +308,8 @@ Build and run from source code for development or customization.
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/Wei-Shaw/sub2api.git
-cd sub2api
+git clone https://github.com/pengbin9472/ggbond.git
+cd ggbond
 
 # 2. Install pnpm (if not already installed)
 npm install -g pnpm
@@ -322,7 +322,7 @@ pnpm run build
 
 # 4. Build backend with embedded frontend
 cd ../backend
-go build -tags embed -o sub2api ./cmd/server
+go build -tags embed -o ggbond ./cmd/server
 
 # 5. Create configuration file
 cp ../deploy/config.example.yaml ./config.yaml
@@ -346,7 +346,7 @@ database:
   port: 5432
   user: "postgres"
   password: "your_password"
-  dbname: "sub2api"
+  dbname: "ggbond"
 
 redis:
   host: "localhost"
@@ -425,7 +425,7 @@ If you disable URL validation or response header filtering, harden your network 
 
 ```bash
 # 6. Run the application
-./sub2api
+./ggbond
 ```
 
 #### Development Mode
@@ -497,7 +497,7 @@ In Claude Code, Plan Mode cannot exit automatically. (Normally when using the na
 ## Project Structure
 
 ```
-sub2api/
+ggbond/
 ├── backend/                  # Go backend service
 │   ├── cmd/server/           # Application entry
 │   ├── internal/             # Internal modules
@@ -521,6 +521,28 @@ sub2api/
     ├── config.example.yaml   # Full config file for binary deployment
     └── install.sh            # One-click installation script
 ```
+
+## Disclaimer
+
+> **Please read carefully before using this project:**
+>
+> :rotating_light: **Terms of Service Risk**: Using this project may violate Anthropic's Terms of Service. Please read Anthropic's user agreement carefully before use. All risks arising from the use of this project are borne solely by the user.
+>
+> :book: **Disclaimer**: This project is for technical learning and research purposes only. The author assumes no responsibility for account suspension, service interruption, or any other losses caused by the use of this project.
+
+---
+
+## Star History
+
+<a href="https://star-history.com/#pengbin9472/ggbond&Date">
+ <picture>
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=pengbin9472/ggbond&type=Date&theme=dark" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=pengbin9472/ggbond&type=Date" />
+   <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=pengbin9472/ggbond&type=Date" />
+ </picture>
+</a>
+
+---
 
 ## License
 

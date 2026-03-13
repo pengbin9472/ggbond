@@ -1127,6 +1127,58 @@
           </template>
         </div>
 
+        <!-- Pool Mode Section -->
+        <div class="border-t border-gray-200 pt-4 dark:border-dark-600">
+          <div class="mb-3 flex items-center justify-between">
+            <div>
+              <label class="input-label mb-0">{{ t('admin.accounts.poolMode') }}</label>
+              <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                {{ t('admin.accounts.poolModeHint') }}
+              </p>
+            </div>
+            <button
+              type="button"
+              @click="poolModeEnabled = !poolModeEnabled"
+              :class="[
+                'relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2',
+                poolModeEnabled ? 'bg-primary-600' : 'bg-gray-200 dark:bg-dark-600'
+              ]"
+            >
+              <span
+                :class="[
+                  'pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out',
+                  poolModeEnabled ? 'translate-x-5' : 'translate-x-0'
+                ]"
+              />
+            </button>
+          </div>
+          <div v-if="poolModeEnabled" class="rounded-lg bg-blue-50 p-3 dark:bg-blue-900/20">
+            <p class="text-xs text-blue-700 dark:text-blue-400">
+              <Icon name="exclamationCircle" size="sm" class="mr-1 inline" :stroke-width="2" />
+              {{ t('admin.accounts.poolModeInfo') }}
+            </p>
+          </div>
+          <div v-if="poolModeEnabled" class="mt-3">
+            <label class="input-label">{{ t('admin.accounts.poolModeRetryCount') }}</label>
+            <input
+              v-model.number="poolModeRetryCount"
+              type="number"
+              min="0"
+              :max="MAX_POOL_MODE_RETRY_COUNT"
+              step="1"
+              class="input"
+            />
+            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              {{
+                t('admin.accounts.poolModeRetryCountHint', {
+                  default: DEFAULT_POOL_MODE_RETRY_COUNT,
+                  max: MAX_POOL_MODE_RETRY_COUNT
+                })
+              }}
+            </p>
+          </div>
+        </div>
+
         <!-- Custom Error Codes Section -->
         <div class="border-t border-gray-200 pt-4 dark:border-dark-600">
           <div class="mb-3 flex items-center justify-between">
@@ -1228,7 +1280,22 @@
       </div>
 
       <!-- API Key 账号配额限制 -->
-      <QuotaLimitCard v-if="form.type === 'apikey'" v-model="editQuotaLimit" />
+      <div v-if="form.type === 'apikey'" class="border-t border-gray-200 pt-4 dark:border-dark-600 space-y-4">
+        <div class="mb-3">
+          <h3 class="input-label mb-0 text-base font-semibold">{{ t('admin.accounts.quotaLimit') }}</h3>
+          <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+            {{ t('admin.accounts.quotaLimitHint') }}
+          </p>
+        </div>
+        <QuotaLimitCard
+          :totalLimit="editQuotaLimit"
+          :dailyLimit="editQuotaDailyLimit"
+          :weeklyLimit="editQuotaWeeklyLimit"
+          @update:totalLimit="editQuotaLimit = $event"
+          @update:dailyLimit="editQuotaDailyLimit = $event"
+          @update:weeklyLimit="editQuotaWeeklyLimit = $event"
+        />
+      </div>
 
       <!-- OpenAI OAuth Model Mapping (OAuth 类型没有 apikey 容器，需要独立的模型映射区域) -->
       <div
@@ -2610,15 +2677,22 @@ interface TempUnschedRuleForm {
 
 // State
 const step = ref(1)
+const customUserAgent = ref('')
 const submitting = ref(false)
 const accountCategory = ref<'oauth-based' | 'apikey'>('oauth-based') // UI selection for account category
 const addMethod = ref<AddMethod>('oauth') // For oauth-based: 'oauth' or 'setup-token'
 const apiKeyBaseUrl = ref('https://api.anthropic.com')
 const apiKeyValue = ref('')
 const editQuotaLimit = ref<number | null>(null)
+const editQuotaDailyLimit = ref<number | null>(null)
+const editQuotaWeeklyLimit = ref<number | null>(null)
 const modelMappings = ref<ModelMapping[]>([])
 const modelRestrictionMode = ref<'whitelist' | 'mapping'>('whitelist')
 const allowedModels = ref<string[]>([])
+const DEFAULT_POOL_MODE_RETRY_COUNT = 3
+const MAX_POOL_MODE_RETRY_COUNT = 10
+const poolModeEnabled = ref(false)
+const poolModeRetryCount = ref(DEFAULT_POOL_MODE_RETRY_COUNT)
 const customErrorCodesEnabled = ref(false)
 const selectedErrorCodes = ref<number[]>([])
 const customErrorCodeInput = ref<number | null>(null)
@@ -2795,8 +2869,6 @@ const form = reactive({
   group_ids: [] as number[],
   expires_at: null as number | null
 })
-
-const customUserAgent = ref('')
 
 // Helper to check if current type needs OAuth flow
 const isOAuthFlow = computed(() => {
@@ -3278,8 +3350,8 @@ const resetForm = () => {
   form.platform = 'anthropic'
   form.type = 'oauth'
   form.credentials = {}
-  customUserAgent.value = ''
   form.proxy_id = null
+  customUserAgent.value = ''
   form.concurrency = 10
   form.load_factor = null
   form.priority = 1
@@ -3291,6 +3363,8 @@ const resetForm = () => {
   apiKeyBaseUrl.value = 'https://api.anthropic.com'
   apiKeyValue.value = ''
   editQuotaLimit.value = null
+  editQuotaDailyLimit.value = null
+  editQuotaWeeklyLimit.value = null
   modelMappings.value = []
   modelRestrictionMode.value = 'whitelist'
   allowedModels.value = [...claudeModels] // Default fill related models
@@ -3300,6 +3374,8 @@ const resetForm = () => {
   fetchAntigravityDefaultMappings().then(mappings => {
     antigravityModelMappings.value = [...mappings]
   })
+  poolModeEnabled.value = false
+  poolModeRetryCount.value = DEFAULT_POOL_MODE_RETRY_COUNT
   customErrorCodesEnabled.value = false
   selectedErrorCodes.value = []
   customErrorCodeInput.value = null
@@ -3452,6 +3528,20 @@ const handleMixedChannelCancel = () => {
   clearMixedChannelDialog()
 }
 
+const normalizePoolModeRetryCount = (value: number) => {
+  if (!Number.isFinite(value)) {
+    return DEFAULT_POOL_MODE_RETRY_COUNT
+  }
+  const normalized = Math.trunc(value)
+  if (normalized < 0) {
+    return 0
+  }
+  if (normalized > MAX_POOL_MODE_RETRY_COUNT) {
+    return MAX_POOL_MODE_RETRY_COUNT
+  }
+  return normalized
+}
+
 const handleSubmit = async () => {
   // For OAuth-based type, handle OAuth flow (goes to step 2)
   if (isOAuthFlow.value) {
@@ -3551,6 +3641,12 @@ const handleSubmit = async () => {
     }
   }
 
+  // Add pool mode if enabled
+  if (poolModeEnabled.value) {
+    credentials.pool_mode = true
+    credentials.pool_mode_retry_count = normalizePoolModeRetryCount(poolModeRetryCount.value)
+  }
+
   // Add custom error codes if enabled
   if (customErrorCodesEnabled.value) {
     credentials.custom_error_codes_enabled = true
@@ -3642,7 +3738,6 @@ const handleImportAccessToken = async (accessTokenInput: string) => {
         const credentials: Record<string, unknown> = {
           access_token: accessTokens[i],
         }
-        applyCustomUserAgent(credentials)
         const soraExtra = buildSoraExtra()
 
         const accountName = accessTokens.length > 1 ? `${form.name} #${i + 1}` : form.name
@@ -3707,10 +3802,22 @@ const createAccountAndFinish = async (
     return
   }
   applyCustomUserAgent(credentials)
-  // Inject quota_limit for apikey accounts
+  // Inject quota limits for apikey accounts
   let finalExtra = extra
-  if (type === 'apikey' && editQuotaLimit.value != null && editQuotaLimit.value > 0) {
-    finalExtra = { ...(extra || {}), quota_limit: editQuotaLimit.value }
+  if (type === 'apikey') {
+    const quotaExtra: Record<string, unknown> = { ...(extra || {}) }
+    if (editQuotaLimit.value != null && editQuotaLimit.value > 0) {
+      quotaExtra.quota_limit = editQuotaLimit.value
+    }
+    if (editQuotaDailyLimit.value != null && editQuotaDailyLimit.value > 0) {
+      quotaExtra.quota_daily_limit = editQuotaDailyLimit.value
+    }
+    if (editQuotaWeeklyLimit.value != null && editQuotaWeeklyLimit.value > 0) {
+      quotaExtra.quota_weekly_limit = editQuotaWeeklyLimit.value
+    }
+    if (Object.keys(quotaExtra).length > 0) {
+      finalExtra = quotaExtra
+    }
   }
   await doCreateAccount({
     name: form.name,
@@ -3772,7 +3879,6 @@ const handleOpenAIExchange = async (authCode: string) => {
     if (!applyTempUnschedConfig(credentials)) {
       return
     }
-    applyCustomUserAgent(credentials)
 
     let openaiAccountId: string | number | undefined
 
@@ -3876,7 +3982,6 @@ const handleOpenAIValidateRT = async (refreshTokenInput: string) => {
         }
 
         const credentials = oauthClient.buildCredentials(tokenInfo)
-        applyCustomUserAgent(credentials)
         const oauthExtra = oauthClient.buildExtraInfo(tokenInfo) as Record<string, unknown> | undefined
         const extra = buildOpenAIExtra(oauthExtra)
 
@@ -4007,7 +4112,6 @@ const handleSoraValidateST = async (sessionTokenInput: string) => {
 
         const credentials = oauthClient.buildCredentials(tokenInfo)
         credentials.session_token = sessionTokens[i]
-        applyCustomUserAgent(credentials)
         const oauthExtra = oauthClient.buildExtraInfo(tokenInfo) as Record<string, unknown> | undefined
         const soraExtra = buildSoraExtra(oauthExtra)
 
@@ -4096,8 +4200,7 @@ const handleAntigravityValidateRT = async (refreshTokenInput: string) => {
         }
 
         const credentials = antigravityOAuth.buildCredentials(tokenInfo)
-        applyCustomUserAgent(credentials)
-
+        
         // Generate account name with index for batch
         const accountName = refreshTokens.length > 1 ? `${form.name} #${i + 1}` : form.name
 
@@ -4421,7 +4524,6 @@ const handleCookieAuth = async (sessionKey: string) => {
 
         const credentials: Record<string, unknown> = { ...tokenInfo }
         applyInterceptWarmup(credentials, interceptWarmupRequests.value, 'create')
-        applyCustomUserAgent(credentials)
         if (tempUnschedEnabled.value) {
           credentials.temp_unschedulable_enabled = true
           credentials.temp_unschedulable_rules = tempUnschedPayload
