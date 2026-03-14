@@ -965,6 +965,8 @@ export default {
       tokens: 'Tokens',
       actual: 'Actual',
       standard: 'Standard',
+      metricTokens: 'By Tokens',
+      metricActualCost: 'By Actual Cost',
       noDataAvailable: 'No data available',
       recentUsage: 'Recent Usage',
       failedToLoad: 'Failed to load dashboard statistics'
@@ -1832,7 +1834,12 @@ export default {
         edit: 'Bulk Edit',
         delete: 'Bulk Delete',
         enableScheduling: 'Enable Scheduling',
-        disableScheduling: 'Disable Scheduling'
+        disableScheduling: 'Disable Scheduling',
+        resetStatus: 'Reset Status',
+        refreshToken: 'Refresh Token',
+        resetStatusSuccess: 'Successfully reset status for {count} account(s)',
+        refreshTokenSuccess: 'Successfully refreshed token for {count} account(s)',
+        partialSuccess: 'Partial success: {success} succeeded, {failed} failed'
       },
       bulkEdit: {
         title: 'Bulk Edit Accounts',

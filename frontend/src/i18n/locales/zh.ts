@@ -970,6 +970,8 @@ export default {
       modelDistribution: '模型分布',
       groupDistribution: '分组使用分布',
       tokenUsageTrend: 'Token 使用趋势',
+      metricTokens: '按 Token',
+      metricActualCost: '按实际成本',
       noDataAvailable: '暂无数据',
       model: '模型',
       group: '分组',
@@ -1979,7 +1981,12 @@ export default {
         edit: '批量编辑账号',
         delete: '批量删除',
         enableScheduling: '批量启用调度',
-        disableScheduling: '批量停止调度'
+        disableScheduling: '批量停止调度',
+        resetStatus: '重置状态',
+        refreshToken: '刷新令牌',
+        resetStatusSuccess: '成功重置 {count} 个账号的状态',
+        refreshTokenSuccess: '成功刷新 {count} 个账号的令牌',
+        partialSuccess: '部分成功：成功 {success} 个，失败 {failed} 个'
       },
       bulkEdit: {
         title: '批量编辑账号',
