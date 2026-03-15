@@ -3,6 +3,7 @@ package routes
 import (
 	"github.com/pengbin9472/ggbond/internal/handler"
 	"github.com/pengbin9472/ggbond/internal/server/middleware"
+	"github.com/pengbin9472/ggbond/internal/service"
 
 	"github.com/gin-gonic/gin"
 )
@@ -12,9 +13,11 @@ func RegisterUserRoutes(
 	v1 *gin.RouterGroup,
 	h *handler.Handlers,
 	jwtAuth middleware.JWTAuthMiddleware,
+	settingService *service.SettingService,
 ) {
 	authenticated := v1.Group("")
 	authenticated.Use(gin.HandlerFunc(jwtAuth))
+	authenticated.Use(middleware.BackendModeUserGuard(settingService))
 	{
 		// 用户接口
 		user := authenticated.Group("/user")

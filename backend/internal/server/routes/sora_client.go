@@ -3,6 +3,7 @@ package routes
 import (
 	"github.com/pengbin9472/ggbond/internal/handler"
 	"github.com/pengbin9472/ggbond/internal/server/middleware"
+	"github.com/pengbin9472/ggbond/internal/service"
 
 	"github.com/gin-gonic/gin"
 )
@@ -12,6 +13,7 @@ func RegisterSoraClientRoutes(
 	v1 *gin.RouterGroup,
 	h *handler.Handlers,
 	jwtAuth middleware.JWTAuthMiddleware,
+	settingService *service.SettingService,
 ) {
 	if h.SoraClient == nil {
 		return
@@ -19,6 +21,7 @@ func RegisterSoraClientRoutes(
 
 	authenticated := v1.Group("/sora")
 	authenticated.Use(gin.HandlerFunc(jwtAuth))
+	authenticated.Use(middleware.BackendModeUserGuard(settingService))
 	{
 		authenticated.POST("/generate", h.SoraClient.Generate)
 		authenticated.GET("/generations", h.SoraClient.ListGenerations)

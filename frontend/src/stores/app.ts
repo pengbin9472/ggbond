@@ -47,6 +47,7 @@ export const useAppStore = defineStore('app', () => {
   // ==================== Computed ====================
 
   const hasActiveToasts = computed(() => toasts.value.length > 0)
+  const backendModeEnabled = computed(() => cachedPublicSettings.value?.backend_mode_enabled ?? false)
 
   const loadingCount = ref<number>(0)
 
@@ -335,6 +336,7 @@ export const useAppStore = defineStore('app', () => {
         custom_menu_items: [],
         linuxdo_oauth_enabled: false,
         sora_client_enabled: false,
+        backend_mode_enabled: false,
         version: siteVersion.value
       }
     }
@@ -408,6 +410,7 @@ export const useAppStore = defineStore('app', () => {
 
     // Computed
     hasActiveToasts,
+    backendModeEnabled,
 
     // Actions
     toggleSidebar,
