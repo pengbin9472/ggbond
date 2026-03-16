@@ -390,14 +390,12 @@ onMounted(async () => {
       }
     }
 
-    // Read invitation code from URL parameter only if invitation code is enabled
-    if (invitationCodeEnabled.value) {
-      const codeParam = route.query.code as string
-      if (codeParam) {
-        formData.invitation_code = codeParam
-        // Validate the invitation code from URL
-        await validateInvitationCodeDebounced(codeParam)
-      }
+    // Read invitation code from URL parameter
+    const codeParam = route.query.code as string
+    if (codeParam) {
+      formData.invitation_code = codeParam
+      invitationCodeEnabled.value = true // 有邀请码时显示输入框
+      await validateInvitationCodeDebounced(codeParam)
     }
   } catch (error) {
     console.error('Failed to load public settings:', error)
