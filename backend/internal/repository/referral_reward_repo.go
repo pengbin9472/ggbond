@@ -5,6 +5,7 @@ import (
 
 	dbent "github.com/pengbin9472/ggbond/ent"
 	"github.com/pengbin9472/ggbond/ent/referralreward"
+	"github.com/pengbin9472/ggbond/ent/user"
 	"github.com/pengbin9472/ggbond/internal/pkg/pagination"
 	"github.com/pengbin9472/ggbond/internal/service"
 )
@@ -90,10 +91,9 @@ func (r *referralRewardRepository) SumRewardsByInviter(ctx context.Context, invi
 }
 
 func (r *referralRewardRepository) CountInviteesByInviter(ctx context.Context, inviterID int64) (int64, error) {
-	count, err := r.client.ReferralReward.Query().
-		Where(referralreward.InviterIDEQ(inviterID)).
-		Unique(true).
-		Select(referralreward.FieldInviteeID).
+	// 从 users 表统计 referred_by = inviterID 的用户数量
+	count, err := r.client.User.Query().
+		Where(user.ReferredByEQ(inviterID)).
 		Count(ctx)
 	if err != nil {
 		return 0, err
