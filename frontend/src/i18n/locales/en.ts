@@ -331,6 +331,7 @@ export default {
     apiKeys: 'API Keys',
     usage: 'Usage',
     redeem: 'Redeem',
+    referral: 'Referral',
     profile: 'Profile',
     users: 'Users',
     groups: 'Groups',
@@ -807,6 +808,26 @@ export default {
     failedToRedeem: 'Failed to redeem code. Please check the code and try again.',
     subscriptionRefreshFailed: 'Redeemed successfully, but failed to refresh subscription status.',
     pleaseEnterCode: 'Please enter a redeem code'
+  },
+
+  // Referral
+  referral: {
+    title: 'Referral Rewards',
+    description: 'Invite friends and earn cashback rewards',
+    totalRewards: 'Total Rewards',
+    inviteeCount: 'Invitees',
+    invitationLink: 'My Invitation Link',
+    invitationLinkHint: 'Share this link to invite friends',
+    invitationCode: 'Invitation Code',
+    invitationUrl: 'Invitation URL',
+    codeCopied: 'Invitation code copied',
+    urlCopied: 'Invitation link copied',
+    rewardHistory: 'Reward History',
+    inviteeEmail: 'Invitee',
+    rewardAmount: 'Reward',
+    triggerAmount: 'Trigger Amount',
+    createdAt: 'Date',
+    noHistory: 'No reward history yet'
   },
 
   // Profile

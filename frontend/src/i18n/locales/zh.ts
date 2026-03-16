@@ -331,6 +331,7 @@ export default {
     apiKeys: 'API 密钥',
     usage: '使用记录',
     redeem: '兑换',
+    referral: '邀请返现',
     profile: '个人资料',
     users: '用户管理',
     groups: '分组管理',
@@ -812,6 +813,26 @@ export default {
     failedToRedeem: '兑换失败，请检查兑换码后重试。',
     subscriptionRefreshFailed: '兑换成功，但订阅状态刷新失败。',
     pleaseEnterCode: '请输入兑换码'
+  },
+
+  // Referral
+  referral: {
+    title: '邀请返现',
+    description: '邀请好友注册，获得返现奖励',
+    totalRewards: '累计返现',
+    inviteeCount: '邀请人数',
+    invitationLink: '我的邀请链接',
+    invitationLinkHint: '分享此链接邀请好友注册',
+    invitationCode: '邀请码',
+    invitationUrl: '邀请链接',
+    codeCopied: '邀请码已复制',
+    urlCopied: '邀请链接已复制',
+    rewardHistory: '返现记录',
+    inviteeEmail: '被邀请人',
+    rewardAmount: '返现金额',
+    triggerAmount: '触发金额',
+    createdAt: '时间',
+    noHistory: '暂无返现记录'
   },
 
   // Profile
