@@ -696,6 +696,84 @@
                 :disabled="!form.totp_encryption_key_configured"
               />
             </div>
+
+            <!-- 邀请返现 -->
+            <div
+              class="flex items-center justify-between border-t border-gray-100 pt-4 dark:border-dark-700"
+            >
+              <div>
+                <label class="font-medium text-gray-900 dark:text-white">{{
+                  t('admin.settings.referral.enabled')
+                }}</label>
+                <p class="text-sm text-gray-500 dark:text-gray-400">
+                  {{ t('admin.settings.referral.enabledHint') }}
+                </p>
+              </div>
+              <Toggle v-model="form.referral_enabled" />
+            </div>
+
+            <!-- 返现类型和金额 - 仅在启用时显示 -->
+            <div
+              v-if="form.referral_enabled"
+              class="border-t border-gray-100 pt-4 dark:border-dark-700"
+            >
+              <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                {{ t('admin.settings.referral.rewardType') }}
+              </label>
+              <select v-model="form.referral_reward_type" class="input mb-4">
+                <option value="percentage">{{ t('admin.settings.referral.percentage') }}</option>
+                <option value="fixed">{{ t('admin.settings.referral.fixed') }}</option>
+              </select>
+
+              <div v-if="form.referral_reward_type === 'percentage'" class="mb-4">
+                <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  {{ t('admin.settings.referral.cashbackPercentage') }}
+                </label>
+                <input
+                  v-model.number="form.referral_cashback_percentage"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  max="100"
+                  class="input"
+                />
+                <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
+                  {{ t('admin.settings.referral.cashbackPercentageHint') }}
+                </p>
+              </div>
+
+              <div v-if="form.referral_reward_type === 'fixed'" class="mb-4">
+                <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  {{ t('admin.settings.referral.fixedAmount') }}
+                </label>
+                <input
+                  v-model.number="form.referral_fixed_amount"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  class="input"
+                />
+                <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
+                  {{ t('admin.settings.referral.fixedAmountHint') }}
+                </p>
+              </div>
+
+              <div>
+                <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  {{ t('admin.settings.referral.maxRewardsPerUser') }}
+                </label>
+                <input
+                  v-model.number="form.referral_max_rewards_per_user"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  class="input"
+                />
+                <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
+                  {{ t('admin.settings.referral.maxRewardsPerUserHint') }}
+                </p>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -1961,7 +2039,13 @@ const form = reactive<SettingsForm>({
   // Claude Code version check
   min_claude_code_version: '',
   // 分组隔离
-  allow_ungrouped_key_scheduling: false
+  allow_ungrouped_key_scheduling: false,
+  // 邀请返现
+  referral_enabled: false,
+  referral_reward_type: 'percentage',
+  referral_cashback_percentage: 10.0,
+  referral_fixed_amount: 0,
+  referral_max_rewards_per_user: 0
 })
 
 const defaultSubscriptionGroupOptions = computed<DefaultSubscriptionGroupOption[]>(() =>
@@ -2229,7 +2313,12 @@ async function saveSettings() {
       enable_identity_patch: form.enable_identity_patch,
       identity_patch_prompt: form.identity_patch_prompt,
       min_claude_code_version: form.min_claude_code_version,
-      allow_ungrouped_key_scheduling: form.allow_ungrouped_key_scheduling
+      allow_ungrouped_key_scheduling: form.allow_ungrouped_key_scheduling,
+      referral_enabled: form.referral_enabled,
+      referral_reward_type: form.referral_reward_type,
+      referral_cashback_percentage: form.referral_cashback_percentage,
+      referral_fixed_amount: form.referral_fixed_amount,
+      referral_max_rewards_per_user: form.referral_max_rewards_per_user
     }
     const updated = await adminAPI.settings.updateSettings(payload)
     Object.assign(form, updated)

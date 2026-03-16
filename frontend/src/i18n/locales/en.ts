@@ -3987,6 +3987,19 @@ export default {
         totpKeyNotConfigured:
           'Please configure TOTP_ENCRYPTION_KEY in environment variables first. Generate a key with: openssl rand -hex 32'
       },
+      referral: {
+        enabled: 'Referral Rewards',
+        enabledHint: 'Inviters receive cashback when invitees redeem balance codes',
+        rewardType: 'Reward Type',
+        percentage: 'Percentage-based',
+        fixed: 'Fixed Amount',
+        cashbackPercentage: 'Cashback Percentage (%)',
+        cashbackPercentageHint: 'Percentage of invitee redemption amount given to inviter (e.g., 10 for 10%)',
+        fixedAmount: 'Fixed Reward Amount',
+        fixedAmountHint: 'Fixed amount given to inviter for each invitee redemption',
+        maxRewardsPerUser: 'Max Rewards Per User',
+        maxRewardsPerUserHint: 'Maximum total rewards each inviter can receive, 0 for unlimited'
+      },
       turnstile: {
         title: 'Cloudflare Turnstile',
         description: 'Bot protection for login and registration',

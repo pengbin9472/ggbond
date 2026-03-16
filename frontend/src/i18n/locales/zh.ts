@@ -4154,6 +4154,19 @@ export default {
         totpKeyNotConfigured:
           '请先在环境变量中配置 TOTP_ENCRYPTION_KEY。使用命令 openssl rand -hex 32 生成密钥。'
       },
+      referral: {
+        enabled: '邀请返现',
+        enabledHint: '用户邀请新用户注册后，新用户兑换余额时邀请人获得返现',
+        rewardType: '返现类型',
+        percentage: '按比例返现',
+        fixed: '固定金额返现',
+        cashbackPercentage: '返现比例 (%)',
+        cashbackPercentageHint: '被邀请人兑换余额时，邀请人获得的返现比例（例如：10 表示 10%）',
+        fixedAmount: '固定返现金额',
+        fixedAmountHint: '被邀请人每次兑换余额时，邀请人获得的固定金额',
+        maxRewardsPerUser: '单人返现上限',
+        maxRewardsPerUserHint: '每个邀请人累计可获得的最大返现金额，0 表示不限制'
+      },
       turnstile: {
         title: 'Cloudflare Turnstile',
         description: '登录和注册的机器人防护',
