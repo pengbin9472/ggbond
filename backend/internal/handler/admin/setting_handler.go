@@ -128,6 +128,11 @@ func (h *SettingHandler) GetSettings(c *gin.Context) {
 		MinClaudeCodeVersion:                 settings.MinClaudeCodeVersion,
 		AllowUngroupedKeyScheduling:          settings.AllowUngroupedKeyScheduling,
 		BackendModeEnabled:                   settings.BackendModeEnabled,
+		ReferralEnabled:                      settings.ReferralEnabled,
+		ReferralRewardType:                   settings.ReferralRewardType,
+		ReferralCashbackPercentage:           settings.ReferralCashbackPercentage,
+		ReferralFixedAmount:                  settings.ReferralFixedAmount,
+		ReferralMaxRewardsPerUser:            settings.ReferralMaxRewardsPerUser,
 	})
 }
 
@@ -648,6 +653,11 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		MinClaudeCodeVersion:                 updatedSettings.MinClaudeCodeVersion,
 		AllowUngroupedKeyScheduling:          updatedSettings.AllowUngroupedKeyScheduling,
 		BackendModeEnabled:                   updatedSettings.BackendModeEnabled,
+		ReferralEnabled:                      updatedSettings.ReferralEnabled,
+		ReferralRewardType:                   updatedSettings.ReferralRewardType,
+		ReferralCashbackPercentage:           updatedSettings.ReferralCashbackPercentage,
+		ReferralFixedAmount:                  updatedSettings.ReferralFixedAmount,
+		ReferralMaxRewardsPerUser:            updatedSettings.ReferralMaxRewardsPerUser,
 	})
 }
 
