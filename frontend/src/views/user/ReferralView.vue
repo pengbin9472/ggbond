@@ -124,7 +124,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
-import AppLayout from '@/layouts/AppLayout.vue'
+import AppLayout from '@/components/layout/AppLayout.vue'
 import Icon from '@/components/Icon.vue'
 import { referralAPI, type ReferralStats, type ReferralReward } from '@/api/referral'
 import { useAppStore } from '@/stores/app'
