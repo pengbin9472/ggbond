@@ -197,6 +197,11 @@ func (s *AuthService) RegisterWithVerification(ctx context.Context, email, passw
 		Status:       StatusActive,
 	}
 
+	// 如果使用了邀请码且邀请码有归属用户，设置 referred_by
+	if invitationRedeemCode != nil && invitationRedeemCode.InviterUserID != nil {
+		user.ReferredBy = invitationRedeemCode.InviterUserID
+	}
+
 	if err := s.userRepo.Create(ctx, user); err != nil {
 		// 优先检查邮箱冲突错误（竞态条件下可能发生）
 		if errors.Is(err, ErrEmailExists) {

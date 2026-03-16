@@ -82,6 +82,14 @@ func RegisterUserRoutes(
 			redeem.GET("/history", h.Redeem.GetHistory)
 		}
 
+		// 邀请返现
+		referrals := authenticated.Group("/referrals")
+		{
+			referrals.GET("/code", h.Referral.GetInvitationCode)
+			referrals.GET("/stats", h.Referral.GetStats)
+			referrals.GET("/history", h.Referral.GetHistory)
+		}
+
 		// 用户订阅
 		subscriptions := authenticated.Group("/subscriptions")
 		{

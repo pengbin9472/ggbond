@@ -87,6 +87,7 @@ func ProvideHandlers(
 	settingHandler *SettingHandler,
 	totpHandler *TotpHandler,
 	monitoringHandler *MonitoringHandler,
+	referralHandler *ReferralHandler,
 	_ *service.IdempotencyCoordinator,
 	_ *service.IdempotencyCleanupService,
 ) *Handlers {
@@ -106,6 +107,7 @@ func ProvideHandlers(
 		Setting:       settingHandler,
 		Totp:          totpHandler,
 		Monitoring:    monitoringHandler,
+		Referral:      referralHandler,
 	}
 }
 
@@ -123,6 +125,7 @@ var ProviderSet = wire.NewSet(
 	NewOpenAIGatewayHandler,
 	NewSoraGatewayHandler,
 	NewTotpHandler,
+	NewReferralHandler,
 	ProvideSettingHandler,
 
 	// Monitoring handler

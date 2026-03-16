@@ -17,6 +17,7 @@ import (
 	"github.com/pengbin9472/ggbond/ent/promocodeusage"
 	"github.com/pengbin9472/ggbond/ent/proxy"
 	"github.com/pengbin9472/ggbond/ent/redeemcode"
+	"github.com/pengbin9472/ggbond/ent/referralreward"
 	"github.com/pengbin9472/ggbond/ent/schema"
 	"github.com/pengbin9472/ggbond/ent/securitysecret"
 	"github.com/pengbin9472/ggbond/ent/setting"
@@ -683,6 +684,24 @@ func init() {
 	redeemcodeDescValidityDays := redeemcodeFields[9].Descriptor()
 	// redeemcode.DefaultValidityDays holds the default value on creation for the validity_days field.
 	redeemcode.DefaultValidityDays = redeemcodeDescValidityDays.Default.(int)
+	referralrewardFields := schema.ReferralReward{}.Fields()
+	_ = referralrewardFields
+	// referralrewardDescRewardType is the schema descriptor for reward_type field.
+	referralrewardDescRewardType := referralrewardFields[4].Descriptor()
+	// referralreward.DefaultRewardType holds the default value on creation for the reward_type field.
+	referralreward.DefaultRewardType = referralrewardDescRewardType.Default.(string)
+	// referralreward.RewardTypeValidator is a validator for the "reward_type" field. It is called by the builders before save.
+	referralreward.RewardTypeValidator = referralrewardDescRewardType.Validators[0].(func(string) error)
+	// referralrewardDescStatus is the schema descriptor for status field.
+	referralrewardDescStatus := referralrewardFields[7].Descriptor()
+	// referralreward.DefaultStatus holds the default value on creation for the status field.
+	referralreward.DefaultStatus = referralrewardDescStatus.Default.(string)
+	// referralreward.StatusValidator is a validator for the "status" field. It is called by the builders before save.
+	referralreward.StatusValidator = referralrewardDescStatus.Validators[0].(func(string) error)
+	// referralrewardDescCreatedAt is the schema descriptor for created_at field.
+	referralrewardDescCreatedAt := referralrewardFields[9].Descriptor()
+	// referralreward.DefaultCreatedAt holds the default value on creation for the created_at field.
+	referralreward.DefaultCreatedAt = referralrewardDescCreatedAt.Default.(func() time.Time)
 	securitysecretMixin := schema.SecuritySecret{}.Mixin()
 	securitysecretMixinFields0 := securitysecretMixin[0].Fields()
 	_ = securitysecretMixinFields0

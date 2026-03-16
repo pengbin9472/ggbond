@@ -238,6 +238,20 @@ func (_c *UserCreate) SetNillableSoraStorageUsedBytes(v *int64) *UserCreate {
 	return _c
 }
 
+// SetReferredBy sets the "referred_by" field.
+func (_c *UserCreate) SetReferredBy(v int64) *UserCreate {
+	_c.mutation.SetReferredBy(v)
+	return _c
+}
+
+// SetNillableReferredBy sets the "referred_by" field if the given value is not nil.
+func (_c *UserCreate) SetNillableReferredBy(v *int64) *UserCreate {
+	if v != nil {
+		_c.SetReferredBy(*v)
+	}
+	return _c
+}
+
 // AddAPIKeyIDs adds the "api_keys" edge to the APIKey entity by IDs.
 func (_c *UserCreate) AddAPIKeyIDs(ids ...int64) *UserCreate {
 	_c.mutation.AddAPIKeyIDs(ids...)
@@ -619,6 +633,10 @@ func (_c *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.SoraStorageUsedBytes(); ok {
 		_spec.SetField(user.FieldSoraStorageUsedBytes, field.TypeInt64, value)
 		_node.SoraStorageUsedBytes = value
+	}
+	if value, ok := _c.mutation.ReferredBy(); ok {
+		_spec.SetField(user.FieldReferredBy, field.TypeInt64, value)
+		_node.ReferredBy = &value
 	}
 	if nodes := _c.mutation.APIKeysIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
@@ -1042,6 +1060,30 @@ func (u *UserUpsert) AddSoraStorageUsedBytes(v int64) *UserUpsert {
 	return u
 }
 
+// SetReferredBy sets the "referred_by" field.
+func (u *UserUpsert) SetReferredBy(v int64) *UserUpsert {
+	u.Set(user.FieldReferredBy, v)
+	return u
+}
+
+// UpdateReferredBy sets the "referred_by" field to the value that was provided on create.
+func (u *UserUpsert) UpdateReferredBy() *UserUpsert {
+	u.SetExcluded(user.FieldReferredBy)
+	return u
+}
+
+// AddReferredBy adds v to the "referred_by" field.
+func (u *UserUpsert) AddReferredBy(v int64) *UserUpsert {
+	u.Add(user.FieldReferredBy, v)
+	return u
+}
+
+// ClearReferredBy clears the value of the "referred_by" field.
+func (u *UserUpsert) ClearReferredBy() *UserUpsert {
+	u.SetNull(user.FieldReferredBy)
+	return u
+}
+
 // UpdateNewValues updates the mutable fields using the new values that were set on create.
 // Using this option is equivalent to using:
 //
@@ -1343,6 +1385,34 @@ func (u *UserUpsertOne) AddSoraStorageUsedBytes(v int64) *UserUpsertOne {
 func (u *UserUpsertOne) UpdateSoraStorageUsedBytes() *UserUpsertOne {
 	return u.Update(func(s *UserUpsert) {
 		s.UpdateSoraStorageUsedBytes()
+	})
+}
+
+// SetReferredBy sets the "referred_by" field.
+func (u *UserUpsertOne) SetReferredBy(v int64) *UserUpsertOne {
+	return u.Update(func(s *UserUpsert) {
+		s.SetReferredBy(v)
+	})
+}
+
+// AddReferredBy adds v to the "referred_by" field.
+func (u *UserUpsertOne) AddReferredBy(v int64) *UserUpsertOne {
+	return u.Update(func(s *UserUpsert) {
+		s.AddReferredBy(v)
+	})
+}
+
+// UpdateReferredBy sets the "referred_by" field to the value that was provided on create.
+func (u *UserUpsertOne) UpdateReferredBy() *UserUpsertOne {
+	return u.Update(func(s *UserUpsert) {
+		s.UpdateReferredBy()
+	})
+}
+
+// ClearReferredBy clears the value of the "referred_by" field.
+func (u *UserUpsertOne) ClearReferredBy() *UserUpsertOne {
+	return u.Update(func(s *UserUpsert) {
+		s.ClearReferredBy()
 	})
 }
 
@@ -1813,6 +1883,34 @@ func (u *UserUpsertBulk) AddSoraStorageUsedBytes(v int64) *UserUpsertBulk {
 func (u *UserUpsertBulk) UpdateSoraStorageUsedBytes() *UserUpsertBulk {
 	return u.Update(func(s *UserUpsert) {
 		s.UpdateSoraStorageUsedBytes()
+	})
+}
+
+// SetReferredBy sets the "referred_by" field.
+func (u *UserUpsertBulk) SetReferredBy(v int64) *UserUpsertBulk {
+	return u.Update(func(s *UserUpsert) {
+		s.SetReferredBy(v)
+	})
+}
+
+// AddReferredBy adds v to the "referred_by" field.
+func (u *UserUpsertBulk) AddReferredBy(v int64) *UserUpsertBulk {
+	return u.Update(func(s *UserUpsert) {
+		s.AddReferredBy(v)
+	})
+}
+
+// UpdateReferredBy sets the "referred_by" field to the value that was provided on create.
+func (u *UserUpsertBulk) UpdateReferredBy() *UserUpsertBulk {
+	return u.Update(func(s *UserUpsert) {
+		s.UpdateReferredBy()
+	})
+}
+
+// ClearReferredBy clears the value of the "referred_by" field.
+func (u *UserUpsertBulk) ClearReferredBy() *UserUpsertBulk {
+	return u.Update(func(s *UserUpsert) {
+		s.ClearReferredBy()
 	})
 }
 

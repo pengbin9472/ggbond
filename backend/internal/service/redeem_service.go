@@ -11,6 +11,7 @@ import (
 
 	dbent "github.com/pengbin9472/ggbond/ent"
 	infraerrors "github.com/pengbin9472/ggbond/internal/pkg/errors"
+	"github.com/pengbin9472/ggbond/internal/pkg/logger"
 	"github.com/pengbin9472/ggbond/internal/pkg/pagination"
 )
 
@@ -80,6 +81,7 @@ type RedeemService struct {
 	billingCacheService  *BillingCacheService
 	entClient            *dbent.Client
 	authCacheInvalidator APIKeyAuthCacheInvalidator
+	referralService      *ReferralService
 }
 
 // NewRedeemService 创建兑换码服务实例
@@ -101,6 +103,11 @@ func NewRedeemService(
 		entClient:            entClient,
 		authCacheInvalidator: authCacheInvalidator,
 	}
+}
+
+// SetReferralService 设置邀请返现服务（避免循环依赖）
+func (s *RedeemService) SetReferralService(referralService *ReferralService) {
+	s.referralService = referralService
 }
 
 // GenerateRandomCode 生成随机兑换码
@@ -354,6 +361,13 @@ func (s *RedeemService) Redeem(ctx context.Context, userID int64, code string) (
 
 	// 事务提交成功后失效缓存
 	s.invalidateRedeemCaches(ctx, userID, redeemCode)
+
+	// 处理邀请返现（非阻塞，失败不影响兑换）
+	if s.referralService != nil && redeemCode.Type == RedeemTypeBalance {
+		if err := s.referralService.ProcessReferralReward(ctx, userID, redeemCode); err != nil {
+			logger.LegacyPrintf("service.redeem", "[Redeem] referral reward error (non-fatal): %v", err)
+		}
+	}
 
 	// 重新获取更新后的兑换码
 	redeemCode, err = s.redeemRepo.GetByID(ctx, redeemCode.ID)
