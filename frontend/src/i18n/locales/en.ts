@@ -287,6 +287,7 @@ export default {
     balance: 'Balance',
     available: 'Available',
     copiedToClipboard: 'Copied to clipboard',
+    copy: 'Copy',
     copied: 'Copied',
     copyFailed: 'Failed to copy',
     verifying: 'Verifying...',
