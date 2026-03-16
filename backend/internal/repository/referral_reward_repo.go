@@ -48,7 +48,8 @@ func (r *referralRewardRepository) Create(ctx context.Context, reward *service.R
 }
 
 func (r *referralRewardRepository) ListByInviter(ctx context.Context, inviterID int64, params pagination.PaginationParams) ([]service.ReferralReward, *pagination.PaginationResult, error) {
-	q := r.client.ReferralReward.Query().
+	client := clientFromContext(ctx, r.client)
+	q := client.ReferralReward.Query().
 		Where(referralreward.InviterIDEQ(inviterID))
 
 	total, err := q.Clone().Count(ctx)
@@ -65,9 +66,35 @@ func (r *referralRewardRepository) ListByInviter(ctx context.Context, inviterID 
 		return nil, nil, err
 	}
 
+	inviteeEmails := make(map[int64]string, len(rewards))
+	if len(rewards) > 0 {
+		inviteeIDs := make([]int64, 0, len(rewards))
+		seenInvitees := make(map[int64]struct{}, len(rewards))
+		for _, reward := range rewards {
+			if _, ok := seenInvitees[reward.InviteeID]; ok {
+				continue
+			}
+			seenInvitees[reward.InviteeID] = struct{}{}
+			inviteeIDs = append(inviteeIDs, reward.InviteeID)
+		}
+
+		users, err := client.User.Query().
+			Where(user.IDIn(inviteeIDs...)).
+			Select(user.FieldID, user.FieldEmail).
+			All(ctx)
+		if err != nil {
+			return nil, nil, err
+		}
+		for _, u := range users {
+			inviteeEmails[u.ID] = u.Email
+		}
+	}
+
 	out := make([]service.ReferralReward, 0, len(rewards))
 	for _, m := range rewards {
-		out = append(out, referralRewardEntityToService(m))
+		item := referralRewardEntityToService(m)
+		item.InviteeEmail = inviteeEmails[m.InviteeID]
+		out = append(out, item)
 	}
 
 	return out, paginationResultFromTotal(int64(total), params), nil

@@ -24,6 +24,7 @@ type ReferralRewardDTO struct {
 	ID               int64     `json:"id"`
 	InviterID        int64     `json:"inviter_id"`
 	InviteeID        int64     `json:"invitee_id"`
+	InviteeEmail     string    `json:"invitee_email"`
 	RewardAmount     float64   `json:"reward_amount"`
 	RewardType       string    `json:"reward_type"`
 	RewardRate       *float64  `json:"reward_rate"`
@@ -55,6 +56,7 @@ func ReferralRewardFromService(r *service.ReferralReward) *ReferralRewardDTO {
 		ID:               r.ID,
 		InviterID:        r.InviterID,
 		InviteeID:        r.InviteeID,
+		InviteeEmail:     r.InviteeEmail,
 		RewardAmount:     r.RewardAmount,
 		RewardType:       r.RewardType,
 		RewardRate:       r.RewardRate,

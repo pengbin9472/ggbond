@@ -332,7 +332,7 @@ export default {
     apiKeys: 'API 密钥',
     usage: '使用记录',
     redeem: '兑换',
-    referral: '邀请返现',
+    referral: '邀请奖励',
     profile: '个人资料',
     users: '用户管理',
     groups: '分组管理',
@@ -818,9 +818,9 @@ export default {
 
   // Referral
   referral: {
-    title: '邀请返现',
-    description: '邀请好友注册，获得返现奖励',
-    totalRewards: '累计返现',
+    title: '邀请奖励',
+    description: '邀请好友注册，获得奖励',
+    totalRewards: '累计奖励',
     inviteeCount: '邀请人数',
     invitationLink: '我的邀请链接',
     invitationLinkHint: '分享此链接邀请好友注册',
@@ -828,12 +828,12 @@ export default {
     invitationUrl: '邀请链接',
     codeCopied: '邀请码已复制',
     urlCopied: '邀请链接已复制',
-    rewardHistory: '返现记录',
+    rewardHistory: '奖励记录',
     inviteeEmail: '被邀请人',
     rewardAmount: '返现金额',
     triggerAmount: '触发金额',
     createdAt: '时间',
-    noHistory: '暂无返现记录'
+    noHistory: '暂无奖励记录'
   },
 
   // Profile
@@ -4177,8 +4177,8 @@ export default {
           '请先在环境变量中配置 TOTP_ENCRYPTION_KEY。使用命令 openssl rand -hex 32 生成密钥。'
       },
       referral: {
-        enabled: '邀请返现',
-        enabledHint: '用户邀请新用户注册后，新用户兑换余额时邀请人获得返现',
+        enabled: '邀请奖励',
+        enabledHint: '用户邀请新用户注册后，新用户兑换余额时邀请人获得奖励',
         rewardType: '返现类型',
         percentage: '按比例返现',
         fixed: '固定金额返现',

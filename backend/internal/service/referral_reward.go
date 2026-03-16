@@ -7,6 +7,7 @@ type ReferralReward struct {
 	ID                  int64
 	InviterID           int64
 	InviteeID           int64
+	InviteeEmail        string
 	TriggerRedeemCodeID *int64
 	RewardAmount        float64
 	RewardType          string // "percentage" / "fixed"

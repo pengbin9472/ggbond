@@ -4011,7 +4011,7 @@ export default {
       },
       referral: {
         enabled: 'Referral Rewards',
-        enabledHint: 'Inviters receive cashback when invitees redeem balance codes',
+        enabledHint: 'Inviters receive rewards when invitees redeem balance codes',
         rewardType: 'Reward Type',
         percentage: 'Percentage-based',
         fixed: 'Fixed Amount',
