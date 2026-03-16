@@ -173,21 +173,55 @@ async function loadHistory() {
 }
 
 async function copyCode() {
+  if (!invitationCode.value) {
+    appStore.showError(t('common.copyFailed'))
+    return
+  }
   try {
     await navigator.clipboard.writeText(invitationCode.value)
     appStore.showSuccess(t('referral.codeCopied'))
   } catch {
-    appStore.showError(t('common.copyFailed'))
+    // 降级方案：使用传统方法
+    fallbackCopyTextToClipboard(invitationCode.value, t('referral.codeCopied'))
   }
 }
 
 async function copyUrl() {
+  if (!invitationUrl.value) {
+    appStore.showError(t('common.copyFailed'))
+    return
+  }
   try {
     await navigator.clipboard.writeText(invitationUrl.value)
     appStore.showSuccess(t('referral.urlCopied'))
   } catch {
+    // 降级方案：使用传统方法
+    fallbackCopyTextToClipboard(invitationUrl.value, t('referral.urlCopied'))
+  }
+}
+
+function fallbackCopyTextToClipboard(text: string, successMessage: string) {
+  const textArea = document.createElement('textarea')
+  textArea.value = text
+  textArea.style.position = 'fixed'
+  textArea.style.left = '-999999px'
+  textArea.style.top = '-999999px'
+  document.body.appendChild(textArea)
+  textArea.focus()
+  textArea.select()
+
+  try {
+    const successful = document.execCommand('copy')
+    if (successful) {
+      appStore.showSuccess(successMessage)
+    } else {
+      appStore.showError(t('common.copyFailed'))
+    }
+  } catch (err) {
     appStore.showError(t('common.copyFailed'))
   }
+
+  document.body.removeChild(textArea)
 }
 
 function formatDate(dateString: string) {
