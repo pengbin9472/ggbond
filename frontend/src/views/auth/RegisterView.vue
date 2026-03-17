@@ -95,10 +95,16 @@
           </p>
         </div>
 
-        <!-- Invitation Code Input (Required when enabled) -->
-        <div v-if="invitationCodeEnabled">
+        <!-- Invitation Code Input -->
+        <div>
           <label for="invitation_code" class="input-label">
             {{ t('auth.invitationCodeLabel') }}
+            <span
+              v-if="!invitationCodeEnabled"
+              class="ml-1 text-xs font-normal text-gray-400 dark:text-dark-500"
+            >
+              ({{ t('common.optional') }})
+            </span>
           </label>
           <div class="relative">
             <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5">
@@ -661,8 +667,8 @@ async function handleRegister(): Promise<void> {
     }
   }
 
-  // Check invitation code validation status (if enabled and code provided)
-  if (invitationCodeEnabled.value) {
+  // Check invitation code validation status
+  if (formData.invitation_code.trim()) {
     // If still validating, wait
     if (invitationValidating.value) {
       errorMessage.value = t('auth.invitationCodeValidating')
@@ -682,6 +688,11 @@ async function handleRegister(): Promise<void> {
         errorMessage.value = t('auth.invitationCodeInvalidCannotRegister')
         return
       }
+    }
+  } else if (invitationCodeEnabled.value) {
+    if (invitationValidating.value) {
+      errorMessage.value = t('auth.invitationCodeValidating')
+      return
     }
   }
 
