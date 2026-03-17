@@ -692,33 +692,10 @@
         <div class="mt-4">
           <label class="input-label">{{ t('admin.accounts.gemini.tier.label') }}</label>
           <div class="mt-2">
-            <select
-              v-if="geminiOAuthType === 'google_one'"
-              v-model="geminiTierGoogleOne"
-              class="input"
-            >
-              <option value="google_one_free">{{ t('admin.accounts.gemini.tier.googleOne.free') }}</option>
-              <option value="google_ai_pro">{{ t('admin.accounts.gemini.tier.googleOne.pro') }}</option>
-              <option value="google_ai_ultra">{{ t('admin.accounts.gemini.tier.googleOne.ultra') }}</option>
-            </select>
-
-            <select
-              v-else-if="geminiOAuthType === 'code_assist'"
-              v-model="geminiTierGcp"
-              class="input"
-            >
-              <option value="gcp_standard">{{ t('admin.accounts.gemini.tier.gcp.standard') }}</option>
-              <option value="gcp_enterprise">{{ t('admin.accounts.gemini.tier.gcp.enterprise') }}</option>
-            </select>
-
-            <select
-              v-else
-              v-model="geminiTierAIStudio"
-              class="input"
-            >
-              <option value="aistudio_free">{{ t('admin.accounts.gemini.tier.aiStudio.free') }}</option>
-              <option value="aistudio_paid">{{ t('admin.accounts.gemini.tier.aiStudio.paid') }}</option>
-            </select>
+            <Select
+              v-model="geminiTierModel"
+              :options="geminiTierOptions"
+            />
           </div>
           <p class="input-hint">{{ t('admin.accounts.gemini.tier.hint') }}</p>
         </div>
@@ -965,10 +942,7 @@
         <!-- Gemini API Key tier selection -->
         <div v-if="form.platform === 'gemini'">
           <label class="input-label">{{ t('admin.accounts.gemini.tier.label') }}</label>
-          <select v-model="geminiTierAIStudio" class="input">
-            <option value="aistudio_free">{{ t('admin.accounts.gemini.tier.aiStudio.free') }}</option>
-            <option value="aistudio_paid">{{ t('admin.accounts.gemini.tier.aiStudio.paid') }}</option>
-          </select>
+          <Select v-model="geminiTierAIStudio" :options="geminiTierAIStudioOptions" />
           <p class="input-hint">{{ t('admin.accounts.gemini.tier.aiStudioHint') }}</p>
         </div>
 
@@ -1383,41 +1357,7 @@
         <!-- Shared: Region -->
         <div>
           <label class="input-label">{{ t('admin.accounts.bedrockRegion') }}</label>
-          <select v-model="bedrockRegion" class="input">
-            <optgroup label="US">
-              <option value="us-east-1">us-east-1 (N. Virginia)</option>
-              <option value="us-east-2">us-east-2 (Ohio)</option>
-              <option value="us-west-1">us-west-1 (N. California)</option>
-              <option value="us-west-2">us-west-2 (Oregon)</option>
-              <option value="us-gov-east-1">us-gov-east-1 (GovCloud US-East)</option>
-              <option value="us-gov-west-1">us-gov-west-1 (GovCloud US-West)</option>
-            </optgroup>
-            <optgroup label="Europe">
-              <option value="eu-west-1">eu-west-1 (Ireland)</option>
-              <option value="eu-west-2">eu-west-2 (London)</option>
-              <option value="eu-west-3">eu-west-3 (Paris)</option>
-              <option value="eu-central-1">eu-central-1 (Frankfurt)</option>
-              <option value="eu-central-2">eu-central-2 (Zurich)</option>
-              <option value="eu-south-1">eu-south-1 (Milan)</option>
-              <option value="eu-south-2">eu-south-2 (Spain)</option>
-              <option value="eu-north-1">eu-north-1 (Stockholm)</option>
-            </optgroup>
-            <optgroup label="Asia Pacific">
-              <option value="ap-northeast-1">ap-northeast-1 (Tokyo)</option>
-              <option value="ap-northeast-2">ap-northeast-2 (Seoul)</option>
-              <option value="ap-northeast-3">ap-northeast-3 (Osaka)</option>
-              <option value="ap-south-1">ap-south-1 (Mumbai)</option>
-              <option value="ap-south-2">ap-south-2 (Hyderabad)</option>
-              <option value="ap-southeast-1">ap-southeast-1 (Singapore)</option>
-              <option value="ap-southeast-2">ap-southeast-2 (Sydney)</option>
-            </optgroup>
-            <optgroup label="Canada">
-              <option value="ca-central-1">ca-central-1 (Canada)</option>
-            </optgroup>
-            <optgroup label="South America">
-              <option value="sa-east-1">sa-east-1 (São Paulo)</option>
-            </optgroup>
-          </select>
+          <Select v-model="bedrockRegion" :options="bedrockRegionOptions" searchable />
           <p class="input-hint">{{ t('admin.accounts.bedrockRegionHint') }}</p>
         </div>
 
@@ -2225,13 +2165,11 @@
           </div>
           <div v-if="cacheTTLOverrideEnabled" class="mt-3">
             <label class="input-label text-xs">{{ t('admin.accounts.quotaControl.cacheTTLOverride.target') }}</label>
-            <select
+            <Select
               v-model="cacheTTLOverrideTarget"
-              class="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:border-dark-500 dark:bg-dark-700 dark:text-white"
-            >
-              <option value="5m">5m</option>
-              <option value="1h">1h</option>
-            </select>
+              class="mt-1"
+              :options="cacheTTLOverrideTargetOptions"
+            />
             <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
               {{ t('admin.accounts.quotaControl.cacheTTLOverride.targetHint') }}
             </p>
@@ -2869,7 +2807,7 @@ import type {
 } from '@/types'
 import BaseDialog from '@/components/common/BaseDialog.vue'
 import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
-import Select from '@/components/common/Select.vue'
+import Select, { type SelectOption } from '@/components/common/Select.vue'
 import Icon from '@/components/icons/Icon.vue'
 import ProxySelector from '@/components/common/ProxySelector.vue'
 import GroupSelector from '@/components/common/GroupSelector.vue'
@@ -3096,6 +3034,96 @@ const cacheTTLOverrideTarget = ref<string>('5m')
 const geminiTierGoogleOne = ref<'google_one_free' | 'google_ai_pro' | 'google_ai_ultra'>('google_one_free')
 const geminiTierGcp = ref<'gcp_standard' | 'gcp_enterprise'>('gcp_standard')
 const geminiTierAIStudio = ref<'aistudio_free' | 'aistudio_paid'>('aistudio_free')
+
+const geminiTierGoogleOneOptions = computed<SelectOption[]>(() => [
+  { value: 'google_one_free', label: t('admin.accounts.gemini.tier.googleOne.free') },
+  { value: 'google_ai_pro', label: t('admin.accounts.gemini.tier.googleOne.pro') },
+  { value: 'google_ai_ultra', label: t('admin.accounts.gemini.tier.googleOne.ultra') }
+])
+
+const geminiTierGcpOptions = computed<SelectOption[]>(() => [
+  { value: 'gcp_standard', label: t('admin.accounts.gemini.tier.gcp.standard') },
+  { value: 'gcp_enterprise', label: t('admin.accounts.gemini.tier.gcp.enterprise') }
+])
+
+const geminiTierAIStudioOptions = computed<SelectOption[]>(() => [
+  { value: 'aistudio_free', label: t('admin.accounts.gemini.tier.aiStudio.free') },
+  { value: 'aistudio_paid', label: t('admin.accounts.gemini.tier.aiStudio.paid') }
+])
+
+const geminiTierOptions = computed<SelectOption[]>(() => {
+  switch (geminiOAuthType.value) {
+    case 'google_one':
+      return geminiTierGoogleOneOptions.value
+    case 'code_assist':
+      return geminiTierGcpOptions.value
+    default:
+      return geminiTierAIStudioOptions.value
+  }
+})
+
+const geminiTierModel = computed<string>({
+  get: () => {
+    switch (geminiOAuthType.value) {
+      case 'google_one':
+        return geminiTierGoogleOne.value
+      case 'code_assist':
+        return geminiTierGcp.value
+      default:
+        return geminiTierAIStudio.value
+    }
+  },
+  set: (value) => {
+    switch (geminiOAuthType.value) {
+      case 'google_one':
+        if (value === 'google_one_free' || value === 'google_ai_pro' || value === 'google_ai_ultra') {
+          geminiTierGoogleOne.value = value
+        }
+        break
+      case 'code_assist':
+        if (value === 'gcp_standard' || value === 'gcp_enterprise') {
+          geminiTierGcp.value = value
+        }
+        break
+      default:
+        if (value === 'aistudio_free' || value === 'aistudio_paid') {
+          geminiTierAIStudio.value = value
+        }
+        break
+    }
+  }
+})
+
+const bedrockRegionOptions = computed<SelectOption[]>(() => [
+  { value: 'us-east-1', label: 'US / us-east-1 (N. Virginia)' },
+  { value: 'us-east-2', label: 'US / us-east-2 (Ohio)' },
+  { value: 'us-west-1', label: 'US / us-west-1 (N. California)' },
+  { value: 'us-west-2', label: 'US / us-west-2 (Oregon)' },
+  { value: 'us-gov-east-1', label: 'US / us-gov-east-1 (GovCloud US-East)' },
+  { value: 'us-gov-west-1', label: 'US / us-gov-west-1 (GovCloud US-West)' },
+  { value: 'eu-west-1', label: 'Europe / eu-west-1 (Ireland)' },
+  { value: 'eu-west-2', label: 'Europe / eu-west-2 (London)' },
+  { value: 'eu-west-3', label: 'Europe / eu-west-3 (Paris)' },
+  { value: 'eu-central-1', label: 'Europe / eu-central-1 (Frankfurt)' },
+  { value: 'eu-central-2', label: 'Europe / eu-central-2 (Zurich)' },
+  { value: 'eu-south-1', label: 'Europe / eu-south-1 (Milan)' },
+  { value: 'eu-south-2', label: 'Europe / eu-south-2 (Spain)' },
+  { value: 'eu-north-1', label: 'Europe / eu-north-1 (Stockholm)' },
+  { value: 'ap-northeast-1', label: 'Asia Pacific / ap-northeast-1 (Tokyo)' },
+  { value: 'ap-northeast-2', label: 'Asia Pacific / ap-northeast-2 (Seoul)' },
+  { value: 'ap-northeast-3', label: 'Asia Pacific / ap-northeast-3 (Osaka)' },
+  { value: 'ap-south-1', label: 'Asia Pacific / ap-south-1 (Mumbai)' },
+  { value: 'ap-south-2', label: 'Asia Pacific / ap-south-2 (Hyderabad)' },
+  { value: 'ap-southeast-1', label: 'Asia Pacific / ap-southeast-1 (Singapore)' },
+  { value: 'ap-southeast-2', label: 'Asia Pacific / ap-southeast-2 (Sydney)' },
+  { value: 'ca-central-1', label: 'Canada / ca-central-1 (Canada)' },
+  { value: 'sa-east-1', label: 'South America / sa-east-1 (São Paulo)' }
+])
+
+const cacheTTLOverrideTargetOptions = computed<SelectOption[]>(() => [
+  { value: '5m', label: '5m' },
+  { value: '1h', label: '1h' }
+])
 
 const geminiSelectedTier = computed(() => {
   if (form.platform !== 'gemini') return ''

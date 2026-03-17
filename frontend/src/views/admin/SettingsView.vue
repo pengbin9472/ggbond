@@ -211,11 +211,11 @@
                   <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
                     {{ t('admin.settings.streamTimeout.action') }}
                   </label>
-                  <select v-model="streamTimeoutForm.action" class="input w-64">
-                    <option value="temp_unsched">{{ t('admin.settings.streamTimeout.actionTempUnsched') }}</option>
-                    <option value="error">{{ t('admin.settings.streamTimeout.actionError') }}</option>
-                    <option value="none">{{ t('admin.settings.streamTimeout.actionNone') }}</option>
-                  </select>
+                  <Select
+                    v-model="streamTimeoutForm.action"
+                    class="w-64"
+                    :options="streamTimeoutActionOptions"
+                  />
                   <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
                     {{ t('admin.settings.streamTimeout.actionHint') }}
                   </p>
@@ -720,10 +720,11 @@
               <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
                 {{ t('admin.settings.referral.rewardType') }}
               </label>
-              <select v-model="form.referral_reward_type" class="input mb-4">
-                <option value="percentage">{{ t('admin.settings.referral.percentage') }}</option>
-                <option value="fixed">{{ t('admin.settings.referral.fixed') }}</option>
-              </select>
+              <Select
+                v-model="form.referral_reward_type"
+                class="mb-4"
+                :options="referralRewardTypeOptions"
+              />
 
               <div v-if="form.referral_reward_type === 'percentage'" class="mb-4">
                 <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -1556,10 +1557,10 @@
                   <label class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">
                     {{ t('admin.settings.customMenu.visibility') }}
                   </label>
-                  <select v-model="item.visibility" class="input text-sm">
-                    <option value="user">{{ t('admin.settings.customMenu.visibilityUser') }}</option>
-                    <option value="admin">{{ t('admin.settings.customMenu.visibilityAdmin') }}</option>
-                  </select>
+                  <Select
+                    v-model="item.visibility"
+                    :options="customMenuVisibilityOptions"
+                  />
                 </div>
 
                 <!-- URL (full width) -->
@@ -1876,6 +1877,7 @@ import type { AdminGroup } from '@/types'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import Icon from '@/components/icons/Icon.vue'
 import Select from '@/components/common/Select.vue'
+import type { SelectOption } from '@/components/common/Select.vue'
 import GroupBadge from '@/components/common/GroupBadge.vue'
 import GroupOptionItem from '@/components/common/GroupOptionItem.vue'
 import Toggle from '@/components/common/Toggle.vue'
@@ -1935,6 +1937,12 @@ const streamTimeoutForm = reactive({
   threshold_count: 3,
   threshold_window_minutes: 10
 })
+
+const streamTimeoutActionOptions = computed<SelectOption[]>(() => [
+  { value: 'temp_unsched', label: t('admin.settings.streamTimeout.actionTempUnsched') },
+  { value: 'error', label: t('admin.settings.streamTimeout.actionError') },
+  { value: 'none', label: t('admin.settings.streamTimeout.actionNone') }
+])
 
 // Rectifier 状态
 const rectifierLoading = ref(true)
@@ -2058,6 +2066,16 @@ const defaultSubscriptionGroupOptions = computed<DefaultSubscriptionGroupOption[
     rate: group.rate_multiplier
   }))
 )
+
+const referralRewardTypeOptions = computed<SelectOption[]>(() => [
+  { value: 'percentage', label: t('admin.settings.referral.percentage') },
+  { value: 'fixed', label: t('admin.settings.referral.fixed') }
+])
+
+const customMenuVisibilityOptions = computed<SelectOption[]>(() => [
+  { value: 'user', label: t('admin.settings.customMenu.visibilityUser') },
+  { value: 'admin', label: t('admin.settings.customMenu.visibilityAdmin') }
+])
 
 const registrationEmailSuffixWhitelistSeparatorKeys = new Set([' ', ',', '，', 'Enter', 'Tab'])
 

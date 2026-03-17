@@ -300,26 +300,11 @@
             </span>
           </div>
           <!-- 分组选择下拉 -->
-          <select
-            class="input"
-            @change="(e) => {
-              const val = Number((e.target as HTMLSelectElement).value)
-              if (val && !createForm.copy_accounts_from_group_ids.includes(val)) {
-                createForm.copy_accounts_from_group_ids.push(val)
-              }
-              (e.target as HTMLSelectElement).value = ''
-            }"
-          >
-            <option value="">{{ t('admin.groups.copyAccounts.selectPlaceholder') }}</option>
-            <option
-              v-for="opt in copyAccountsGroupOptions"
-              :key="opt.value"
-              :value="opt.value"
-              :disabled="createForm.copy_accounts_from_group_ids.includes(opt.value)"
-            >
-              {{ opt.label }}
-            </option>
-          </select>
+          <Select
+            v-model="createCopyAccountsGroupSelection"
+            :options="createCopyAccountsSelectOptions"
+            @change="handleCreateCopyAccountsSelectChange"
+          />
           <p class="input-hint">{{ t('admin.groups.copyAccounts.hint') }}</p>
         </div>
         <div>
@@ -1028,26 +1013,11 @@
             </span>
           </div>
           <!-- 分组选择下拉 -->
-          <select
-            class="input"
-            @change="(e) => {
-              const val = Number((e.target as HTMLSelectElement).value)
-              if (val && !editForm.copy_accounts_from_group_ids.includes(val)) {
-                editForm.copy_accounts_from_group_ids.push(val)
-              }
-              (e.target as HTMLSelectElement).value = ''
-            }"
-          >
-            <option value="">{{ t('admin.groups.copyAccounts.selectPlaceholder') }}</option>
-            <option
-              v-for="opt in copyAccountsGroupOptionsForEdit"
-              :key="opt.value"
-              :value="opt.value"
-              :disabled="editForm.copy_accounts_from_group_ids.includes(opt.value)"
-            >
-              {{ opt.label }}
-            </option>
-          </select>
+          <Select
+            v-model="editCopyAccountsGroupSelection"
+            :options="editCopyAccountsSelectOptions"
+            @change="handleEditCopyAccountsSelectChange"
+          />
           <p class="input-hint">{{ t('admin.groups.copyAccounts.hintEdit') }}</p>
         </div>
         <div>
@@ -1809,6 +1779,7 @@ import BaseDialog from '@/components/common/BaseDialog.vue'
 import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
 import EmptyState from '@/components/common/EmptyState.vue'
 import Select from '@/components/common/Select.vue'
+import type { SelectOption } from '@/components/common/Select.vue'
 import PlatformIcon from '@/components/common/PlatformIcon.vue'
 import Icon from '@/components/icons/Icon.vue'
 import GroupRateMultipliersModal from '@/components/admin/group/GroupRateMultipliersModal.vue'
@@ -1949,6 +1920,16 @@ const copyAccountsGroupOptions = computed(() => {
   }))
 })
 
+const createCopyAccountsGroupSelection = ref<string | number | boolean | null>('')
+const createCopyAccountsSelectOptions = computed<SelectOption[]>(() => [
+  { value: '', label: t('admin.groups.copyAccounts.selectPlaceholder') },
+  ...copyAccountsGroupOptions.value.map((opt) => ({
+    value: opt.value,
+    label: opt.label,
+    disabled: createForm.copy_accounts_from_group_ids.includes(opt.value)
+  }))
+])
+
 // 复制账号的源分组选项（编辑时）- 仅包含相同平台且有账号的分组，排除自身
 const copyAccountsGroupOptionsForEdit = computed(() => {
   const currentId = editingGroup.value?.id
@@ -1960,6 +1941,32 @@ const copyAccountsGroupOptionsForEdit = computed(() => {
     label: `${g.name} (${g.account_count || 0} 个账号)`
   }))
 })
+
+const editCopyAccountsGroupSelection = ref<string | number | boolean | null>('')
+const editCopyAccountsSelectOptions = computed<SelectOption[]>(() => [
+  { value: '', label: t('admin.groups.copyAccounts.selectPlaceholder') },
+  ...copyAccountsGroupOptionsForEdit.value.map((opt) => ({
+    value: opt.value,
+    label: opt.label,
+    disabled: editForm.copy_accounts_from_group_ids.includes(opt.value)
+  }))
+])
+
+function handleCreateCopyAccountsSelectChange(value: string | number | boolean | null) {
+  const selectedValue = Number(value)
+  if (selectedValue && !createForm.copy_accounts_from_group_ids.includes(selectedValue)) {
+    createForm.copy_accounts_from_group_ids.push(selectedValue)
+  }
+  createCopyAccountsGroupSelection.value = ''
+}
+
+function handleEditCopyAccountsSelectChange(value: string | number | boolean | null) {
+  const selectedValue = Number(value)
+  if (selectedValue && !editForm.copy_accounts_from_group_ids.includes(selectedValue)) {
+    editForm.copy_accounts_from_group_ids.push(selectedValue)
+  }
+  editCopyAccountsGroupSelection.value = ''
+}
 
 const groups = ref<AdminGroup[]>([])
 const loading = ref(false)

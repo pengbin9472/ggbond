@@ -5,36 +5,20 @@
         <!-- 模型选择行 -->
         <div class="sora-creator-model-row">
           <div class="sora-model-select-wrapper">
-            <select
+            <Select
               v-model="selectedFamily"
-              class="sora-model-select"
+              class="w-44"
+              :options="familySelectOptions"
               @change="onFamilyChange"
-            >
-              <optgroup v-if="videoFamilies.length" :label="t('sora.videoModels')">
-                <option v-for="f in videoFamilies" :key="f.id" :value="f.id">{{ f.name }}</option>
-              </optgroup>
-              <optgroup v-if="imageFamilies.length" :label="t('sora.imageModels')">
-                <option v-for="f in imageFamilies" :key="f.id" :value="f.id">{{ f.name }}</option>
-              </optgroup>
-            </select>
-            <span class="sora-model-select-arrow">▼</span>
+            />
           </div>
           <!-- 凭证选择器 -->
           <div class="sora-credential-select-wrapper">
-            <select v-model="selectedCredentialId" class="sora-model-select">
-              <option :value="0" disabled>{{ t('sora.selectCredential') }}</option>
-              <optgroup v-if="apiKeyOptions.length" :label="t('sora.apiKeys')">
-                <option v-for="k in apiKeyOptions" :key="'k'+k.id" :value="k.id">
-                  {{ k.name }}{{ k.group ? ' · ' + k.group.name : '' }}
-                </option>
-              </optgroup>
-              <optgroup v-if="subscriptionOptions.length" :label="t('sora.subscriptions')">
-                <option v-for="s in subscriptionOptions" :key="'s'+s.id" :value="-s.id">
-                  {{ s.group?.name || t('sora.subscription') }}
-                </option>
-              </optgroup>
-            </select>
-            <span class="sora-model-select-arrow">▼</span>
+            <Select
+              v-model="selectedCredentialId"
+              class="w-52"
+              :options="credentialSelectOptions"
+            />
           </div>
           <!-- 无凭证提示 -->
           <span v-if="soraCredentialEmpty" class="sora-no-storage-badge">
@@ -162,6 +146,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import soraAPI, { type SoraModelFamily, type GenerateRequest } from '@/api/sora'
 import keysAPI from '@/api/keys'
+import Select, { type SelectOption } from '@/components/common/Select.vue'
 import { useSubscriptionStore } from '@/stores/subscriptions'
 import type { ApiKey, UserSubscription } from '@/types'
 
@@ -212,6 +197,44 @@ const soraCredentialEmpty = computed(() =>
 // 按类型分组
 const videoFamilies = computed(() => families.value.filter(f => f.type === 'video'))
 const imageFamilies = computed(() => families.value.filter(f => f.type === 'image'))
+
+const familySelectOptions = computed<SelectOption[]>(() => {
+  const options: SelectOption[] = []
+  if (videoFamilies.value.length > 0) {
+    options.push({ value: '__group_video', label: t('sora.videoModels'), kind: 'group', disabled: true })
+    options.push(...videoFamilies.value.map((f) => ({ value: f.id, label: f.name })))
+  }
+  if (imageFamilies.value.length > 0) {
+    options.push({ value: '__group_image', label: t('sora.imageModels'), kind: 'group', disabled: true })
+    options.push(...imageFamilies.value.map((f) => ({ value: f.id, label: f.name })))
+  }
+  return options
+})
+
+const credentialSelectOptions = computed<SelectOption[]>(() => {
+  const options: SelectOption[] = [
+    { value: 0, label: t('sora.selectCredential'), disabled: true }
+  ]
+  if (apiKeyOptions.value.length > 0) {
+    options.push({ value: '__group_api_keys', label: t('sora.apiKeys'), kind: 'group', disabled: true })
+    options.push(
+      ...apiKeyOptions.value.map((k) => ({
+        value: k.id,
+        label: `${k.name}${k.group ? ' · ' + k.group.name : ''}`
+      }))
+    )
+  }
+  if (subscriptionOptions.value.length > 0) {
+    options.push({ value: '__group_subscriptions', label: t('sora.subscriptions'), kind: 'group', disabled: true })
+    options.push(
+      ...subscriptionOptions.value.map((s) => ({
+        value: -s.id,
+        label: s.group?.name || t('sora.subscription')
+      }))
+    )
+  }
+  return options
+})
 
 // 当前选中的家族对象
 const currentFamily = computed(() => families.value.find(f => f.id === selectedFamily.value))

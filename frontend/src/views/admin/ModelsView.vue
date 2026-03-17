@@ -43,15 +43,11 @@
               />
               <Icon name="search" size="sm" class="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
             </div>
-            <select
+            <Select
               v-model="selectedPlatform"
-              class="rounded-2xl border border-slate-200 bg-white/90 px-4 py-3 text-sm text-slate-900 outline-none focus:border-sky-400 dark:border-slate-700 dark:bg-slate-950/60 dark:text-white"
-            >
-              <option value="">{{ t('admin.models.allPlatforms') }}</option>
-              <option v-for="platform in platformOptions" :key="platform" :value="platform">
-                {{ platformLabel(platform) }}
-              </option>
-            </select>
+              class="w-full lg:w-56"
+              :options="platformSelectOptions"
+            />
           </div>
         </section>
 
@@ -75,11 +71,17 @@
                 <ModelIcon :model="model.id" size="42px" />
               </div>
               <div class="min-w-0 flex-1 space-y-3">
-                <div class="flex items-start justify-between gap-3">
+                <div class="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
                   <div class="min-w-0">
-                    <h2 class="truncate text-[1.65rem] font-semibold leading-tight tracking-tight text-slate-800 dark:text-white">
+                    <h2 class="text-[1.45rem] font-semibold leading-tight tracking-tight text-slate-800 [overflow-wrap:anywhere] dark:text-white">
                       {{ model.display_name }}
                     </h2>
+                    <p
+                      v-if="model.display_name !== model.id"
+                      class="mt-1 text-xs font-mono text-slate-500 [overflow-wrap:anywhere] dark:text-slate-400"
+                    >
+                      {{ model.id }}
+                    </p>
                     <div class="mt-2 flex flex-wrap gap-2">
                       <span class="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600 dark:bg-slate-800 dark:text-slate-300">
                         {{ platformLabel(model.platform) }}
@@ -110,12 +112,6 @@
               <span class="inline-flex items-center rounded-full bg-emerald-100 px-3 py-1.5 text-sm font-medium text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-200">
                 {{ t('admin.models.metered') }}
               </span>
-              <span class="inline-flex items-center rounded-full bg-slate-100 px-3 py-1.5 text-sm text-slate-600 dark:bg-slate-800 dark:text-slate-300">
-                {{ t('admin.models.accountCount', { count: model.account_count }) }}
-              </span>
-              <span class="inline-flex items-center rounded-full bg-slate-100 px-3 py-1.5 text-sm text-slate-600 dark:bg-slate-800 dark:text-slate-300">
-                {{ t('admin.models.groupCount', { count: model.group_count }) }}
-              </span>
               <span
                 v-if="model.pricing_fallback || model.input_price == null || model.output_price == null"
                 class="inline-flex items-center rounded-full bg-amber-100 px-3 py-1.5 text-sm text-amber-700 dark:bg-amber-500/15 dark:text-amber-200"
@@ -143,6 +139,7 @@ import { useI18n } from 'vue-i18n'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import ModelIcon from '@/components/common/ModelIcon.vue'
 import Icon from '@/components/icons/Icon.vue'
+import Select, { type SelectOption } from '@/components/common/Select.vue'
 import { getModelCatalog } from '@/api/admin/accounts'
 import type { AdminModelCatalogEntry } from '@/types'
 import { useAppStore } from '@/stores/app'
@@ -158,6 +155,14 @@ const models = ref<AdminModelCatalogEntry[]>([])
 const platformOptions = computed(() =>
   Array.from(new Set(models.value.map(model => model.platform).filter(Boolean))).sort()
 )
+
+const platformSelectOptions = computed<SelectOption[]>(() => [
+  { value: '', label: t('admin.models.allPlatforms') },
+  ...platformOptions.value.map(platform => ({
+    value: platform,
+    label: platformLabel(platform),
+  })),
+])
 
 const filteredModels = computed(() => {
   const query = searchQuery.value.trim().toLowerCase()
