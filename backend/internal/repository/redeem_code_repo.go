@@ -30,6 +30,7 @@ func (r *redeemCodeRepository) Create(ctx context.Context, code *service.RedeemC
 		SetNillableUsedBy(code.UsedBy).
 		SetNillableUsedAt(code.UsedAt).
 		SetNillableGroupID(code.GroupID).
+		SetNillableInviterUserID(code.InviterUserID).
 		Save(ctx)
 	if err == nil {
 		code.ID = created.ID
@@ -55,7 +56,8 @@ func (r *redeemCodeRepository) CreateBatch(ctx context.Context, codes []service.
 			SetValidityDays(c.ValidityDays).
 			SetNillableUsedBy(c.UsedBy).
 			SetNillableUsedAt(c.UsedAt).
-			SetNillableGroupID(c.GroupID)
+			SetNillableGroupID(c.GroupID).
+			SetNillableInviterUserID(c.InviterUserID)
 		builders = append(builders, b)
 	}
 
@@ -264,17 +266,18 @@ func redeemCodeEntityToService(m *dbent.RedeemCode) *service.RedeemCode {
 		return nil
 	}
 	out := &service.RedeemCode{
-		ID:           m.ID,
-		Code:         m.Code,
-		Type:         m.Type,
-		Value:        m.Value,
-		Status:       m.Status,
-		UsedBy:       m.UsedBy,
-		UsedAt:       m.UsedAt,
-		Notes:        derefString(m.Notes),
-		CreatedAt:    m.CreatedAt,
-		GroupID:      m.GroupID,
-		ValidityDays: m.ValidityDays,
+		ID:            m.ID,
+		Code:          m.Code,
+		Type:          m.Type,
+		Value:         m.Value,
+		Status:        m.Status,
+		UsedBy:        m.UsedBy,
+		UsedAt:        m.UsedAt,
+		Notes:         derefString(m.Notes),
+		CreatedAt:     m.CreatedAt,
+		GroupID:       m.GroupID,
+		ValidityDays:  m.ValidityDays,
+		InviterUserID: m.InviterUserID,
 	}
 	if m.Edges.User != nil {
 		out.User = userEntityToService(m.Edges.User)

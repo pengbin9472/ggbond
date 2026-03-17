@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/google/wire"
+	dbent "github.com/pengbin9472/ggbond/ent"
 	"github.com/pengbin9472/ggbond/internal/config"
 	"github.com/pengbin9472/ggbond/internal/pkg/logger"
 	"github.com/redis/go-redis/v9"
@@ -198,6 +199,22 @@ func ProvideSchedulerSnapshotService(
 ) *SchedulerSnapshotService {
 	svc := NewSchedulerSnapshotService(cache, outboxRepo, accountRepo, groupRepo, cfg)
 	svc.Start()
+	return svc
+}
+
+// ProvideReferralService creates ReferralService and wires it into RedeemService.
+func ProvideReferralService(
+	rewardRepo ReferralRewardRepository,
+	userRepo UserRepository,
+	redeemRepo RedeemCodeRepository,
+	settingService *SettingService,
+	billingCacheService *BillingCacheService,
+	authCacheInvalidator APIKeyAuthCacheInvalidator,
+	entClient *dbent.Client,
+	redeemService *RedeemService,
+) *ReferralService {
+	svc := NewReferralService(rewardRepo, userRepo, redeemRepo, settingService, billingCacheService, authCacheInvalidator, entClient)
+	redeemService.SetReferralService(svc)
 	return svc
 }
 
@@ -421,6 +438,7 @@ var ProviderSet = wire.NewSet(
 	NewAccountService,
 	NewProxyService,
 	NewRedeemService,
+	ProvideReferralService,
 	NewPromoService,
 	NewUsageService,
 	NewDashboardService,

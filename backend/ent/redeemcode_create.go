@@ -156,6 +156,20 @@ func (_c *RedeemCodeCreate) SetNillableValidityDays(v *int) *RedeemCodeCreate {
 	return _c
 }
 
+// SetInviterUserID sets the "inviter_user_id" field.
+func (_c *RedeemCodeCreate) SetInviterUserID(v int64) *RedeemCodeCreate {
+	_c.mutation.SetInviterUserID(v)
+	return _c
+}
+
+// SetNillableInviterUserID sets the "inviter_user_id" field if the given value is not nil.
+func (_c *RedeemCodeCreate) SetNillableInviterUserID(v *int64) *RedeemCodeCreate {
+	if v != nil {
+		_c.SetInviterUserID(*v)
+	}
+	return _c
+}
+
 // SetUserID sets the "user" edge to the User entity by ID.
 func (_c *RedeemCodeCreate) SetUserID(id int64) *RedeemCodeCreate {
 	_c.mutation.SetUserID(id)
@@ -330,6 +344,10 @@ func (_c *RedeemCodeCreate) createSpec() (*RedeemCode, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.ValidityDays(); ok {
 		_spec.SetField(redeemcode.FieldValidityDays, field.TypeInt, value)
 		_node.ValidityDays = value
+	}
+	if value, ok := _c.mutation.InviterUserID(); ok {
+		_spec.SetField(redeemcode.FieldInviterUserID, field.TypeInt64, value)
+		_node.InviterUserID = &value
 	}
 	if nodes := _c.mutation.UserIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
@@ -561,6 +579,30 @@ func (u *RedeemCodeUpsert) AddValidityDays(v int) *RedeemCodeUpsert {
 	return u
 }
 
+// SetInviterUserID sets the "inviter_user_id" field.
+func (u *RedeemCodeUpsert) SetInviterUserID(v int64) *RedeemCodeUpsert {
+	u.Set(redeemcode.FieldInviterUserID, v)
+	return u
+}
+
+// UpdateInviterUserID sets the "inviter_user_id" field to the value that was provided on create.
+func (u *RedeemCodeUpsert) UpdateInviterUserID() *RedeemCodeUpsert {
+	u.SetExcluded(redeemcode.FieldInviterUserID)
+	return u
+}
+
+// AddInviterUserID adds v to the "inviter_user_id" field.
+func (u *RedeemCodeUpsert) AddInviterUserID(v int64) *RedeemCodeUpsert {
+	u.Add(redeemcode.FieldInviterUserID, v)
+	return u
+}
+
+// ClearInviterUserID clears the value of the "inviter_user_id" field.
+func (u *RedeemCodeUpsert) ClearInviterUserID() *RedeemCodeUpsert {
+	u.SetNull(redeemcode.FieldInviterUserID)
+	return u
+}
+
 // UpdateNewValues updates the mutable fields using the new values that were set on create.
 // Using this option is equivalent to using:
 //
@@ -771,6 +813,34 @@ func (u *RedeemCodeUpsertOne) AddValidityDays(v int) *RedeemCodeUpsertOne {
 func (u *RedeemCodeUpsertOne) UpdateValidityDays() *RedeemCodeUpsertOne {
 	return u.Update(func(s *RedeemCodeUpsert) {
 		s.UpdateValidityDays()
+	})
+}
+
+// SetInviterUserID sets the "inviter_user_id" field.
+func (u *RedeemCodeUpsertOne) SetInviterUserID(v int64) *RedeemCodeUpsertOne {
+	return u.Update(func(s *RedeemCodeUpsert) {
+		s.SetInviterUserID(v)
+	})
+}
+
+// AddInviterUserID adds v to the "inviter_user_id" field.
+func (u *RedeemCodeUpsertOne) AddInviterUserID(v int64) *RedeemCodeUpsertOne {
+	return u.Update(func(s *RedeemCodeUpsert) {
+		s.AddInviterUserID(v)
+	})
+}
+
+// UpdateInviterUserID sets the "inviter_user_id" field to the value that was provided on create.
+func (u *RedeemCodeUpsertOne) UpdateInviterUserID() *RedeemCodeUpsertOne {
+	return u.Update(func(s *RedeemCodeUpsert) {
+		s.UpdateInviterUserID()
+	})
+}
+
+// ClearInviterUserID clears the value of the "inviter_user_id" field.
+func (u *RedeemCodeUpsertOne) ClearInviterUserID() *RedeemCodeUpsertOne {
+	return u.Update(func(s *RedeemCodeUpsert) {
+		s.ClearInviterUserID()
 	})
 }
 
@@ -1150,6 +1220,34 @@ func (u *RedeemCodeUpsertBulk) AddValidityDays(v int) *RedeemCodeUpsertBulk {
 func (u *RedeemCodeUpsertBulk) UpdateValidityDays() *RedeemCodeUpsertBulk {
 	return u.Update(func(s *RedeemCodeUpsert) {
 		s.UpdateValidityDays()
+	})
+}
+
+// SetInviterUserID sets the "inviter_user_id" field.
+func (u *RedeemCodeUpsertBulk) SetInviterUserID(v int64) *RedeemCodeUpsertBulk {
+	return u.Update(func(s *RedeemCodeUpsert) {
+		s.SetInviterUserID(v)
+	})
+}
+
+// AddInviterUserID adds v to the "inviter_user_id" field.
+func (u *RedeemCodeUpsertBulk) AddInviterUserID(v int64) *RedeemCodeUpsertBulk {
+	return u.Update(func(s *RedeemCodeUpsert) {
+		s.AddInviterUserID(v)
+	})
+}
+
+// UpdateInviterUserID sets the "inviter_user_id" field to the value that was provided on create.
+func (u *RedeemCodeUpsertBulk) UpdateInviterUserID() *RedeemCodeUpsertBulk {
+	return u.Update(func(s *RedeemCodeUpsert) {
+		s.UpdateInviterUserID()
+	})
+}
+
+// ClearInviterUserID clears the value of the "inviter_user_id" field.
+func (u *RedeemCodeUpsertBulk) ClearInviterUserID() *RedeemCodeUpsertBulk {
+	return u.Update(func(s *RedeemCodeUpsert) {
+		s.ClearInviterUserID()
 	})
 }
 

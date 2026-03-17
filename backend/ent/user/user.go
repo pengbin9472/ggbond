@@ -47,6 +47,8 @@ const (
 	FieldSoraStorageQuotaBytes = "sora_storage_quota_bytes"
 	// FieldSoraStorageUsedBytes holds the string denoting the sora_storage_used_bytes field in the database.
 	FieldSoraStorageUsedBytes = "sora_storage_used_bytes"
+	// FieldReferredBy holds the string denoting the referred_by field in the database.
+	FieldReferredBy = "referred_by"
 	// EdgeAPIKeys holds the string denoting the api_keys edge name in mutations.
 	EdgeAPIKeys = "api_keys"
 	// EdgeRedeemCodes holds the string denoting the redeem_codes edge name in mutations.
@@ -158,6 +160,7 @@ var Columns = []string{
 	FieldTotpEnabledAt,
 	FieldSoraStorageQuotaBytes,
 	FieldSoraStorageUsedBytes,
+	FieldReferredBy,
 }
 
 var (
@@ -306,6 +309,11 @@ func BySoraStorageQuotaBytes(opts ...sql.OrderTermOption) OrderOption {
 // BySoraStorageUsedBytes orders the results by the sora_storage_used_bytes field.
 func BySoraStorageUsedBytes(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldSoraStorageUsedBytes, opts...).ToFunc()
+}
+
+// ByReferredBy orders the results by the referred_by field.
+func ByReferredBy(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldReferredBy, opts...).ToFunc()
 }
 
 // ByAPIKeysCount orders the results by api_keys count.

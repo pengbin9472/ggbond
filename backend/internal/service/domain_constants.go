@@ -230,6 +230,13 @@ const (
 
 	// SettingKeyBackendModeEnabled Backend 模式：禁用用户注册和自助服务，仅管理员可登录
 	SettingKeyBackendModeEnabled = "backend_mode_enabled"
+
+	// 邀请返现设置
+	SettingKeyReferralEnabled            = "referral_enabled"              // 是否启用邀请返现
+	SettingKeyReferralRewardType         = "referral_reward_type"          // percentage / fixed
+	SettingKeyReferralCashbackPercentage = "referral_cashback_percentage"  // 返现比例(默认10)
+	SettingKeyReferralFixedAmount        = "referral_fixed_amount"         // 固定返现金额
+	SettingKeyReferralMaxRewardsPerUser  = "referral_max_rewards_per_user" // 每人最大返现总额(0=无限)
 )
 
 // AdminAPIKeyPrefix is the prefix for admin API keys (distinct from user "sk-" keys).

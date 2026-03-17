@@ -89,6 +89,13 @@ type SystemSettings struct {
 
 	// Backend Mode
 	BackendModeEnabled bool `json:"backend_mode_enabled"`
+
+	// 邀请返现设置
+	ReferralEnabled            bool    `json:"referral_enabled"`
+	ReferralRewardType         string  `json:"referral_reward_type"`
+	ReferralCashbackPercentage float64 `json:"referral_cashback_percentage"`
+	ReferralFixedAmount        float64 `json:"referral_fixed_amount"`
+	ReferralMaxRewardsPerUser  float64 `json:"referral_max_rewards_per_user"`
 }
 
 type DefaultSubscriptionSetting struct {

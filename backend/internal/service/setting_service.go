@@ -516,6 +516,13 @@ func (s *SettingService) UpdateSettings(ctx context.Context, settings *SystemSet
 	// Backend Mode
 	updates[SettingKeyBackendModeEnabled] = strconv.FormatBool(settings.BackendModeEnabled)
 
+	// 邀请返现设置
+	updates[SettingKeyReferralEnabled] = strconv.FormatBool(settings.ReferralEnabled)
+	updates[SettingKeyReferralRewardType] = settings.ReferralRewardType
+	updates[SettingKeyReferralCashbackPercentage] = strconv.FormatFloat(settings.ReferralCashbackPercentage, 'f', 2, 64)
+	updates[SettingKeyReferralFixedAmount] = strconv.FormatFloat(settings.ReferralFixedAmount, 'f', 2, 64)
+	updates[SettingKeyReferralMaxRewardsPerUser] = strconv.FormatFloat(settings.ReferralMaxRewardsPerUser, 'f', 2, 64)
+
 	err = s.settingRepo.SetMultiple(ctx, updates)
 	if err == nil {
 		// 先使 inflight singleflight 失效，再刷新缓存，缩小旧值覆盖新值的竞态窗口
@@ -930,6 +937,21 @@ func (s *SettingService) parseSettings(settings map[string]string) *SystemSettin
 
 	// 分组隔离
 	result.AllowUngroupedKeyScheduling = settings[SettingKeyAllowUngroupedKeyScheduling] == "true"
+
+	// 邀请返现设置
+	result.ReferralEnabled = settings[SettingKeyReferralEnabled] == "true"
+	result.ReferralRewardType = s.getStringOrDefault(settings, SettingKeyReferralRewardType, "percentage")
+	if percentage, err := strconv.ParseFloat(settings[SettingKeyReferralCashbackPercentage], 64); err == nil {
+		result.ReferralCashbackPercentage = percentage
+	} else {
+		result.ReferralCashbackPercentage = 10.0
+	}
+	if fixedAmount, err := strconv.ParseFloat(settings[SettingKeyReferralFixedAmount], 64); err == nil {
+		result.ReferralFixedAmount = fixedAmount
+	}
+	if maxRewards, err := strconv.ParseFloat(settings[SettingKeyReferralMaxRewardsPerUser], 64); err == nil {
+		result.ReferralMaxRewardsPerUser = maxRewards
+	}
 
 	return result
 }

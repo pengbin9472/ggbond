@@ -108,6 +108,9 @@ func (h *SettingHandler) GetSettings(c *gin.Context) {
 		HideCcsImportButton:                  settings.HideCcsImportButton,
 		PurchaseSubscriptionEnabled:          settings.PurchaseSubscriptionEnabled,
 		PurchaseSubscriptionURL:              settings.PurchaseSubscriptionURL,
+		PurchaseChannelEnabled:               settings.PurchaseChannelEnabled,
+		PurchaseChannelURL:                   settings.PurchaseChannelURL,
+		PurchaseChannelImage:                 settings.PurchaseChannelImage,
 		SoraClientEnabled:                    settings.SoraClientEnabled,
 		GroupMonitoringEnabled:               settings.GroupMonitoringEnabled,
 		CustomMenuItems:                      dto.ParseCustomMenuItems(settings.CustomMenuItems),
@@ -128,6 +131,11 @@ func (h *SettingHandler) GetSettings(c *gin.Context) {
 		MinClaudeCodeVersion:                 settings.MinClaudeCodeVersion,
 		AllowUngroupedKeyScheduling:          settings.AllowUngroupedKeyScheduling,
 		BackendModeEnabled:                   settings.BackendModeEnabled,
+		ReferralEnabled:                      settings.ReferralEnabled,
+		ReferralRewardType:                   settings.ReferralRewardType,
+		ReferralCashbackPercentage:           settings.ReferralCashbackPercentage,
+		ReferralFixedAmount:                  settings.ReferralFixedAmount,
+		ReferralMaxRewardsPerUser:            settings.ReferralMaxRewardsPerUser,
 	})
 }
 
@@ -210,6 +218,13 @@ type UpdateSettingsRequest struct {
 
 	// Backend Mode
 	BackendModeEnabled bool `json:"backend_mode_enabled"`
+
+	// 邀请返现设置
+	ReferralEnabled            bool    `json:"referral_enabled"`
+	ReferralRewardType         string  `json:"referral_reward_type"`
+	ReferralCashbackPercentage float64 `json:"referral_cashback_percentage"`
+	ReferralFixedAmount        float64 `json:"referral_fixed_amount"`
+	ReferralMaxRewardsPerUser  float64 `json:"referral_max_rewards_per_user"`
 }
 
 // UpdateSettings 更新系统设置
@@ -535,6 +550,11 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		MinClaudeCodeVersion:        req.MinClaudeCodeVersion,
 		AllowUngroupedKeyScheduling: req.AllowUngroupedKeyScheduling,
 		BackendModeEnabled:          req.BackendModeEnabled,
+		ReferralEnabled:             req.ReferralEnabled,
+		ReferralRewardType:          req.ReferralRewardType,
+		ReferralCashbackPercentage:  req.ReferralCashbackPercentage,
+		ReferralFixedAmount:         req.ReferralFixedAmount,
+		ReferralMaxRewardsPerUser:   req.ReferralMaxRewardsPerUser,
 		OpsMonitoringEnabled: func() bool {
 			if req.OpsMonitoringEnabled != nil {
 				return *req.OpsMonitoringEnabled
@@ -616,6 +636,9 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		HideCcsImportButton:                  updatedSettings.HideCcsImportButton,
 		PurchaseSubscriptionEnabled:          updatedSettings.PurchaseSubscriptionEnabled,
 		PurchaseSubscriptionURL:              updatedSettings.PurchaseSubscriptionURL,
+		PurchaseChannelEnabled:               updatedSettings.PurchaseChannelEnabled,
+		PurchaseChannelURL:                   updatedSettings.PurchaseChannelURL,
+		PurchaseChannelImage:                 updatedSettings.PurchaseChannelImage,
 		SoraClientEnabled:                    updatedSettings.SoraClientEnabled,
 		GroupMonitoringEnabled:               updatedSettings.GroupMonitoringEnabled,
 		CustomMenuItems:                      dto.ParseCustomMenuItems(updatedSettings.CustomMenuItems),
@@ -636,6 +659,11 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		MinClaudeCodeVersion:                 updatedSettings.MinClaudeCodeVersion,
 		AllowUngroupedKeyScheduling:          updatedSettings.AllowUngroupedKeyScheduling,
 		BackendModeEnabled:                   updatedSettings.BackendModeEnabled,
+		ReferralEnabled:                      updatedSettings.ReferralEnabled,
+		ReferralRewardType:                   updatedSettings.ReferralRewardType,
+		ReferralCashbackPercentage:           updatedSettings.ReferralCashbackPercentage,
+		ReferralFixedAmount:                  updatedSettings.ReferralFixedAmount,
+		ReferralMaxRewardsPerUser:            updatedSettings.ReferralMaxRewardsPerUser,
 	})
 }
 

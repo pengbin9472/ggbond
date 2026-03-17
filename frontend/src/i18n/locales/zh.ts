@@ -287,6 +287,7 @@ export default {
     balance: '余额',
     available: '可用',
     copiedToClipboard: '已复制到剪贴板',
+    copy: '复制',
     copied: '已复制',
     copyFailed: '复制失败',
     verifying: '验证中...',
@@ -331,6 +332,7 @@ export default {
     apiKeys: 'API 密钥',
     usage: '使用记录',
     redeem: '兑换',
+    referral: '邀请奖励',
     profile: '个人资料',
     users: '用户管理',
     groups: '分组管理',
@@ -812,6 +814,26 @@ export default {
     failedToRedeem: '兑换失败，请检查兑换码后重试。',
     subscriptionRefreshFailed: '兑换成功，但订阅状态刷新失败。',
     pleaseEnterCode: '请输入兑换码'
+  },
+
+  // Referral
+  referral: {
+    title: '邀请奖励',
+    description: '邀请好友注册，获得奖励',
+    totalRewards: '累计奖励',
+    inviteeCount: '邀请人数',
+    invitationLink: '我的邀请链接',
+    invitationLinkHint: '分享此链接邀请好友注册',
+    invitationCode: '邀请码',
+    invitationUrl: '邀请链接',
+    codeCopied: '邀请码已复制',
+    urlCopied: '邀请链接已复制',
+    rewardHistory: '奖励记录',
+    inviteeEmail: '被邀请人',
+    rewardAmount: '返现金额',
+    triggerAmount: '触发金额',
+    createdAt: '时间',
+    noHistory: '暂无奖励记录'
   },
 
   // Profile
@@ -4153,6 +4175,19 @@ export default {
         totpHint: '允许用户使用 Google Authenticator 等应用进行二次验证',
         totpKeyNotConfigured:
           '请先在环境变量中配置 TOTP_ENCRYPTION_KEY。使用命令 openssl rand -hex 32 生成密钥。'
+      },
+      referral: {
+        enabled: '邀请奖励',
+        enabledHint: '用户邀请新用户注册后，新用户兑换余额时邀请人获得奖励',
+        rewardType: '返现类型',
+        percentage: '按比例返现',
+        fixed: '固定金额返现',
+        cashbackPercentage: '返现比例 (%)',
+        cashbackPercentageHint: '被邀请人兑换余额时，邀请人获得的返现比例（例如：10 表示 10%）',
+        fixedAmount: '固定返现金额',
+        fixedAmountHint: '被邀请人每次兑换余额时，邀请人获得的固定金额',
+        maxRewardsPerUser: '单人返现上限',
+        maxRewardsPerUserHint: '每个邀请人累计可获得的最大返现金额，0 表示不限制'
       },
       turnstile: {
         title: 'Cloudflare Turnstile',

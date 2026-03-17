@@ -78,6 +78,11 @@ func (User) Fields() []ent.Field {
 			Default(0),
 		field.Int64("sora_storage_used_bytes").
 			Default(0),
+
+		// 邀请人 ID
+		field.Int64("referred_by").
+			Optional().
+			Nillable(),
 	}
 }
 

@@ -68,6 +68,9 @@ func (RedeemCode) Fields() []ent.Field {
 			Nillable(),
 		field.Int("validity_days").
 			Default(30),
+		field.Int64("inviter_user_id").
+			Optional().
+			Nillable(),
 	}
 }
 
@@ -90,5 +93,6 @@ func (RedeemCode) Indexes() []ent.Index {
 		index.Fields("status"),
 		index.Fields("used_by"),
 		index.Fields("group_id"),
+		index.Fields("inviter_user_id"),
 	}
 }

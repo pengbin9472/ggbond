@@ -194,6 +194,33 @@ func (_u *RedeemCodeUpdate) AddValidityDays(v int) *RedeemCodeUpdate {
 	return _u
 }
 
+// SetInviterUserID sets the "inviter_user_id" field.
+func (_u *RedeemCodeUpdate) SetInviterUserID(v int64) *RedeemCodeUpdate {
+	_u.mutation.ResetInviterUserID()
+	_u.mutation.SetInviterUserID(v)
+	return _u
+}
+
+// SetNillableInviterUserID sets the "inviter_user_id" field if the given value is not nil.
+func (_u *RedeemCodeUpdate) SetNillableInviterUserID(v *int64) *RedeemCodeUpdate {
+	if v != nil {
+		_u.SetInviterUserID(*v)
+	}
+	return _u
+}
+
+// AddInviterUserID adds value to the "inviter_user_id" field.
+func (_u *RedeemCodeUpdate) AddInviterUserID(v int64) *RedeemCodeUpdate {
+	_u.mutation.AddInviterUserID(v)
+	return _u
+}
+
+// ClearInviterUserID clears the value of the "inviter_user_id" field.
+func (_u *RedeemCodeUpdate) ClearInviterUserID() *RedeemCodeUpdate {
+	_u.mutation.ClearInviterUserID()
+	return _u
+}
+
 // SetUserID sets the "user" edge to the User entity by ID.
 func (_u *RedeemCodeUpdate) SetUserID(id int64) *RedeemCodeUpdate {
 	_u.mutation.SetUserID(id)
@@ -326,6 +353,15 @@ func (_u *RedeemCodeUpdate) sqlSave(ctx context.Context) (_node int, err error) 
 	}
 	if value, ok := _u.mutation.AddedValidityDays(); ok {
 		_spec.AddField(redeemcode.FieldValidityDays, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.InviterUserID(); ok {
+		_spec.SetField(redeemcode.FieldInviterUserID, field.TypeInt64, value)
+	}
+	if value, ok := _u.mutation.AddedInviterUserID(); ok {
+		_spec.AddField(redeemcode.FieldInviterUserID, field.TypeInt64, value)
+	}
+	if _u.mutation.InviterUserIDCleared() {
+		_spec.ClearField(redeemcode.FieldInviterUserID, field.TypeInt64)
 	}
 	if _u.mutation.UserCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -569,6 +605,33 @@ func (_u *RedeemCodeUpdateOne) AddValidityDays(v int) *RedeemCodeUpdateOne {
 	return _u
 }
 
+// SetInviterUserID sets the "inviter_user_id" field.
+func (_u *RedeemCodeUpdateOne) SetInviterUserID(v int64) *RedeemCodeUpdateOne {
+	_u.mutation.ResetInviterUserID()
+	_u.mutation.SetInviterUserID(v)
+	return _u
+}
+
+// SetNillableInviterUserID sets the "inviter_user_id" field if the given value is not nil.
+func (_u *RedeemCodeUpdateOne) SetNillableInviterUserID(v *int64) *RedeemCodeUpdateOne {
+	if v != nil {
+		_u.SetInviterUserID(*v)
+	}
+	return _u
+}
+
+// AddInviterUserID adds value to the "inviter_user_id" field.
+func (_u *RedeemCodeUpdateOne) AddInviterUserID(v int64) *RedeemCodeUpdateOne {
+	_u.mutation.AddInviterUserID(v)
+	return _u
+}
+
+// ClearInviterUserID clears the value of the "inviter_user_id" field.
+func (_u *RedeemCodeUpdateOne) ClearInviterUserID() *RedeemCodeUpdateOne {
+	_u.mutation.ClearInviterUserID()
+	return _u
+}
+
 // SetUserID sets the "user" edge to the User entity by ID.
 func (_u *RedeemCodeUpdateOne) SetUserID(id int64) *RedeemCodeUpdateOne {
 	_u.mutation.SetUserID(id)
@@ -731,6 +794,15 @@ func (_u *RedeemCodeUpdateOne) sqlSave(ctx context.Context) (_node *RedeemCode, 
 	}
 	if value, ok := _u.mutation.AddedValidityDays(); ok {
 		_spec.AddField(redeemcode.FieldValidityDays, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.InviterUserID(); ok {
+		_spec.SetField(redeemcode.FieldInviterUserID, field.TypeInt64, value)
+	}
+	if value, ok := _u.mutation.AddedInviterUserID(); ok {
+		_spec.AddField(redeemcode.FieldInviterUserID, field.TypeInt64, value)
+	}
+	if _u.mutation.InviterUserIDCleared() {
+		_spec.ClearField(redeemcode.FieldInviterUserID, field.TypeInt64)
 	}
 	if _u.mutation.UserCleared() {
 		edge := &sqlgraph.EdgeSpec{

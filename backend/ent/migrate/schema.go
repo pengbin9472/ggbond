@@ -606,6 +606,7 @@ var (
 		{Name: "notes", Type: field.TypeString, Nullable: true, SchemaType: map[string]string{"postgres": "text"}},
 		{Name: "created_at", Type: field.TypeTime, SchemaType: map[string]string{"postgres": "timestamptz"}},
 		{Name: "validity_days", Type: field.TypeInt, Default: 30},
+		{Name: "inviter_user_id", Type: field.TypeInt64, Nullable: true},
 		{Name: "group_id", Type: field.TypeInt64, Nullable: true},
 		{Name: "used_by", Type: field.TypeInt64, Nullable: true},
 	}
@@ -617,13 +618,13 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "redeem_codes_groups_redeem_codes",
-				Columns:    []*schema.Column{RedeemCodesColumns[9]},
+				Columns:    []*schema.Column{RedeemCodesColumns[10]},
 				RefColumns: []*schema.Column{GroupsColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 			{
 				Symbol:     "redeem_codes_users_redeem_codes",
-				Columns:    []*schema.Column{RedeemCodesColumns[10]},
+				Columns:    []*schema.Column{RedeemCodesColumns[11]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
@@ -637,12 +638,54 @@ var (
 			{
 				Name:    "redeemcode_used_by",
 				Unique:  false,
-				Columns: []*schema.Column{RedeemCodesColumns[10]},
+				Columns: []*schema.Column{RedeemCodesColumns[11]},
 			},
 			{
 				Name:    "redeemcode_group_id",
 				Unique:  false,
+				Columns: []*schema.Column{RedeemCodesColumns[10]},
+			},
+			{
+				Name:    "redeemcode_inviter_user_id",
+				Unique:  false,
 				Columns: []*schema.Column{RedeemCodesColumns[9]},
+			},
+		},
+	}
+	// ReferralRewardsColumns holds the columns for the "referral_rewards" table.
+	ReferralRewardsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt64, Increment: true},
+		{Name: "inviter_id", Type: field.TypeInt64},
+		{Name: "invitee_id", Type: field.TypeInt64},
+		{Name: "trigger_redeem_code_id", Type: field.TypeInt64, Nullable: true},
+		{Name: "reward_amount", Type: field.TypeFloat64, SchemaType: map[string]string{"postgres": "decimal(20,8)"}},
+		{Name: "reward_type", Type: field.TypeString, Size: 20, Default: "percentage"},
+		{Name: "reward_rate", Type: field.TypeFloat64, Nullable: true, SchemaType: map[string]string{"postgres": "decimal(10,4)"}},
+		{Name: "trigger_code_value", Type: field.TypeFloat64, SchemaType: map[string]string{"postgres": "decimal(20,8)"}},
+		{Name: "status", Type: field.TypeString, Size: 20, Default: "completed"},
+		{Name: "notes", Type: field.TypeString, Nullable: true, SchemaType: map[string]string{"postgres": "text"}},
+		{Name: "created_at", Type: field.TypeTime, SchemaType: map[string]string{"postgres": "timestamptz"}},
+	}
+	// ReferralRewardsTable holds the schema information for the "referral_rewards" table.
+	ReferralRewardsTable = &schema.Table{
+		Name:       "referral_rewards",
+		Columns:    ReferralRewardsColumns,
+		PrimaryKey: []*schema.Column{ReferralRewardsColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "referralreward_inviter_id",
+				Unique:  false,
+				Columns: []*schema.Column{ReferralRewardsColumns[1]},
+			},
+			{
+				Name:    "referralreward_invitee_id",
+				Unique:  false,
+				Columns: []*schema.Column{ReferralRewardsColumns[2]},
+			},
+			{
+				Name:    "referralreward_created_at",
+				Unique:  false,
+				Columns: []*schema.Column{ReferralRewardsColumns[10]},
 			},
 		},
 	}
@@ -861,6 +904,7 @@ var (
 		{Name: "totp_enabled_at", Type: field.TypeTime, Nullable: true},
 		{Name: "sora_storage_quota_bytes", Type: field.TypeInt64, Default: 0},
 		{Name: "sora_storage_used_bytes", Type: field.TypeInt64, Default: 0},
+		{Name: "referred_by", Type: field.TypeInt64, Nullable: true},
 	}
 	// UsersTable holds the schema information for the "users" table.
 	UsersTable = &schema.Table{
@@ -1102,6 +1146,7 @@ var (
 		PromoCodeUsagesTable,
 		ProxiesTable,
 		RedeemCodesTable,
+		ReferralRewardsTable,
 		SecuritySecretsTable,
 		SettingsTable,
 		UsageCleanupTasksTable,
@@ -1161,6 +1206,9 @@ func init() {
 	RedeemCodesTable.ForeignKeys[1].RefTable = UsersTable
 	RedeemCodesTable.Annotation = &entsql.Annotation{
 		Table: "redeem_codes",
+	}
+	ReferralRewardsTable.Annotation = &entsql.Annotation{
+		Table: "referral_rewards",
 	}
 	SecuritySecretsTable.Annotation = &entsql.Annotation{
 		Table: "security_secrets",

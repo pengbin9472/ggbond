@@ -24,6 +24,7 @@ import (
 	"github.com/pengbin9472/ggbond/ent/promocodeusage"
 	"github.com/pengbin9472/ggbond/ent/proxy"
 	"github.com/pengbin9472/ggbond/ent/redeemcode"
+	"github.com/pengbin9472/ggbond/ent/referralreward"
 	"github.com/pengbin9472/ggbond/ent/securitysecret"
 	"github.com/pengbin9472/ggbond/ent/setting"
 	"github.com/pengbin9472/ggbond/ent/usagecleanuptask"
@@ -105,6 +106,7 @@ func checkColumn(t, c string) error {
 			promocodeusage.Table:          promocodeusage.ValidColumn,
 			proxy.Table:                   proxy.ValidColumn,
 			redeemcode.Table:              redeemcode.ValidColumn,
+			referralreward.Table:          referralreward.ValidColumn,
 			securitysecret.Table:          securitysecret.ValidColumn,
 			setting.Table:                 setting.ValidColumn,
 			usagecleanuptask.Table:        usagecleanuptask.ValidColumn,

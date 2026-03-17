@@ -105,6 +105,11 @@ func ValidityDays(v int) predicate.RedeemCode {
 	return predicate.RedeemCode(sql.FieldEQ(FieldValidityDays, v))
 }
 
+// InviterUserID applies equality check predicate on the "inviter_user_id" field. It's identical to InviterUserIDEQ.
+func InviterUserID(v int64) predicate.RedeemCode {
+	return predicate.RedeemCode(sql.FieldEQ(FieldInviterUserID, v))
+}
+
 // CodeEQ applies the EQ predicate on the "code" field.
 func CodeEQ(v string) predicate.RedeemCode {
 	return predicate.RedeemCode(sql.FieldEQ(FieldCode, v))
@@ -603,6 +608,56 @@ func ValidityDaysLT(v int) predicate.RedeemCode {
 // ValidityDaysLTE applies the LTE predicate on the "validity_days" field.
 func ValidityDaysLTE(v int) predicate.RedeemCode {
 	return predicate.RedeemCode(sql.FieldLTE(FieldValidityDays, v))
+}
+
+// InviterUserIDEQ applies the EQ predicate on the "inviter_user_id" field.
+func InviterUserIDEQ(v int64) predicate.RedeemCode {
+	return predicate.RedeemCode(sql.FieldEQ(FieldInviterUserID, v))
+}
+
+// InviterUserIDNEQ applies the NEQ predicate on the "inviter_user_id" field.
+func InviterUserIDNEQ(v int64) predicate.RedeemCode {
+	return predicate.RedeemCode(sql.FieldNEQ(FieldInviterUserID, v))
+}
+
+// InviterUserIDIn applies the In predicate on the "inviter_user_id" field.
+func InviterUserIDIn(vs ...int64) predicate.RedeemCode {
+	return predicate.RedeemCode(sql.FieldIn(FieldInviterUserID, vs...))
+}
+
+// InviterUserIDNotIn applies the NotIn predicate on the "inviter_user_id" field.
+func InviterUserIDNotIn(vs ...int64) predicate.RedeemCode {
+	return predicate.RedeemCode(sql.FieldNotIn(FieldInviterUserID, vs...))
+}
+
+// InviterUserIDGT applies the GT predicate on the "inviter_user_id" field.
+func InviterUserIDGT(v int64) predicate.RedeemCode {
+	return predicate.RedeemCode(sql.FieldGT(FieldInviterUserID, v))
+}
+
+// InviterUserIDGTE applies the GTE predicate on the "inviter_user_id" field.
+func InviterUserIDGTE(v int64) predicate.RedeemCode {
+	return predicate.RedeemCode(sql.FieldGTE(FieldInviterUserID, v))
+}
+
+// InviterUserIDLT applies the LT predicate on the "inviter_user_id" field.
+func InviterUserIDLT(v int64) predicate.RedeemCode {
+	return predicate.RedeemCode(sql.FieldLT(FieldInviterUserID, v))
+}
+
+// InviterUserIDLTE applies the LTE predicate on the "inviter_user_id" field.
+func InviterUserIDLTE(v int64) predicate.RedeemCode {
+	return predicate.RedeemCode(sql.FieldLTE(FieldInviterUserID, v))
+}
+
+// InviterUserIDIsNil applies the IsNil predicate on the "inviter_user_id" field.
+func InviterUserIDIsNil() predicate.RedeemCode {
+	return predicate.RedeemCode(sql.FieldIsNull(FieldInviterUserID))
+}
+
+// InviterUserIDNotNil applies the NotNil predicate on the "inviter_user_id" field.
+func InviterUserIDNotNil() predicate.RedeemCode {
+	return predicate.RedeemCode(sql.FieldNotNull(FieldInviterUserID))
 }
 
 // HasUser applies the HasEdge predicate on the "user" edge.

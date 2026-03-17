@@ -62,6 +62,7 @@ func (r *userRepository) Create(ctx context.Context, userIn *service.User) error
 		SetConcurrency(userIn.Concurrency).
 		SetStatus(userIn.Status).
 		SetSoraStorageQuotaBytes(userIn.SoraStorageQuotaBytes).
+		SetNillableReferredBy(userIn.ReferredBy).
 		Save(ctx)
 	if err != nil {
 		return translatePersistenceError(err, nil, service.ErrEmailExists)

@@ -25,6 +25,7 @@ import (
 	"github.com/pengbin9472/ggbond/ent/promocodeusage"
 	"github.com/pengbin9472/ggbond/ent/proxy"
 	"github.com/pengbin9472/ggbond/ent/redeemcode"
+	"github.com/pengbin9472/ggbond/ent/referralreward"
 	"github.com/pengbin9472/ggbond/ent/securitysecret"
 	"github.com/pengbin9472/ggbond/ent/setting"
 	"github.com/pengbin9472/ggbond/ent/usagecleanuptask"
@@ -58,6 +59,7 @@ const (
 	TypePromoCodeUsage          = "PromoCodeUsage"
 	TypeProxy                   = "Proxy"
 	TypeRedeemCode              = "RedeemCode"
+	TypeReferralReward          = "ReferralReward"
 	TypeSecuritySecret          = "SecuritySecret"
 	TypeSetting                 = "Setting"
 	TypeUsageCleanupTask        = "UsageCleanupTask"
@@ -15156,27 +15158,29 @@ func (m *ProxyMutation) ResetEdge(name string) error {
 // RedeemCodeMutation represents an operation that mutates the RedeemCode nodes in the graph.
 type RedeemCodeMutation struct {
 	config
-	op               Op
-	typ              string
-	id               *int64
-	code             *string
-	_type            *string
-	value            *float64
-	addvalue         *float64
-	status           *string
-	used_at          *time.Time
-	notes            *string
-	created_at       *time.Time
-	validity_days    *int
-	addvalidity_days *int
-	clearedFields    map[string]struct{}
-	user             *int64
-	cleareduser      bool
-	group            *int64
-	clearedgroup     bool
-	done             bool
-	oldValue         func(context.Context) (*RedeemCode, error)
-	predicates       []predicate.RedeemCode
+	op                 Op
+	typ                string
+	id                 *int64
+	code               *string
+	_type              *string
+	value              *float64
+	addvalue           *float64
+	status             *string
+	used_at            *time.Time
+	notes              *string
+	created_at         *time.Time
+	validity_days      *int
+	addvalidity_days   *int
+	inviter_user_id    *int64
+	addinviter_user_id *int64
+	clearedFields      map[string]struct{}
+	user               *int64
+	cleareduser        bool
+	group              *int64
+	clearedgroup       bool
+	done               bool
+	oldValue           func(context.Context) (*RedeemCode, error)
+	predicates         []predicate.RedeemCode
 }
 
 var _ ent.Mutation = (*RedeemCodeMutation)(nil)
@@ -15729,6 +15733,76 @@ func (m *RedeemCodeMutation) ResetValidityDays() {
 	m.addvalidity_days = nil
 }
 
+// SetInviterUserID sets the "inviter_user_id" field.
+func (m *RedeemCodeMutation) SetInviterUserID(i int64) {
+	m.inviter_user_id = &i
+	m.addinviter_user_id = nil
+}
+
+// InviterUserID returns the value of the "inviter_user_id" field in the mutation.
+func (m *RedeemCodeMutation) InviterUserID() (r int64, exists bool) {
+	v := m.inviter_user_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldInviterUserID returns the old "inviter_user_id" field's value of the RedeemCode entity.
+// If the RedeemCode object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RedeemCodeMutation) OldInviterUserID(ctx context.Context) (v *int64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldInviterUserID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldInviterUserID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldInviterUserID: %w", err)
+	}
+	return oldValue.InviterUserID, nil
+}
+
+// AddInviterUserID adds i to the "inviter_user_id" field.
+func (m *RedeemCodeMutation) AddInviterUserID(i int64) {
+	if m.addinviter_user_id != nil {
+		*m.addinviter_user_id += i
+	} else {
+		m.addinviter_user_id = &i
+	}
+}
+
+// AddedInviterUserID returns the value that was added to the "inviter_user_id" field in this mutation.
+func (m *RedeemCodeMutation) AddedInviterUserID() (r int64, exists bool) {
+	v := m.addinviter_user_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearInviterUserID clears the value of the "inviter_user_id" field.
+func (m *RedeemCodeMutation) ClearInviterUserID() {
+	m.inviter_user_id = nil
+	m.addinviter_user_id = nil
+	m.clearedFields[redeemcode.FieldInviterUserID] = struct{}{}
+}
+
+// InviterUserIDCleared returns if the "inviter_user_id" field was cleared in this mutation.
+func (m *RedeemCodeMutation) InviterUserIDCleared() bool {
+	_, ok := m.clearedFields[redeemcode.FieldInviterUserID]
+	return ok
+}
+
+// ResetInviterUserID resets all changes to the "inviter_user_id" field.
+func (m *RedeemCodeMutation) ResetInviterUserID() {
+	m.inviter_user_id = nil
+	m.addinviter_user_id = nil
+	delete(m.clearedFields, redeemcode.FieldInviterUserID)
+}
+
 // SetUserID sets the "user" edge to the User entity by id.
 func (m *RedeemCodeMutation) SetUserID(id int64) {
 	m.user = &id
@@ -15830,7 +15904,7 @@ func (m *RedeemCodeMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *RedeemCodeMutation) Fields() []string {
-	fields := make([]string, 0, 10)
+	fields := make([]string, 0, 11)
 	if m.code != nil {
 		fields = append(fields, redeemcode.FieldCode)
 	}
@@ -15861,6 +15935,9 @@ func (m *RedeemCodeMutation) Fields() []string {
 	if m.validity_days != nil {
 		fields = append(fields, redeemcode.FieldValidityDays)
 	}
+	if m.inviter_user_id != nil {
+		fields = append(fields, redeemcode.FieldInviterUserID)
+	}
 	return fields
 }
 
@@ -15889,6 +15966,8 @@ func (m *RedeemCodeMutation) Field(name string) (ent.Value, bool) {
 		return m.GroupID()
 	case redeemcode.FieldValidityDays:
 		return m.ValidityDays()
+	case redeemcode.FieldInviterUserID:
+		return m.InviterUserID()
 	}
 	return nil, false
 }
@@ -15918,6 +15997,8 @@ func (m *RedeemCodeMutation) OldField(ctx context.Context, name string) (ent.Val
 		return m.OldGroupID(ctx)
 	case redeemcode.FieldValidityDays:
 		return m.OldValidityDays(ctx)
+	case redeemcode.FieldInviterUserID:
+		return m.OldInviterUserID(ctx)
 	}
 	return nil, fmt.Errorf("unknown RedeemCode field %s", name)
 }
@@ -15997,6 +16078,13 @@ func (m *RedeemCodeMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetValidityDays(v)
 		return nil
+	case redeemcode.FieldInviterUserID:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetInviterUserID(v)
+		return nil
 	}
 	return fmt.Errorf("unknown RedeemCode field %s", name)
 }
@@ -16011,6 +16099,9 @@ func (m *RedeemCodeMutation) AddedFields() []string {
 	if m.addvalidity_days != nil {
 		fields = append(fields, redeemcode.FieldValidityDays)
 	}
+	if m.addinviter_user_id != nil {
+		fields = append(fields, redeemcode.FieldInviterUserID)
+	}
 	return fields
 }
 
@@ -16023,6 +16114,8 @@ func (m *RedeemCodeMutation) AddedField(name string) (ent.Value, bool) {
 		return m.AddedValue()
 	case redeemcode.FieldValidityDays:
 		return m.AddedValidityDays()
+	case redeemcode.FieldInviterUserID:
+		return m.AddedInviterUserID()
 	}
 	return nil, false
 }
@@ -16046,6 +16139,13 @@ func (m *RedeemCodeMutation) AddField(name string, value ent.Value) error {
 		}
 		m.AddValidityDays(v)
 		return nil
+	case redeemcode.FieldInviterUserID:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddInviterUserID(v)
+		return nil
 	}
 	return fmt.Errorf("unknown RedeemCode numeric field %s", name)
 }
@@ -16065,6 +16165,9 @@ func (m *RedeemCodeMutation) ClearedFields() []string {
 	}
 	if m.FieldCleared(redeemcode.FieldGroupID) {
 		fields = append(fields, redeemcode.FieldGroupID)
+	}
+	if m.FieldCleared(redeemcode.FieldInviterUserID) {
+		fields = append(fields, redeemcode.FieldInviterUserID)
 	}
 	return fields
 }
@@ -16091,6 +16194,9 @@ func (m *RedeemCodeMutation) ClearField(name string) error {
 		return nil
 	case redeemcode.FieldGroupID:
 		m.ClearGroupID()
+		return nil
+	case redeemcode.FieldInviterUserID:
+		m.ClearInviterUserID()
 		return nil
 	}
 	return fmt.Errorf("unknown RedeemCode nullable field %s", name)
@@ -16129,6 +16235,9 @@ func (m *RedeemCodeMutation) ResetField(name string) error {
 		return nil
 	case redeemcode.FieldValidityDays:
 		m.ResetValidityDays()
+		return nil
+	case redeemcode.FieldInviterUserID:
+		m.ResetInviterUserID()
 		return nil
 	}
 	return fmt.Errorf("unknown RedeemCode field %s", name)
@@ -16224,6 +16333,1081 @@ func (m *RedeemCodeMutation) ResetEdge(name string) error {
 		return nil
 	}
 	return fmt.Errorf("unknown RedeemCode edge %s", name)
+}
+
+// ReferralRewardMutation represents an operation that mutates the ReferralReward nodes in the graph.
+type ReferralRewardMutation struct {
+	config
+	op                        Op
+	typ                       string
+	id                        *int64
+	inviter_id                *int64
+	addinviter_id             *int64
+	invitee_id                *int64
+	addinvitee_id             *int64
+	trigger_redeem_code_id    *int64
+	addtrigger_redeem_code_id *int64
+	reward_amount             *float64
+	addreward_amount          *float64
+	reward_type               *string
+	reward_rate               *float64
+	addreward_rate            *float64
+	trigger_code_value        *float64
+	addtrigger_code_value     *float64
+	status                    *string
+	notes                     *string
+	created_at                *time.Time
+	clearedFields             map[string]struct{}
+	done                      bool
+	oldValue                  func(context.Context) (*ReferralReward, error)
+	predicates                []predicate.ReferralReward
+}
+
+var _ ent.Mutation = (*ReferralRewardMutation)(nil)
+
+// referralrewardOption allows management of the mutation configuration using functional options.
+type referralrewardOption func(*ReferralRewardMutation)
+
+// newReferralRewardMutation creates new mutation for the ReferralReward entity.
+func newReferralRewardMutation(c config, op Op, opts ...referralrewardOption) *ReferralRewardMutation {
+	m := &ReferralRewardMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeReferralReward,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withReferralRewardID sets the ID field of the mutation.
+func withReferralRewardID(id int64) referralrewardOption {
+	return func(m *ReferralRewardMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *ReferralReward
+		)
+		m.oldValue = func(ctx context.Context) (*ReferralReward, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().ReferralReward.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withReferralReward sets the old ReferralReward of the mutation.
+func withReferralReward(node *ReferralReward) referralrewardOption {
+	return func(m *ReferralRewardMutation) {
+		m.oldValue = func(context.Context) (*ReferralReward, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m ReferralRewardMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m ReferralRewardMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *ReferralRewardMutation) ID() (id int64, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *ReferralRewardMutation) IDs(ctx context.Context) ([]int64, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []int64{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().ReferralReward.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetInviterID sets the "inviter_id" field.
+func (m *ReferralRewardMutation) SetInviterID(i int64) {
+	m.inviter_id = &i
+	m.addinviter_id = nil
+}
+
+// InviterID returns the value of the "inviter_id" field in the mutation.
+func (m *ReferralRewardMutation) InviterID() (r int64, exists bool) {
+	v := m.inviter_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldInviterID returns the old "inviter_id" field's value of the ReferralReward entity.
+// If the ReferralReward object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ReferralRewardMutation) OldInviterID(ctx context.Context) (v int64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldInviterID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldInviterID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldInviterID: %w", err)
+	}
+	return oldValue.InviterID, nil
+}
+
+// AddInviterID adds i to the "inviter_id" field.
+func (m *ReferralRewardMutation) AddInviterID(i int64) {
+	if m.addinviter_id != nil {
+		*m.addinviter_id += i
+	} else {
+		m.addinviter_id = &i
+	}
+}
+
+// AddedInviterID returns the value that was added to the "inviter_id" field in this mutation.
+func (m *ReferralRewardMutation) AddedInviterID() (r int64, exists bool) {
+	v := m.addinviter_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetInviterID resets all changes to the "inviter_id" field.
+func (m *ReferralRewardMutation) ResetInviterID() {
+	m.inviter_id = nil
+	m.addinviter_id = nil
+}
+
+// SetInviteeID sets the "invitee_id" field.
+func (m *ReferralRewardMutation) SetInviteeID(i int64) {
+	m.invitee_id = &i
+	m.addinvitee_id = nil
+}
+
+// InviteeID returns the value of the "invitee_id" field in the mutation.
+func (m *ReferralRewardMutation) InviteeID() (r int64, exists bool) {
+	v := m.invitee_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldInviteeID returns the old "invitee_id" field's value of the ReferralReward entity.
+// If the ReferralReward object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ReferralRewardMutation) OldInviteeID(ctx context.Context) (v int64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldInviteeID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldInviteeID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldInviteeID: %w", err)
+	}
+	return oldValue.InviteeID, nil
+}
+
+// AddInviteeID adds i to the "invitee_id" field.
+func (m *ReferralRewardMutation) AddInviteeID(i int64) {
+	if m.addinvitee_id != nil {
+		*m.addinvitee_id += i
+	} else {
+		m.addinvitee_id = &i
+	}
+}
+
+// AddedInviteeID returns the value that was added to the "invitee_id" field in this mutation.
+func (m *ReferralRewardMutation) AddedInviteeID() (r int64, exists bool) {
+	v := m.addinvitee_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetInviteeID resets all changes to the "invitee_id" field.
+func (m *ReferralRewardMutation) ResetInviteeID() {
+	m.invitee_id = nil
+	m.addinvitee_id = nil
+}
+
+// SetTriggerRedeemCodeID sets the "trigger_redeem_code_id" field.
+func (m *ReferralRewardMutation) SetTriggerRedeemCodeID(i int64) {
+	m.trigger_redeem_code_id = &i
+	m.addtrigger_redeem_code_id = nil
+}
+
+// TriggerRedeemCodeID returns the value of the "trigger_redeem_code_id" field in the mutation.
+func (m *ReferralRewardMutation) TriggerRedeemCodeID() (r int64, exists bool) {
+	v := m.trigger_redeem_code_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldTriggerRedeemCodeID returns the old "trigger_redeem_code_id" field's value of the ReferralReward entity.
+// If the ReferralReward object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ReferralRewardMutation) OldTriggerRedeemCodeID(ctx context.Context) (v *int64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldTriggerRedeemCodeID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldTriggerRedeemCodeID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTriggerRedeemCodeID: %w", err)
+	}
+	return oldValue.TriggerRedeemCodeID, nil
+}
+
+// AddTriggerRedeemCodeID adds i to the "trigger_redeem_code_id" field.
+func (m *ReferralRewardMutation) AddTriggerRedeemCodeID(i int64) {
+	if m.addtrigger_redeem_code_id != nil {
+		*m.addtrigger_redeem_code_id += i
+	} else {
+		m.addtrigger_redeem_code_id = &i
+	}
+}
+
+// AddedTriggerRedeemCodeID returns the value that was added to the "trigger_redeem_code_id" field in this mutation.
+func (m *ReferralRewardMutation) AddedTriggerRedeemCodeID() (r int64, exists bool) {
+	v := m.addtrigger_redeem_code_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearTriggerRedeemCodeID clears the value of the "trigger_redeem_code_id" field.
+func (m *ReferralRewardMutation) ClearTriggerRedeemCodeID() {
+	m.trigger_redeem_code_id = nil
+	m.addtrigger_redeem_code_id = nil
+	m.clearedFields[referralreward.FieldTriggerRedeemCodeID] = struct{}{}
+}
+
+// TriggerRedeemCodeIDCleared returns if the "trigger_redeem_code_id" field was cleared in this mutation.
+func (m *ReferralRewardMutation) TriggerRedeemCodeIDCleared() bool {
+	_, ok := m.clearedFields[referralreward.FieldTriggerRedeemCodeID]
+	return ok
+}
+
+// ResetTriggerRedeemCodeID resets all changes to the "trigger_redeem_code_id" field.
+func (m *ReferralRewardMutation) ResetTriggerRedeemCodeID() {
+	m.trigger_redeem_code_id = nil
+	m.addtrigger_redeem_code_id = nil
+	delete(m.clearedFields, referralreward.FieldTriggerRedeemCodeID)
+}
+
+// SetRewardAmount sets the "reward_amount" field.
+func (m *ReferralRewardMutation) SetRewardAmount(f float64) {
+	m.reward_amount = &f
+	m.addreward_amount = nil
+}
+
+// RewardAmount returns the value of the "reward_amount" field in the mutation.
+func (m *ReferralRewardMutation) RewardAmount() (r float64, exists bool) {
+	v := m.reward_amount
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldRewardAmount returns the old "reward_amount" field's value of the ReferralReward entity.
+// If the ReferralReward object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ReferralRewardMutation) OldRewardAmount(ctx context.Context) (v float64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldRewardAmount is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldRewardAmount requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRewardAmount: %w", err)
+	}
+	return oldValue.RewardAmount, nil
+}
+
+// AddRewardAmount adds f to the "reward_amount" field.
+func (m *ReferralRewardMutation) AddRewardAmount(f float64) {
+	if m.addreward_amount != nil {
+		*m.addreward_amount += f
+	} else {
+		m.addreward_amount = &f
+	}
+}
+
+// AddedRewardAmount returns the value that was added to the "reward_amount" field in this mutation.
+func (m *ReferralRewardMutation) AddedRewardAmount() (r float64, exists bool) {
+	v := m.addreward_amount
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetRewardAmount resets all changes to the "reward_amount" field.
+func (m *ReferralRewardMutation) ResetRewardAmount() {
+	m.reward_amount = nil
+	m.addreward_amount = nil
+}
+
+// SetRewardType sets the "reward_type" field.
+func (m *ReferralRewardMutation) SetRewardType(s string) {
+	m.reward_type = &s
+}
+
+// RewardType returns the value of the "reward_type" field in the mutation.
+func (m *ReferralRewardMutation) RewardType() (r string, exists bool) {
+	v := m.reward_type
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldRewardType returns the old "reward_type" field's value of the ReferralReward entity.
+// If the ReferralReward object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ReferralRewardMutation) OldRewardType(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldRewardType is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldRewardType requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRewardType: %w", err)
+	}
+	return oldValue.RewardType, nil
+}
+
+// ResetRewardType resets all changes to the "reward_type" field.
+func (m *ReferralRewardMutation) ResetRewardType() {
+	m.reward_type = nil
+}
+
+// SetRewardRate sets the "reward_rate" field.
+func (m *ReferralRewardMutation) SetRewardRate(f float64) {
+	m.reward_rate = &f
+	m.addreward_rate = nil
+}
+
+// RewardRate returns the value of the "reward_rate" field in the mutation.
+func (m *ReferralRewardMutation) RewardRate() (r float64, exists bool) {
+	v := m.reward_rate
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldRewardRate returns the old "reward_rate" field's value of the ReferralReward entity.
+// If the ReferralReward object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ReferralRewardMutation) OldRewardRate(ctx context.Context) (v *float64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldRewardRate is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldRewardRate requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRewardRate: %w", err)
+	}
+	return oldValue.RewardRate, nil
+}
+
+// AddRewardRate adds f to the "reward_rate" field.
+func (m *ReferralRewardMutation) AddRewardRate(f float64) {
+	if m.addreward_rate != nil {
+		*m.addreward_rate += f
+	} else {
+		m.addreward_rate = &f
+	}
+}
+
+// AddedRewardRate returns the value that was added to the "reward_rate" field in this mutation.
+func (m *ReferralRewardMutation) AddedRewardRate() (r float64, exists bool) {
+	v := m.addreward_rate
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearRewardRate clears the value of the "reward_rate" field.
+func (m *ReferralRewardMutation) ClearRewardRate() {
+	m.reward_rate = nil
+	m.addreward_rate = nil
+	m.clearedFields[referralreward.FieldRewardRate] = struct{}{}
+}
+
+// RewardRateCleared returns if the "reward_rate" field was cleared in this mutation.
+func (m *ReferralRewardMutation) RewardRateCleared() bool {
+	_, ok := m.clearedFields[referralreward.FieldRewardRate]
+	return ok
+}
+
+// ResetRewardRate resets all changes to the "reward_rate" field.
+func (m *ReferralRewardMutation) ResetRewardRate() {
+	m.reward_rate = nil
+	m.addreward_rate = nil
+	delete(m.clearedFields, referralreward.FieldRewardRate)
+}
+
+// SetTriggerCodeValue sets the "trigger_code_value" field.
+func (m *ReferralRewardMutation) SetTriggerCodeValue(f float64) {
+	m.trigger_code_value = &f
+	m.addtrigger_code_value = nil
+}
+
+// TriggerCodeValue returns the value of the "trigger_code_value" field in the mutation.
+func (m *ReferralRewardMutation) TriggerCodeValue() (r float64, exists bool) {
+	v := m.trigger_code_value
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldTriggerCodeValue returns the old "trigger_code_value" field's value of the ReferralReward entity.
+// If the ReferralReward object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ReferralRewardMutation) OldTriggerCodeValue(ctx context.Context) (v float64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldTriggerCodeValue is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldTriggerCodeValue requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTriggerCodeValue: %w", err)
+	}
+	return oldValue.TriggerCodeValue, nil
+}
+
+// AddTriggerCodeValue adds f to the "trigger_code_value" field.
+func (m *ReferralRewardMutation) AddTriggerCodeValue(f float64) {
+	if m.addtrigger_code_value != nil {
+		*m.addtrigger_code_value += f
+	} else {
+		m.addtrigger_code_value = &f
+	}
+}
+
+// AddedTriggerCodeValue returns the value that was added to the "trigger_code_value" field in this mutation.
+func (m *ReferralRewardMutation) AddedTriggerCodeValue() (r float64, exists bool) {
+	v := m.addtrigger_code_value
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetTriggerCodeValue resets all changes to the "trigger_code_value" field.
+func (m *ReferralRewardMutation) ResetTriggerCodeValue() {
+	m.trigger_code_value = nil
+	m.addtrigger_code_value = nil
+}
+
+// SetStatus sets the "status" field.
+func (m *ReferralRewardMutation) SetStatus(s string) {
+	m.status = &s
+}
+
+// Status returns the value of the "status" field in the mutation.
+func (m *ReferralRewardMutation) Status() (r string, exists bool) {
+	v := m.status
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldStatus returns the old "status" field's value of the ReferralReward entity.
+// If the ReferralReward object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ReferralRewardMutation) OldStatus(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldStatus is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldStatus requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldStatus: %w", err)
+	}
+	return oldValue.Status, nil
+}
+
+// ResetStatus resets all changes to the "status" field.
+func (m *ReferralRewardMutation) ResetStatus() {
+	m.status = nil
+}
+
+// SetNotes sets the "notes" field.
+func (m *ReferralRewardMutation) SetNotes(s string) {
+	m.notes = &s
+}
+
+// Notes returns the value of the "notes" field in the mutation.
+func (m *ReferralRewardMutation) Notes() (r string, exists bool) {
+	v := m.notes
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldNotes returns the old "notes" field's value of the ReferralReward entity.
+// If the ReferralReward object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ReferralRewardMutation) OldNotes(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldNotes is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldNotes requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldNotes: %w", err)
+	}
+	return oldValue.Notes, nil
+}
+
+// ClearNotes clears the value of the "notes" field.
+func (m *ReferralRewardMutation) ClearNotes() {
+	m.notes = nil
+	m.clearedFields[referralreward.FieldNotes] = struct{}{}
+}
+
+// NotesCleared returns if the "notes" field was cleared in this mutation.
+func (m *ReferralRewardMutation) NotesCleared() bool {
+	_, ok := m.clearedFields[referralreward.FieldNotes]
+	return ok
+}
+
+// ResetNotes resets all changes to the "notes" field.
+func (m *ReferralRewardMutation) ResetNotes() {
+	m.notes = nil
+	delete(m.clearedFields, referralreward.FieldNotes)
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *ReferralRewardMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *ReferralRewardMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the ReferralReward entity.
+// If the ReferralReward object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ReferralRewardMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *ReferralRewardMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// Where appends a list predicates to the ReferralRewardMutation builder.
+func (m *ReferralRewardMutation) Where(ps ...predicate.ReferralReward) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the ReferralRewardMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *ReferralRewardMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.ReferralReward, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *ReferralRewardMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *ReferralRewardMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (ReferralReward).
+func (m *ReferralRewardMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *ReferralRewardMutation) Fields() []string {
+	fields := make([]string, 0, 10)
+	if m.inviter_id != nil {
+		fields = append(fields, referralreward.FieldInviterID)
+	}
+	if m.invitee_id != nil {
+		fields = append(fields, referralreward.FieldInviteeID)
+	}
+	if m.trigger_redeem_code_id != nil {
+		fields = append(fields, referralreward.FieldTriggerRedeemCodeID)
+	}
+	if m.reward_amount != nil {
+		fields = append(fields, referralreward.FieldRewardAmount)
+	}
+	if m.reward_type != nil {
+		fields = append(fields, referralreward.FieldRewardType)
+	}
+	if m.reward_rate != nil {
+		fields = append(fields, referralreward.FieldRewardRate)
+	}
+	if m.trigger_code_value != nil {
+		fields = append(fields, referralreward.FieldTriggerCodeValue)
+	}
+	if m.status != nil {
+		fields = append(fields, referralreward.FieldStatus)
+	}
+	if m.notes != nil {
+		fields = append(fields, referralreward.FieldNotes)
+	}
+	if m.created_at != nil {
+		fields = append(fields, referralreward.FieldCreatedAt)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *ReferralRewardMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case referralreward.FieldInviterID:
+		return m.InviterID()
+	case referralreward.FieldInviteeID:
+		return m.InviteeID()
+	case referralreward.FieldTriggerRedeemCodeID:
+		return m.TriggerRedeemCodeID()
+	case referralreward.FieldRewardAmount:
+		return m.RewardAmount()
+	case referralreward.FieldRewardType:
+		return m.RewardType()
+	case referralreward.FieldRewardRate:
+		return m.RewardRate()
+	case referralreward.FieldTriggerCodeValue:
+		return m.TriggerCodeValue()
+	case referralreward.FieldStatus:
+		return m.Status()
+	case referralreward.FieldNotes:
+		return m.Notes()
+	case referralreward.FieldCreatedAt:
+		return m.CreatedAt()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *ReferralRewardMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case referralreward.FieldInviterID:
+		return m.OldInviterID(ctx)
+	case referralreward.FieldInviteeID:
+		return m.OldInviteeID(ctx)
+	case referralreward.FieldTriggerRedeemCodeID:
+		return m.OldTriggerRedeemCodeID(ctx)
+	case referralreward.FieldRewardAmount:
+		return m.OldRewardAmount(ctx)
+	case referralreward.FieldRewardType:
+		return m.OldRewardType(ctx)
+	case referralreward.FieldRewardRate:
+		return m.OldRewardRate(ctx)
+	case referralreward.FieldTriggerCodeValue:
+		return m.OldTriggerCodeValue(ctx)
+	case referralreward.FieldStatus:
+		return m.OldStatus(ctx)
+	case referralreward.FieldNotes:
+		return m.OldNotes(ctx)
+	case referralreward.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	}
+	return nil, fmt.Errorf("unknown ReferralReward field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *ReferralRewardMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case referralreward.FieldInviterID:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetInviterID(v)
+		return nil
+	case referralreward.FieldInviteeID:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetInviteeID(v)
+		return nil
+	case referralreward.FieldTriggerRedeemCodeID:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetTriggerRedeemCodeID(v)
+		return nil
+	case referralreward.FieldRewardAmount:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetRewardAmount(v)
+		return nil
+	case referralreward.FieldRewardType:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetRewardType(v)
+		return nil
+	case referralreward.FieldRewardRate:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetRewardRate(v)
+		return nil
+	case referralreward.FieldTriggerCodeValue:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetTriggerCodeValue(v)
+		return nil
+	case referralreward.FieldStatus:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetStatus(v)
+		return nil
+	case referralreward.FieldNotes:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetNotes(v)
+		return nil
+	case referralreward.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	}
+	return fmt.Errorf("unknown ReferralReward field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *ReferralRewardMutation) AddedFields() []string {
+	var fields []string
+	if m.addinviter_id != nil {
+		fields = append(fields, referralreward.FieldInviterID)
+	}
+	if m.addinvitee_id != nil {
+		fields = append(fields, referralreward.FieldInviteeID)
+	}
+	if m.addtrigger_redeem_code_id != nil {
+		fields = append(fields, referralreward.FieldTriggerRedeemCodeID)
+	}
+	if m.addreward_amount != nil {
+		fields = append(fields, referralreward.FieldRewardAmount)
+	}
+	if m.addreward_rate != nil {
+		fields = append(fields, referralreward.FieldRewardRate)
+	}
+	if m.addtrigger_code_value != nil {
+		fields = append(fields, referralreward.FieldTriggerCodeValue)
+	}
+	return fields
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *ReferralRewardMutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	case referralreward.FieldInviterID:
+		return m.AddedInviterID()
+	case referralreward.FieldInviteeID:
+		return m.AddedInviteeID()
+	case referralreward.FieldTriggerRedeemCodeID:
+		return m.AddedTriggerRedeemCodeID()
+	case referralreward.FieldRewardAmount:
+		return m.AddedRewardAmount()
+	case referralreward.FieldRewardRate:
+		return m.AddedRewardRate()
+	case referralreward.FieldTriggerCodeValue:
+		return m.AddedTriggerCodeValue()
+	}
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *ReferralRewardMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	case referralreward.FieldInviterID:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddInviterID(v)
+		return nil
+	case referralreward.FieldInviteeID:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddInviteeID(v)
+		return nil
+	case referralreward.FieldTriggerRedeemCodeID:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddTriggerRedeemCodeID(v)
+		return nil
+	case referralreward.FieldRewardAmount:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddRewardAmount(v)
+		return nil
+	case referralreward.FieldRewardRate:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddRewardRate(v)
+		return nil
+	case referralreward.FieldTriggerCodeValue:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddTriggerCodeValue(v)
+		return nil
+	}
+	return fmt.Errorf("unknown ReferralReward numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *ReferralRewardMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(referralreward.FieldTriggerRedeemCodeID) {
+		fields = append(fields, referralreward.FieldTriggerRedeemCodeID)
+	}
+	if m.FieldCleared(referralreward.FieldRewardRate) {
+		fields = append(fields, referralreward.FieldRewardRate)
+	}
+	if m.FieldCleared(referralreward.FieldNotes) {
+		fields = append(fields, referralreward.FieldNotes)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *ReferralRewardMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *ReferralRewardMutation) ClearField(name string) error {
+	switch name {
+	case referralreward.FieldTriggerRedeemCodeID:
+		m.ClearTriggerRedeemCodeID()
+		return nil
+	case referralreward.FieldRewardRate:
+		m.ClearRewardRate()
+		return nil
+	case referralreward.FieldNotes:
+		m.ClearNotes()
+		return nil
+	}
+	return fmt.Errorf("unknown ReferralReward nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *ReferralRewardMutation) ResetField(name string) error {
+	switch name {
+	case referralreward.FieldInviterID:
+		m.ResetInviterID()
+		return nil
+	case referralreward.FieldInviteeID:
+		m.ResetInviteeID()
+		return nil
+	case referralreward.FieldTriggerRedeemCodeID:
+		m.ResetTriggerRedeemCodeID()
+		return nil
+	case referralreward.FieldRewardAmount:
+		m.ResetRewardAmount()
+		return nil
+	case referralreward.FieldRewardType:
+		m.ResetRewardType()
+		return nil
+	case referralreward.FieldRewardRate:
+		m.ResetRewardRate()
+		return nil
+	case referralreward.FieldTriggerCodeValue:
+		m.ResetTriggerCodeValue()
+		return nil
+	case referralreward.FieldStatus:
+		m.ResetStatus()
+		return nil
+	case referralreward.FieldNotes:
+		m.ResetNotes()
+		return nil
+	case referralreward.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	}
+	return fmt.Errorf("unknown ReferralReward field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *ReferralRewardMutation) AddedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *ReferralRewardMutation) AddedIDs(name string) []ent.Value {
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *ReferralRewardMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *ReferralRewardMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *ReferralRewardMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *ReferralRewardMutation) EdgeCleared(name string) bool {
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *ReferralRewardMutation) ClearEdge(name string) error {
+	return fmt.Errorf("unknown ReferralReward unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *ReferralRewardMutation) ResetEdge(name string) error {
+	return fmt.Errorf("unknown ReferralReward edge %s", name)
 }
 
 // SecuritySecretMutation represents an operation that mutates the SecuritySecret nodes in the graph.
@@ -21269,6 +22453,8 @@ type UserMutation struct {
 	addsora_storage_quota_bytes   *int64
 	sora_storage_used_bytes       *int64
 	addsora_storage_used_bytes    *int64
+	referred_by                   *int64
+	addreferred_by                *int64
 	clearedFields                 map[string]struct{}
 	api_keys                      map[int64]struct{}
 	removedapi_keys               map[int64]struct{}
@@ -22095,6 +23281,76 @@ func (m *UserMutation) ResetSoraStorageUsedBytes() {
 	m.addsora_storage_used_bytes = nil
 }
 
+// SetReferredBy sets the "referred_by" field.
+func (m *UserMutation) SetReferredBy(i int64) {
+	m.referred_by = &i
+	m.addreferred_by = nil
+}
+
+// ReferredBy returns the value of the "referred_by" field in the mutation.
+func (m *UserMutation) ReferredBy() (r int64, exists bool) {
+	v := m.referred_by
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldReferredBy returns the old "referred_by" field's value of the User entity.
+// If the User object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UserMutation) OldReferredBy(ctx context.Context) (v *int64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldReferredBy is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldReferredBy requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldReferredBy: %w", err)
+	}
+	return oldValue.ReferredBy, nil
+}
+
+// AddReferredBy adds i to the "referred_by" field.
+func (m *UserMutation) AddReferredBy(i int64) {
+	if m.addreferred_by != nil {
+		*m.addreferred_by += i
+	} else {
+		m.addreferred_by = &i
+	}
+}
+
+// AddedReferredBy returns the value that was added to the "referred_by" field in this mutation.
+func (m *UserMutation) AddedReferredBy() (r int64, exists bool) {
+	v := m.addreferred_by
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearReferredBy clears the value of the "referred_by" field.
+func (m *UserMutation) ClearReferredBy() {
+	m.referred_by = nil
+	m.addreferred_by = nil
+	m.clearedFields[user.FieldReferredBy] = struct{}{}
+}
+
+// ReferredByCleared returns if the "referred_by" field was cleared in this mutation.
+func (m *UserMutation) ReferredByCleared() bool {
+	_, ok := m.clearedFields[user.FieldReferredBy]
+	return ok
+}
+
+// ResetReferredBy resets all changes to the "referred_by" field.
+func (m *UserMutation) ResetReferredBy() {
+	m.referred_by = nil
+	m.addreferred_by = nil
+	delete(m.clearedFields, user.FieldReferredBy)
+}
+
 // AddAPIKeyIDs adds the "api_keys" edge to the APIKey entity by ids.
 func (m *UserMutation) AddAPIKeyIDs(ids ...int64) {
 	if m.api_keys == nil {
@@ -22615,7 +23871,7 @@ func (m *UserMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *UserMutation) Fields() []string {
-	fields := make([]string, 0, 16)
+	fields := make([]string, 0, 17)
 	if m.created_at != nil {
 		fields = append(fields, user.FieldCreatedAt)
 	}
@@ -22664,6 +23920,9 @@ func (m *UserMutation) Fields() []string {
 	if m.sora_storage_used_bytes != nil {
 		fields = append(fields, user.FieldSoraStorageUsedBytes)
 	}
+	if m.referred_by != nil {
+		fields = append(fields, user.FieldReferredBy)
+	}
 	return fields
 }
 
@@ -22704,6 +23963,8 @@ func (m *UserMutation) Field(name string) (ent.Value, bool) {
 		return m.SoraStorageQuotaBytes()
 	case user.FieldSoraStorageUsedBytes:
 		return m.SoraStorageUsedBytes()
+	case user.FieldReferredBy:
+		return m.ReferredBy()
 	}
 	return nil, false
 }
@@ -22745,6 +24006,8 @@ func (m *UserMutation) OldField(ctx context.Context, name string) (ent.Value, er
 		return m.OldSoraStorageQuotaBytes(ctx)
 	case user.FieldSoraStorageUsedBytes:
 		return m.OldSoraStorageUsedBytes(ctx)
+	case user.FieldReferredBy:
+		return m.OldReferredBy(ctx)
 	}
 	return nil, fmt.Errorf("unknown User field %s", name)
 }
@@ -22866,6 +24129,13 @@ func (m *UserMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetSoraStorageUsedBytes(v)
 		return nil
+	case user.FieldReferredBy:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetReferredBy(v)
+		return nil
 	}
 	return fmt.Errorf("unknown User field %s", name)
 }
@@ -22886,6 +24156,9 @@ func (m *UserMutation) AddedFields() []string {
 	if m.addsora_storage_used_bytes != nil {
 		fields = append(fields, user.FieldSoraStorageUsedBytes)
 	}
+	if m.addreferred_by != nil {
+		fields = append(fields, user.FieldReferredBy)
+	}
 	return fields
 }
 
@@ -22902,6 +24175,8 @@ func (m *UserMutation) AddedField(name string) (ent.Value, bool) {
 		return m.AddedSoraStorageQuotaBytes()
 	case user.FieldSoraStorageUsedBytes:
 		return m.AddedSoraStorageUsedBytes()
+	case user.FieldReferredBy:
+		return m.AddedReferredBy()
 	}
 	return nil, false
 }
@@ -22939,6 +24214,13 @@ func (m *UserMutation) AddField(name string, value ent.Value) error {
 		}
 		m.AddSoraStorageUsedBytes(v)
 		return nil
+	case user.FieldReferredBy:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddReferredBy(v)
+		return nil
 	}
 	return fmt.Errorf("unknown User numeric field %s", name)
 }
@@ -22955,6 +24237,9 @@ func (m *UserMutation) ClearedFields() []string {
 	}
 	if m.FieldCleared(user.FieldTotpEnabledAt) {
 		fields = append(fields, user.FieldTotpEnabledAt)
+	}
+	if m.FieldCleared(user.FieldReferredBy) {
+		fields = append(fields, user.FieldReferredBy)
 	}
 	return fields
 }
@@ -22978,6 +24263,9 @@ func (m *UserMutation) ClearField(name string) error {
 		return nil
 	case user.FieldTotpEnabledAt:
 		m.ClearTotpEnabledAt()
+		return nil
+	case user.FieldReferredBy:
+		m.ClearReferredBy()
 		return nil
 	}
 	return fmt.Errorf("unknown User nullable field %s", name)
@@ -23034,6 +24322,9 @@ func (m *UserMutation) ResetField(name string) error {
 		return nil
 	case user.FieldSoraStorageUsedBytes:
 		m.ResetSoraStorageUsedBytes()
+		return nil
+	case user.FieldReferredBy:
+		m.ResetReferredBy()
 		return nil
 	}
 	return fmt.Errorf("unknown User field %s", name)
