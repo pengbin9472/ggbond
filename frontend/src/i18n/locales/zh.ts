@@ -337,6 +337,7 @@ export default {
     users: '用户管理',
     groups: '分组管理',
     subscriptions: '订阅管理',
+    models: '模型广场',
     accounts: '账号管理',
     proxies: 'IP管理',
     redeemCodes: '兑换码',
@@ -1033,6 +1034,33 @@ export default {
       systemSettings: '系统设置',
       configureSystem: '配置系统设置',
       failedToLoad: '加载仪表盘数据失败'
+    },
+
+    models: {
+      title: '模型广场',
+      description: '聚合全平台所有账号声明的模型并集，并展示对应输入/输出价格。',
+      badge: 'Platform Catalog',
+      searchPlaceholder: '搜索模型名称、平台',
+      allPlatforms: '全部平台',
+      usageBadge: '按量计费',
+      inputPrice: '输入',
+      outputPrice: '输出',
+      metered: '按量计费',
+      priceMissing: '价格缺失',
+      copyModelId: '复制模型 ID',
+      copySuccess: '模型 ID 已复制',
+      copyFailed: '复制失败',
+      loadFailed: '加载模型广场失败',
+      emptyTitle: '没有可展示的模型',
+      emptyDescription: '请先为账号配置模型映射，模型广场会自动聚合去重。',
+      unknownPlatform: '未知平台',
+      accountCount: '{count} 个账号',
+      groupCount: '{count} 个分组',
+      stats: {
+        totalModels: '模型数',
+        platforms: '平台数',
+        pricedModels: '已定价'
+      }
     },
 
     backup: {

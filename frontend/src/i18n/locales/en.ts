@@ -337,6 +337,7 @@ export default {
     users: 'Users',
     groups: 'Groups',
     subscriptions: 'Subscriptions',
+    models: 'Model Plaza',
     accounts: 'Accounts',
     proxies: 'Proxies',
     redeemCodes: 'Redeem Codes',
@@ -1011,6 +1012,33 @@ export default {
       requestsShort: 'Req',
       tokensShort: 'Tok',
       failedToLoad: 'Failed to load dashboard statistics'
+    },
+
+    models: {
+      title: 'Model Plaza',
+      description: 'Aggregate the deduplicated union of models declared by all platform accounts and show input/output pricing.',
+      badge: 'Platform Catalog',
+      searchPlaceholder: 'Search models or platforms',
+      allPlatforms: 'All Platforms',
+      usageBadge: 'Metered',
+      inputPrice: 'Input',
+      outputPrice: 'Output',
+      metered: 'Metered Billing',
+      priceMissing: 'Missing Price',
+      copyModelId: 'Copy model ID',
+      copySuccess: 'Model ID copied',
+      copyFailed: 'Copy failed',
+      loadFailed: 'Failed to load model plaza',
+      emptyTitle: 'No models to display',
+      emptyDescription: 'Configure model mappings on accounts and the catalog will aggregate them automatically.',
+      unknownPlatform: 'Unknown Platform',
+      accountCount: '{count} accounts',
+      groupCount: '{count} groups',
+      stats: {
+        totalModels: 'Models',
+        platforms: 'Platforms',
+        pricedModels: 'Priced'
+      }
     },
 
     backup: {

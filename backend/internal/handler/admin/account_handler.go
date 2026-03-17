@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -52,6 +53,7 @@ type AccountHandler struct {
 	rateLimitService        *service.RateLimitService
 	accountUsageService     *service.AccountUsageService
 	accountTestService      *service.AccountTestService
+	billingService          *service.BillingService
 	concurrencyService      *service.ConcurrencyService
 	crsSyncService          *service.CRSSyncService
 	sessionLimitCache       service.SessionLimitCache
@@ -69,6 +71,7 @@ func NewAccountHandler(
 	rateLimitService *service.RateLimitService,
 	accountUsageService *service.AccountUsageService,
 	accountTestService *service.AccountTestService,
+	billingService *service.BillingService,
 	concurrencyService *service.ConcurrencyService,
 	crsSyncService *service.CRSSyncService,
 	sessionLimitCache service.SessionLimitCache,
@@ -84,6 +87,7 @@ func NewAccountHandler(
 		rateLimitService:        rateLimitService,
 		accountUsageService:     accountUsageService,
 		accountTestService:      accountTestService,
+		billingService:          billingService,
 		concurrencyService:      concurrencyService,
 		crsSyncService:          crsSyncService,
 		sessionLimitCache:       sessionLimitCache,
@@ -163,6 +167,31 @@ type AccountWithConcurrency struct {
 	CurrentWindowCost *float64 `json:"current_window_cost,omitempty"` // 当前窗口费用
 	ActiveSessions    *int     `json:"active_sessions,omitempty"`     // 当前活跃会话数
 	CurrentRPM        *int     `json:"current_rpm,omitempty"`         // 当前分钟 RPM 计数
+}
+
+type adminModelCatalogEntry struct {
+	ID              string   `json:"id"`
+	DisplayName     string   `json:"display_name"`
+	Type            string   `json:"type"`
+	Platform        string   `json:"platform"`
+	InputPrice      *float64 `json:"input_price,omitempty"`
+	OutputPrice     *float64 `json:"output_price,omitempty"`
+	AccountCount    int      `json:"account_count"`
+	GroupCount      int      `json:"group_count"`
+	AccountIDs      []int64  `json:"account_ids,omitempty"`
+	GroupIDs        []int64  `json:"group_ids,omitempty"`
+	PricingFallback bool     `json:"pricing_fallback"`
+}
+
+type adminModelCatalogResponse struct {
+	Models []adminModelCatalogEntry `json:"models"`
+	Total  int                      `json:"total"`
+}
+
+type modelCatalogAccumulator struct {
+	entry      adminModelCatalogEntry
+	accountSet map[int64]struct{}
+	groupSet   map[int64]struct{}
 }
 
 func (h *AccountHandler) buildAccountResponseWithRuntime(ctx context.Context, account *service.Account) AccountWithConcurrency {
@@ -1844,6 +1873,315 @@ func (h *AccountHandler) GetAvailableModels(c *gin.Context) {
 	}
 
 	response.Success(c, models)
+}
+
+// GetModelCatalog handles the admin platform-wide model catalog.
+// GET /api/v1/admin/accounts/models/catalog
+func (h *AccountHandler) GetModelCatalog(c *gin.Context) {
+	const pageSize = 500
+
+	accumulators := make(map[string]*modelCatalogAccumulator)
+	page := 1
+
+	for {
+		accounts, total, err := h.adminService.ListAccounts(c.Request.Context(), page, pageSize, "", "", "", "", 0)
+		if err != nil {
+			response.ErrorFrom(c, err)
+			return
+		}
+
+		for i := range accounts {
+			account := &accounts[i]
+			for _, modelID := range h.accountAvailableModelIDs(account) {
+				h.mergeModelCatalogEntry(accumulators, account, modelID)
+			}
+		}
+
+		if len(accounts) < pageSize || int64(page*pageSize) >= total {
+			break
+		}
+		page++
+	}
+
+	models := make([]adminModelCatalogEntry, 0, len(accumulators))
+	for _, acc := range accumulators {
+		acc.entry.AccountCount = len(acc.accountSet)
+		acc.entry.GroupCount = len(acc.groupSet)
+		acc.entry.AccountIDs = sortedInt64Keys(acc.accountSet)
+		acc.entry.GroupIDs = sortedInt64Keys(acc.groupSet)
+		models = append(models, acc.entry)
+	}
+
+	sort.Slice(models, func(i, j int) bool {
+		if models[i].Platform != models[j].Platform {
+			return models[i].Platform < models[j].Platform
+		}
+		return models[i].ID < models[j].ID
+	})
+
+	response.Success(c, adminModelCatalogResponse{
+		Models: models,
+		Total:  len(models),
+	})
+}
+
+func (h *AccountHandler) accountAvailableModelIDs(account *service.Account) []string {
+	if account == nil {
+		return nil
+	}
+
+	if account.IsOpenAI() {
+		if account.IsOpenAIPassthroughEnabled() {
+			return openAIModelIDs(openai.DefaultModels)
+		}
+		if models := whitelistOrMappedModels(account); len(models) > 0 {
+			return models
+		}
+		return openAIModelIDs(openai.DefaultModels)
+	}
+
+	if account.IsGemini() {
+		if !account.IsOAuth() {
+			if models := whitelistOrMappedModels(account); len(models) > 0 {
+				return models
+			}
+		}
+		return geminiModelIDs(geminicli.DefaultModels)
+	}
+
+	if account.Platform == service.PlatformAntigravity {
+		if models := whitelistOrMappedModels(account); len(models) > 0 {
+			return models
+		}
+		return antigravityModelIDs(antigravity.DefaultModels())
+	}
+
+	if account.Platform == service.PlatformSora {
+		if models := whitelistOrMappedModels(account); len(models) > 0 {
+			return models
+		}
+		return soraModelIDs(service.DefaultSoraModels(nil))
+	}
+
+	if account.IsOAuth() {
+		if models := whitelistOrMappedModels(account); len(models) > 0 {
+			return models
+		}
+		return claudeModelIDs(claude.DefaultModels)
+	}
+
+	if models := whitelistOrMappedModels(account); len(models) > 0 {
+		return models
+	}
+	return claudeModelIDs(claude.DefaultModels)
+}
+
+func (h *AccountHandler) mergeModelCatalogEntry(accumulators map[string]*modelCatalogAccumulator, account *service.Account, modelID string) {
+	if strings.TrimSpace(modelID) == "" || account == nil {
+		return
+	}
+
+	item, ok := accumulators[modelID]
+	if !ok {
+		item = &modelCatalogAccumulator{
+			entry: adminModelCatalogEntry{
+				ID:          modelID,
+				DisplayName: modelID,
+				Type:        "model",
+				Platform:    inferModelPlatform(modelID, account.Platform),
+			},
+			accountSet: make(map[int64]struct{}),
+			groupSet:   make(map[int64]struct{}),
+		}
+		if pricing, err := h.lookupModelPricing(modelID); err == nil && pricing != nil {
+			item.entry.InputPrice = floatPtr(pricing.InputPricePerToken * 1_000_000)
+			item.entry.OutputPrice = floatPtr(pricing.OutputPricePerToken * 1_000_000)
+		} else {
+			item.entry.PricingFallback = true
+		}
+		accumulators[modelID] = item
+	}
+
+	item.accountSet[account.ID] = struct{}{}
+	for _, groupID := range account.GroupIDs {
+		if groupID > 0 {
+			item.groupSet[groupID] = struct{}{}
+		}
+	}
+}
+
+func (h *AccountHandler) lookupModelPricing(modelID string) (*service.ModelPricing, error) {
+	if h.billingService == nil {
+		return nil, fmt.Errorf("billing service unavailable")
+	}
+	return h.billingService.GetModelPricing(modelID)
+}
+
+func sortedModelMappingKeys(mapping map[string]string) []string {
+	keys := make([]string, 0, len(mapping))
+	for model := range mapping {
+		keys = append(keys, model)
+	}
+	sort.Strings(keys)
+	return keys
+}
+
+func whitelistOrMappedModels(account *service.Account) []string {
+	if account == nil {
+		return nil
+	}
+	// Priority 1: explicit whitelist (legacy model_whitelist + identity mappings).
+	whitelist := explicitWhitelistModels(account)
+	if len(whitelist) > 0 {
+		return whitelist
+	}
+	// Priority 2: fallback to mapping targets.
+	return mappedTargetModels(account)
+}
+
+func explicitWhitelistModels(account *service.Account) []string {
+	result := make(map[string]struct{})
+
+	if account != nil && account.Credentials != nil {
+		// Backward compatibility: legacy model_whitelist field.
+		if raw, ok := account.Credentials["model_whitelist"]; ok {
+			switch v := raw.(type) {
+			case []string:
+				for _, model := range v {
+					model = strings.TrimSpace(model)
+					if model == "" || strings.Contains(model, "*") {
+						continue
+					}
+					result[model] = struct{}{}
+				}
+			case []any:
+				for _, item := range v {
+					model, ok := item.(string)
+					if !ok {
+						continue
+					}
+					model = strings.TrimSpace(model)
+					if model == "" || strings.Contains(model, "*") {
+						continue
+					}
+					result[model] = struct{}{}
+				}
+			}
+		}
+	}
+
+	// Current encoding for whitelist mode: model_mapping with exact identity pairs.
+	for from, to := range account.GetModelMapping() {
+		from = strings.TrimSpace(from)
+		to = strings.TrimSpace(to)
+		if from == "" || to == "" {
+			continue
+		}
+		if strings.Contains(from, "*") || strings.Contains(to, "*") {
+			continue
+		}
+		if from == to {
+			result[from] = struct{}{}
+		}
+	}
+
+	return sortedStringKeys(result)
+}
+
+func mappedTargetModels(account *service.Account) []string {
+	result := make(map[string]struct{})
+	for _, to := range account.GetModelMapping() {
+		to = strings.TrimSpace(to)
+		if to == "" || strings.Contains(to, "*") {
+			continue
+		}
+		result[to] = struct{}{}
+	}
+	return sortedStringKeys(result)
+}
+
+func sortedStringKeys(values map[string]struct{}) []string {
+	if len(values) == 0 {
+		return nil
+	}
+	out := make([]string, 0, len(values))
+	for key := range values {
+		out = append(out, key)
+	}
+	sort.Strings(out)
+	return out
+}
+
+func claudeModelIDs(models []claude.Model) []string {
+	ids := make([]string, 0, len(models))
+	for _, model := range models {
+		ids = append(ids, model.ID)
+	}
+	return ids
+}
+
+func geminiModelIDs(models []geminicli.Model) []string {
+	ids := make([]string, 0, len(models))
+	for _, model := range models {
+		ids = append(ids, model.ID)
+	}
+	return ids
+}
+
+func openAIModelIDs(models []openai.Model) []string {
+	ids := make([]string, 0, len(models))
+	for _, model := range models {
+		ids = append(ids, model.ID)
+	}
+	return ids
+}
+
+func antigravityModelIDs(models []antigravity.ClaudeModel) []string {
+	ids := make([]string, 0, len(models))
+	for _, model := range models {
+		ids = append(ids, model.ID)
+	}
+	return ids
+}
+
+func soraModelIDs(models []openai.Model) []string {
+	ids := make([]string, 0, len(models))
+	for _, model := range models {
+		ids = append(ids, model.ID)
+	}
+	return ids
+}
+
+func inferModelPlatform(modelID string, fallback string) string {
+	lower := strings.ToLower(strings.TrimSpace(modelID))
+	switch {
+	case strings.HasPrefix(lower, "claude"):
+		return service.PlatformAnthropic
+	case strings.HasPrefix(lower, "gpt"), strings.HasPrefix(lower, "o1"), strings.HasPrefix(lower, "o3"), strings.HasPrefix(lower, "o4"), strings.HasPrefix(lower, "chatgpt"):
+		return service.PlatformOpenAI
+	case strings.HasPrefix(lower, "gemini"):
+		return service.PlatformGemini
+	case strings.HasPrefix(lower, "sora"), strings.HasPrefix(lower, "gpt-image"), strings.HasPrefix(lower, "prompt-enhance"):
+		return service.PlatformSora
+	default:
+		return fallback
+	}
+}
+
+func sortedInt64Keys(values map[int64]struct{}) []int64 {
+	if len(values) == 0 {
+		return nil
+	}
+	ids := make([]int64, 0, len(values))
+	for id := range values {
+		ids = append(ids, id)
+	}
+	sort.Slice(ids, func(i, j int) bool { return ids[i] < ids[j] })
+	return ids
+}
+
+func floatPtr(v float64) *float64 {
+	return &v
 }
 
 // RefreshTier handles refreshing Google One tier for a single account

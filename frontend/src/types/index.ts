@@ -552,6 +552,25 @@ export interface ClaudeModel {
   created_at: string
 }
 
+export interface AdminModelCatalogEntry {
+  id: string
+  display_name: string
+  type: string
+  platform: string
+  input_price?: number | null
+  output_price?: number | null
+  account_count: number
+  group_count: number
+  account_ids?: number[]
+  group_ids?: number[]
+  pricing_fallback: boolean
+}
+
+export interface AdminModelCatalogResponse {
+  models: AdminModelCatalogEntry[]
+  total: number
+}
+
 export interface Proxy {
   id: number
   name: string
