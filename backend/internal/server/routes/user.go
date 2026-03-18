@@ -55,6 +55,11 @@ func RegisterUserRoutes(
 			groups.GET("/rates", h.APIKey.GetUserGroupRates)
 		}
 
+		models := authenticated.Group("/models")
+		{
+			models.GET("/catalog", h.User.GetModelCatalog)
+		}
+
 		// 使用记录
 		usage := authenticated.Group("/usage")
 		{

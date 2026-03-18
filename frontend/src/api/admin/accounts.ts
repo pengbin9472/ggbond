@@ -12,7 +12,6 @@ import type {
   AccountUsageInfo,
   WindowStats,
   ClaudeModel,
-  AdminModelCatalogResponse,
   AccountUsageStatsResponse,
   TempUnschedulableStatus,
   AdminDataPayload,
@@ -430,11 +429,6 @@ export async function setSchedulable(id: number, schedulable: boolean): Promise<
  */
 export async function getAvailableModels(id: number): Promise<ClaudeModel[]> {
   const { data } = await apiClient.get<ClaudeModel[]>(`/admin/accounts/${id}/models`)
-  return data
-}
-
-export async function getModelCatalog(): Promise<AdminModelCatalogResponse> {
-  const { data } = await apiClient.get<AdminModelCatalogResponse>('/admin/accounts/models/catalog')
   return data
 }
 

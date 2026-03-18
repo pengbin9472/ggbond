@@ -550,6 +550,7 @@ const userNavItems = computed((): NavItem[] => {
   const items: NavItem[] = [
     { path: '/dashboard', label: t('nav.dashboard'), icon: DashboardIcon },
     { path: '/keys', label: t('nav.apiKeys'), icon: KeyIcon },
+    { path: '/models', label: t('nav.models'), icon: GridIcon },
     { path: '/usage', label: t('nav.usage'), icon: ChartIcon, hideInSimpleMode: true },
     ...(groupMonitoringEnabled.value
       ? [{ path: '/monitoring', label: t('nav.monitoring'), icon: MonitorIcon, hideInSimpleMode: true }]
@@ -596,7 +597,7 @@ const userNavItems = computed((): NavItem[] => {
 const personalNavItems = computed((): NavItem[] => {
   const items: NavItem[] = [
     { path: '/keys', label: t('nav.apiKeys'), icon: KeyIcon },
-    { path: '/admin/models', label: t('nav.models'), icon: GridIcon, hideInSimpleMode: true },
+    { path: '/models', label: t('nav.models'), icon: GridIcon, hideInSimpleMode: true },
     { path: '/usage', label: t('nav.usage'), icon: ChartIcon, hideInSimpleMode: true },
     ...(groupMonitoringEnabled.value
       ? [{ path: '/monitoring', label: t('nav.monitoring'), icon: MonitorIcon, hideInSimpleMode: true }]

@@ -166,6 +166,18 @@ const routes: RouteRecordRaw[] = [
     }
   },
   {
+    path: '/models',
+    name: 'Models',
+    component: () => import('@/views/admin/ModelsView.vue'),
+    meta: {
+      requiresAuth: true,
+      requiresAdmin: false,
+      title: 'Model Plaza',
+      titleKey: 'admin.models.title',
+      descriptionKey: 'admin.models.description'
+    }
+  },
+  {
     path: '/redeem',
     name: 'Redeem',
     component: () => import('@/views/user/RedeemView.vue'),
@@ -335,18 +347,6 @@ const routes: RouteRecordRaw[] = [
       title: 'Subscription Management',
       titleKey: 'admin.subscriptions.title',
       descriptionKey: 'admin.subscriptions.description'
-    }
-  },
-  {
-    path: '/admin/models',
-    name: 'AdminModels',
-    component: () => import('@/views/admin/ModelsView.vue'),
-    meta: {
-      requiresAuth: true,
-      requiresAdmin: true,
-      title: 'Model Plaza',
-      titleKey: 'admin.models.title',
-      descriptionKey: 'admin.models.description'
     }
   },
   {

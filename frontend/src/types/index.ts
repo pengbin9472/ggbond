@@ -571,6 +571,10 @@ export interface AdminModelCatalogResponse {
   total: number
 }
 
+export type ModelCatalogEntry = AdminModelCatalogEntry
+
+export type ModelCatalogResponse = AdminModelCatalogResponse
+
 export interface Proxy {
   id: number
   name: string

@@ -140,8 +140,8 @@ import AppLayout from '@/components/layout/AppLayout.vue'
 import ModelIcon from '@/components/common/ModelIcon.vue'
 import Icon from '@/components/icons/Icon.vue'
 import Select, { type SelectOption } from '@/components/common/Select.vue'
-import { getModelCatalog } from '@/api/admin/accounts'
-import type { AdminModelCatalogEntry } from '@/types'
+import { getModelCatalog } from '@/api/models'
+import type { ModelCatalogEntry } from '@/types'
 import { useAppStore } from '@/stores/app'
 
 const { t } = useI18n()
@@ -150,7 +150,7 @@ const appStore = useAppStore()
 const loading = ref(false)
 const searchQuery = ref('')
 const selectedPlatform = ref('')
-const models = ref<AdminModelCatalogEntry[]>([])
+const models = ref<ModelCatalogEntry[]>([])
 
 const platformOptions = computed(() =>
   Array.from(new Set(models.value.map(model => model.platform).filter(Boolean))).sort()
