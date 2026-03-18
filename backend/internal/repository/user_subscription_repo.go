@@ -5,6 +5,7 @@ import (
 	"time"
 
 	dbent "github.com/pengbin9472/ggbond/ent"
+	"github.com/pengbin9472/ggbond/ent/group"
 	"github.com/pengbin9472/ggbond/ent/usersubscription"
 	"github.com/pengbin9472/ggbond/internal/pkg/pagination"
 	"github.com/pengbin9472/ggbond/internal/service"
@@ -190,7 +191,7 @@ func (r *userSubscriptionRepository) ListByGroupID(ctx context.Context, groupID 
 	return userSubscriptionEntitiesToService(subs), paginationResultFromTotal(int64(total), params), nil
 }
 
-func (r *userSubscriptionRepository) List(ctx context.Context, params pagination.PaginationParams, userID, groupID *int64, status, sortBy, sortOrder string) ([]service.UserSubscription, *pagination.PaginationResult, error) {
+func (r *userSubscriptionRepository) List(ctx context.Context, params pagination.PaginationParams, userID, groupID *int64, status, platform, sortBy, sortOrder string) ([]service.UserSubscription, *pagination.PaginationResult, error) {
 	client := clientFromContext(ctx, r.client)
 	q := client.UserSubscription.Query()
 	if userID != nil {
@@ -198,6 +199,9 @@ func (r *userSubscriptionRepository) List(ctx context.Context, params pagination
 	}
 	if groupID != nil {
 		q = q.Where(usersubscription.GroupIDEQ(*groupID))
+	}
+	if platform != "" {
+		q = q.Where(usersubscription.HasGroupWith(group.PlatformEQ(platform)))
 	}
 
 	// Status filtering with real-time expiration check

@@ -415,6 +415,8 @@ export interface AdminGroup extends Group {
 
   // 分组下账号数量（仅管理员可见）
   account_count?: number
+  active_account_count?: number
+  rate_limited_account_count?: number
 
   // OpenAI Messages 调度配置（仅 openai 平台使用）
   default_mapped_model?: string
@@ -1002,6 +1004,7 @@ export interface UsageLog {
   account_id: number | null
   request_id: string
   model: string
+  upstream_model?: string | null
   service_tier?: string | null
   reasoning_effort?: string | null
   inbound_endpoint?: string | null
@@ -1257,6 +1260,15 @@ export interface MonitoringHistoryPoint {
   availability_rate: number
   cache_hit_rate: number
   recorded_at: number
+}
+
+export interface UserBreakdownItem {
+  user_id: number
+  email: string
+  requests: number
+  total_tokens: number
+  cost: number
+  actual_cost: number
 }
 
 export interface UserUsageTrendPoint {
