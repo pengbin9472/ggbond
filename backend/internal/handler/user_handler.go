@@ -19,7 +19,7 @@ import (
 )
 
 type accountCatalogService interface {
-	ListAccounts(ctx context.Context, page, pageSize int, platform, accountType, status, search string, groupID int64) ([]service.Account, int64, error)
+	ListAccounts(ctx context.Context, page, pageSize int, platform, accountType, status, search string, groupID int64, privacyMode string) ([]service.Account, int64, error)
 }
 
 // UserHandler handles user-related requests
@@ -159,7 +159,7 @@ func (h *UserHandler) GetModelCatalog(c *gin.Context) {
 	page := 1
 
 	for {
-		accounts, total, err := h.accountCatalogService.ListAccounts(c.Request.Context(), page, pageSize, "", "", "", "", 0)
+		accounts, total, err := h.accountCatalogService.ListAccounts(c.Request.Context(), page, pageSize, "", "", "", "", 0, "")
 		if err != nil {
 			response.ErrorFrom(c, err)
 			return

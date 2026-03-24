@@ -15,6 +15,13 @@ type CustomMenuItem struct {
 	SortOrder  int    `json:"sort_order"`
 }
 
+// CustomEndpoint represents an admin-configured API endpoint for quick copy.
+type CustomEndpoint struct {
+	Name        string `json:"name"`
+	Endpoint    string `json:"endpoint"`
+	Description string `json:"description"`
+}
+
 // SystemSettings represents the admin settings API response payload.
 type SystemSettings struct {
 	RegistrationEnabled              bool     `json:"registration_enabled"`
@@ -60,6 +67,7 @@ type SystemSettings struct {
 	SoraClientEnabled           bool             `json:"sora_client_enabled"`
 	GroupMonitoringEnabled      bool             `json:"group_monitoring_enabled"`
 	CustomMenuItems             []CustomMenuItem `json:"custom_menu_items"`
+	CustomEndpoints             []CustomEndpoint `json:"custom_endpoints"`
 
 	DefaultConcurrency   int                          `json:"default_concurrency"`
 	DefaultBalance       float64                      `json:"default_balance"`
@@ -83,6 +91,7 @@ type SystemSettings struct {
 	OpsMetricsIntervalSeconds    int    `json:"ops_metrics_interval_seconds"`
 
 	MinClaudeCodeVersion string `json:"min_claude_code_version"`
+	MaxClaudeCodeVersion string `json:"max_claude_code_version"`
 
 	// 分组隔离
 	AllowUngroupedKeyScheduling bool `json:"allow_ungrouped_key_scheduling"`
@@ -128,6 +137,7 @@ type PublicSettings struct {
 	PurchaseChannelImage             string           `json:"purchase_channel_image"`
 	GroupMonitoringEnabled           bool             `json:"group_monitoring_enabled"`
 	CustomMenuItems                  []CustomMenuItem `json:"custom_menu_items"`
+	CustomEndpoints                  []CustomEndpoint `json:"custom_endpoints"`
 	LinuxDoOAuthEnabled              bool             `json:"linuxdo_oauth_enabled"`
 	SoraClientEnabled                bool             `json:"sora_client_enabled"`
 	BackendModeEnabled               bool             `json:"backend_mode_enabled"`
@@ -231,4 +241,18 @@ func ParseUserVisibleMenuItems(raw string) []CustomMenuItem {
 		}
 	}
 	return filtered
+}
+
+// ParseCustomEndpoints parses a JSON string into a slice of CustomEndpoint.
+// Returns empty slice on empty/invalid input.
+func ParseCustomEndpoints(raw string) []CustomEndpoint {
+	raw = strings.TrimSpace(raw)
+	if raw == "" || raw == "[]" {
+		return []CustomEndpoint{}
+	}
+	var items []CustomEndpoint
+	if err := json.Unmarshal([]byte(raw), &items); err != nil {
+		return []CustomEndpoint{}
+	}
+	return items
 }

@@ -552,6 +552,14 @@ export default {
     title: 'API Keys',
     description: 'Manage your API keys and access tokens',
     searchPlaceholder: 'Search name or key...',
+    endpoints: {
+      title: 'API Endpoints',
+      default: 'Default',
+      copied: 'Copied',
+      copiedHint: 'Copied to clipboard',
+      clickToCopy: 'Click to copy this endpoint',
+      speedTest: 'Speed Test',
+    },
     allGroups: 'All Groups',
     allStatus: 'All Status',
     createKey: 'Create API Key',
@@ -1345,6 +1353,9 @@ export default {
       searchUsers: 'Search by email, username, notes, or API key...',
       allRoles: 'All Roles',
       allStatus: 'All Status',
+      allGroups: 'All Groups',
+      searchGroups: 'Search groups...',
+      fuzzySearch: 'Fuzzy search',
       admin: 'Admin',
       user: 'User',
       disabled: 'Disabled',
@@ -1369,6 +1380,7 @@ export default {
         username: 'Username',
         notes: 'Notes',
         role: 'Role',
+        groups: 'Groups',
         subscriptions: 'Subscriptions',
         balance: 'Balance',
         usage: 'Usage',
@@ -1380,6 +1392,9 @@ export default {
       today: 'Today',
       total: 'Last 30d',
       noSubscription: 'No subscription',
+      publicGroupCount: '+{count} public',
+      exclusiveLabel: 'exclusive',
+      publicLabel: 'public',
       daysRemaining: '{days}d',
       expired: 'Expired',
       disable: 'Disable',
@@ -1435,6 +1450,14 @@ export default {
       useDefaultRate: 'Use Default',
       customRatePlaceholder: 'Leave empty for default',
       groupConfigUpdated: 'Group configuration updated successfully',
+      replaceGroup: 'Replace Group',
+      clickToReplace: 'Click to replace',
+      replaceGroupTitle: 'Replace Exclusive Group',
+      replaceGroupHint: 'Select a new group to replace "{old}". Keys will be migrated and permissions updated automatically.',
+      replaceGroupConfirm: 'Confirm Replace',
+      replaceGroupSuccess: 'Group replaced successfully, {count} key(s) migrated',
+      selectNewGroup: 'Select target group',
+      noOtherGroups: 'No other exclusive groups available',
       deposit: 'Deposit',
       withdraw: 'Withdraw',
       depositAmount: 'Deposit Amount',
@@ -1931,6 +1954,7 @@ export default {
       allTypes: 'All Types',
       allStatus: 'All Status',
       allGroups: 'All Groups',
+      ungroupedGroup: 'Ungrouped',
       oauthType: 'OAuth',
       setupToken: 'Setup Token',
       apiKey: 'API Key',
@@ -2003,6 +2027,8 @@ export default {
         expiresAt: 'Expires At',
         actions: 'Actions'
       },
+      allPrivacyModes: 'All Privacy States',
+      privacyUnset: 'Unset',
       privacyTrainingOff: 'Training data sharing disabled',
       privacyCfBlocked: 'Blocked by Cloudflare, training may still be on',
       privacyFailed: 'Failed to disable training',
@@ -2268,6 +2294,13 @@ export default {
         'When enabled, warmup requests like title generation will return mock responses without consuming upstream tokens',
       autoPauseOnExpired: 'Auto Pause On Expired',
       autoPauseOnExpiredDesc: 'When enabled, the account will auto pause scheduling after it expires',
+      poolMode: 'Pool Mode',
+      poolModeHint: 'Enable when upstream is an account pool; errors won\'t mark local account status',
+      poolModeInfo:
+        'When enabled, upstream 429/403/401 errors will auto-retry without marking the account as rate-limited or errored. Suitable for upstream pointing to another sub2api instance.',
+      poolModeRetryCount: 'Same-Account Retries',
+      poolModeRetryCountHint:
+        'Only applies in pool mode. Use 0 to disable in-place retry. Default {default}, maximum {max}.',
       // Quota control (Anthropic OAuth/SetupToken only)
       quotaControl: {
         title: 'Quota Control',
@@ -2803,7 +2836,9 @@ export default {
         gemini3Pro: 'G3P',
         gemini3Flash: 'G3F',
         gemini3Image: 'G31FI',
-        claude: 'Claude'
+        claude: 'Claude',
+        passiveSampled: 'Passive',
+        activeQuery: 'Query'
       },
       tier: {
         free: 'Free',
@@ -3495,7 +3530,12 @@ export default {
         typeRequest: 'Request',
         typeAuth: 'Auth',
         typeRouting: 'Routing',
-        typeInternal: 'Internal'
+        typeInternal: 'Internal',
+        endpoint: 'Endpoint',
+        requestType: 'Type',
+        requestTypeSync: 'Sync',
+        requestTypeStream: 'Stream',
+        requestTypeWs: 'WS'
       },
       // Error Details Modal
       errorDetails: {
@@ -3581,6 +3621,16 @@ export default {
         latency: 'Request Duration',
         businessLimited: 'Business Limited',
         requestPath: 'Request Path',
+        inboundEndpoint: 'Inbound Endpoint',
+        upstreamEndpoint: 'Upstream Endpoint',
+        requestedModel: 'Requested Model',
+        upstreamModel: 'Upstream Model',
+        requestType: 'Request Type',
+        requestTypeUnknown: 'Unknown',
+        requestTypeSync: 'Sync',
+        requestTypeStream: 'Stream',
+        requestTypeWs: 'WebSocket',
+        modelMapping: 'Model Mapping',
         timings: 'Timings',
         auth: 'Auth',
         routing: 'Routing',
@@ -4162,7 +4212,11 @@ export default {
         minVersion: 'Minimum Version',
         minVersionPlaceholder: 'e.g. 2.1.63',
         minVersionHint:
-          'Reject Claude Code clients below this version (semver format). Leave empty to disable version check.'
+          'Reject Claude Code clients below this version (semver format). Leave empty to disable version check.',
+        maxVersion: 'Maximum Version',
+        maxVersionPlaceholder: 'e.g. 2.5.0',
+        maxVersionHint:
+          'Reject Claude Code clients above this version (semver format). Leave empty to allow any version.'
       },
       scheduling: {
         title: 'Gateway Scheduling Settings',
@@ -4186,6 +4240,18 @@ export default {
         apiBaseUrlPlaceholder: 'https://api.example.com',
         apiBaseUrlHint:
           'Used for "Use Key" and "Import to CC Switch" features. Leave empty to use current site URL.',
+        customEndpoints: {
+          title: 'Custom Endpoints',
+          description: 'Add additional API endpoint URLs for users to quickly copy on the API Keys page',
+          itemLabel: 'Endpoint #{n}',
+          name: 'Name',
+          namePlaceholder: 'e.g., OpenAI Compatible',
+          endpointUrl: 'Endpoint URL',
+          endpointUrlPlaceholder: 'https://api2.example.com',
+          descriptionLabel: 'Description',
+          descriptionPlaceholder: 'e.g., Supports OpenAI format requests',
+          add: 'Add Endpoint',
+        },
         contactInfo: 'Contact Info',
         contactInfoPlaceholder: 'e.g., QQ: 123456789',
         contactInfoHint: 'Customer support contact info, displayed on redeem page, profile, etc.',

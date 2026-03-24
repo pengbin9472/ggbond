@@ -16,7 +16,7 @@ type stubAccountCatalogService struct {
 	accounts []service.Account
 }
 
-func (s *stubAccountCatalogService) ListAccounts(_ context.Context, page, pageSize int, platform, accountType, status, search string, groupID int64) ([]service.Account, int64, error) {
+func (s *stubAccountCatalogService) ListAccounts(_ context.Context, page, pageSize int, platform, accountType, status, search string, groupID int64, privacyMode string) ([]service.Account, int64, error) {
 	start := (page - 1) * pageSize
 	if start >= len(s.accounts) {
 		return nil, int64(len(s.accounts)), nil

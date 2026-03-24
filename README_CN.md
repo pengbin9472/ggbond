@@ -177,10 +177,10 @@ mkdir -p ggbond-deploy && cd ggbond-deploy
 curl -sSL https://raw.githubusercontent.com/pengbin9472/ggbond/main/deploy/docker-deploy.sh | bash
 
 # 启动服务
-docker-compose up -d
+docker compose up -d
 
 # 查看日志
-docker-compose logs -f ggbond
+docker compose logs -f ggbond
 ```
 
 **脚本功能：**
@@ -244,16 +244,16 @@ mkdir -p data postgres_data redis_data
 
 # 5. 启动所有服务
 # 选项 A：本地目录版（推荐 - 易于迁移）
-docker-compose -f docker-compose.local.yml up -d
+docker compose -f docker-compose.local.yml up -d
 
 # 选项 B：命名卷版（简单设置）
-docker-compose up -d
+docker compose up -d
 
 # 6. 查看状态
-docker-compose -f docker-compose.local.yml ps
+docker compose -f docker-compose.local.yml ps
 
 # 7. 查看日志
-docker-compose -f docker-compose.local.yml logs -f ggbond
+docker compose -f docker-compose.local.yml logs -f ggbond
 ```
 
 #### 部署版本对比
@@ -283,15 +283,15 @@ docker-compose -f docker-compose.local.yml logs -f ggbond
 
 如果管理员密码是自动生成的，在日志中查找：
 ```bash
-docker-compose -f docker-compose.local.yml logs ggbond | grep "admin password"
+docker compose -f docker-compose.local.yml logs ggbond | grep "admin password"
 ```
 
 #### 升级
 
 ```bash
 # 拉取最新镜像并重建容器
-docker-compose -f docker-compose.local.yml pull
-docker-compose -f docker-compose.local.yml up -d
+docker compose -f docker-compose.local.yml pull
+docker compose -f docker-compose.local.yml up -d
 ```
 
 #### 轻松迁移（本地目录版）
@@ -300,7 +300,7 @@ docker-compose -f docker-compose.local.yml up -d
 
 ```bash
 # 源服务器
-docker-compose -f docker-compose.local.yml down
+docker compose -f docker-compose.local.yml down
 cd ..
 tar czf ggbond-complete.tar.gz ggbond-deploy/
 
@@ -310,23 +310,23 @@ scp ggbond-complete.tar.gz user@new-server:/path/
 # 新服务器
 tar xzf ggbond-complete.tar.gz
 cd ggbond-deploy/
-docker-compose -f docker-compose.local.yml up -d
+docker compose -f docker-compose.local.yml up -d
 ```
 
 #### 常用命令
 
 ```bash
 # 停止所有服务
-docker-compose -f docker-compose.local.yml down
+docker compose -f docker-compose.local.yml down
 
 # 重启
-docker-compose -f docker-compose.local.yml restart
+docker compose -f docker-compose.local.yml restart
 
 # 查看所有日志
-docker-compose -f docker-compose.local.yml logs -f
+docker compose -f docker-compose.local.yml logs -f
 
 # 删除所有数据（谨慎！）
-docker-compose -f docker-compose.local.yml down
+docker compose -f docker-compose.local.yml down
 rm -rf data/ postgres_data/ redis_data/
 ```
 

@@ -7,7 +7,7 @@
       </div>
 
       <!-- Settings Form -->
-      <form v-else @submit.prevent="saveSettings" class="space-y-6">
+      <form v-else @submit.prevent="saveSettings" class="space-y-6" novalidate>
         <!-- Tab Navigation -->
         <div class="sticky top-0 z-10 overflow-x-auto settings-tabs-scroll">
           <nav class="settings-tabs">
@@ -1230,6 +1230,20 @@
                 {{ t('admin.settings.claudeCode.minVersionHint') }}
               </p>
             </div>
+            <div class="mt-4">
+              <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                {{ t('admin.settings.claudeCode.maxVersion') }}
+              </label>
+              <input
+                v-model="form.max_claude_code_version"
+                type="text"
+                class="input max-w-xs font-mono text-sm"
+                :placeholder="t('admin.settings.claudeCode.maxVersionPlaceholder')"
+              />
+              <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
+                {{ t('admin.settings.claudeCode.maxVersionHint') }}
+              </p>
+            </div>
           </div>
         </div>
 
@@ -1335,6 +1349,81 @@
               <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
                 {{ t('admin.settings.site.apiBaseUrlHint') }}
               </p>
+            </div>
+
+            <!-- Custom Endpoints -->
+            <div>
+              <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                {{ t('admin.settings.site.customEndpoints.title') }}
+              </label>
+              <p class="mb-3 text-xs text-gray-500 dark:text-gray-400">
+                {{ t('admin.settings.site.customEndpoints.description') }}
+              </p>
+
+              <div class="space-y-3">
+                <div
+                  v-for="(ep, index) in form.custom_endpoints"
+                  :key="index"
+                  class="rounded-lg border border-gray-200 p-4 dark:border-dark-600"
+                >
+                  <div class="mb-3 flex items-center justify-between">
+                    <span class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                      {{ t('admin.settings.site.customEndpoints.itemLabel', { n: index + 1 }) }}
+                    </span>
+                    <button
+                      type="button"
+                      class="rounded p-1 text-red-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20"
+                      @click="removeEndpoint(index)"
+                    >
+                      <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                    </button>
+                  </div>
+                  <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <div>
+                      <label class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">
+                        {{ t('admin.settings.site.customEndpoints.name') }}
+                      </label>
+                      <input
+                        v-model="ep.name"
+                        type="text"
+                        class="input text-sm"
+                        :placeholder="t('admin.settings.site.customEndpoints.namePlaceholder')"
+                      />
+                    </div>
+                    <div>
+                      <label class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">
+                        {{ t('admin.settings.site.customEndpoints.endpointUrl') }}
+                      </label>
+                      <input
+                        v-model="ep.endpoint"
+                        type="url"
+                        class="input font-mono text-sm"
+                        :placeholder="t('admin.settings.site.customEndpoints.endpointUrlPlaceholder')"
+                      />
+                    </div>
+                    <div class="sm:col-span-2">
+                      <label class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">
+                        {{ t('admin.settings.site.customEndpoints.descriptionLabel') }}
+                      </label>
+                      <input
+                        v-model="ep.description"
+                        type="text"
+                        class="input text-sm"
+                        :placeholder="t('admin.settings.site.customEndpoints.descriptionPlaceholder')"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                class="mt-3 flex w-full items-center justify-center gap-2 rounded-lg border-2 border-dashed border-gray-300 px-4 py-2.5 text-sm text-gray-500 transition-colors hover:border-primary-400 hover:text-primary-600 dark:border-dark-600 dark:text-gray-400 dark:hover:border-primary-500 dark:hover:text-primary-400"
+                @click="addEndpoint"
+              >
+                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" /></svg>
+                {{ t('admin.settings.site.customEndpoints.add') }}
+              </button>
             </div>
 
             <!-- Contact Info -->
@@ -1726,7 +1815,7 @@
             <button
               type="button"
               @click="testSmtpConnection"
-              :disabled="testingSmtp"
+              :disabled="testingSmtp || loadFailed"
               class="btn btn-secondary btn-sm"
             >
               <svg v-if="testingSmtp" class="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
@@ -1796,6 +1885,11 @@
                   v-model="form.smtp_password"
                   type="password"
                   class="input"
+                  autocomplete="new-password"
+                  autocapitalize="off"
+                  spellcheck="false"
+                  @keydown="smtpPasswordManuallyEdited = true"
+                  @paste="smtpPasswordManuallyEdited = true"
                   :placeholder="
                     form.smtp_password_configured
                       ? t('admin.settings.smtp.passwordConfiguredPlaceholder')
@@ -1878,7 +1972,7 @@
               <button
                 type="button"
                 @click="sendTestEmail"
-                :disabled="sendingTestEmail || !testEmailAddress"
+                :disabled="sendingTestEmail || !testEmailAddress || loadFailed"
                 class="btn btn-secondary"
               >
                 <svg
@@ -1924,7 +2018,7 @@
 
         <!-- Save Button -->
         <div v-show="activeTab !== 'backup' && activeTab !== 'data'" class="flex justify-end">
-          <button type="submit" :disabled="saving" class="btn btn-primary">
+          <button type="submit" :disabled="saving || loadFailed" class="btn btn-primary">
             <svg v-if="saving" class="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
               <circle
                 class="opacity-25"
@@ -1996,9 +2090,11 @@ const settingsTabs = [
 const { copyToClipboard } = useClipboard()
 
 const loading = ref(true)
+const loadFailed = ref(false)
 const saving = ref(false)
 const testingSmtp = ref(false)
 const sendingTestEmail = ref(false)
+const smtpPasswordManuallyEdited = ref(false)
 const testEmailAddress = ref('')
 const registrationEmailSuffixWhitelistTags = ref<string[]>([])
 const registrationEmailSuffixWhitelistDraft = ref('')
@@ -2102,6 +2198,7 @@ const form = reactive<SettingsForm>({
   sora_client_enabled: false,
   group_monitoring_enabled: true,
   custom_menu_items: [] as Array<{id: string; label: string; icon_svg: string; url: string; visibility: 'user' | 'admin'; sort_order: number}>,
+  custom_endpoints: [] as Array<{name: string; endpoint: string; description: string}>,
   frontend_url: '',
   smtp_host: '',
   smtp_port: 587,
@@ -2138,6 +2235,7 @@ const form = reactive<SettingsForm>({
   ops_metrics_interval_seconds: 60,
   // Claude Code version check
   min_claude_code_version: '',
+  max_claude_code_version: '',
   // 分组隔离
   allow_ungrouped_key_scheduling: false,
   // 邀请返现
@@ -2286,8 +2384,18 @@ function moveMenuItem(index: number, direction: -1 | 1) {
   })
 }
 
+// Custom endpoint management
+function addEndpoint() {
+  form.custom_endpoints.push({ name: '', endpoint: '', description: '' })
+}
+
+function removeEndpoint(index: number) {
+  form.custom_endpoints.splice(index, 1)
+}
+
 async function loadSettings() {
   loading.value = true
+  loadFailed.value = false
   try {
     const settings = await adminAPI.settings.getSettings()
     Object.assign(form, settings)
@@ -2305,9 +2413,11 @@ async function loadSettings() {
     )
     registrationEmailSuffixWhitelistDraft.value = ''
     form.smtp_password = ''
+    smtpPasswordManuallyEdited.value = false
     form.turnstile_secret_key = ''
     form.linuxdo_connect_client_secret = ''
   } catch (error: any) {
+    loadFailed.value = true
     appStore.showError(
       t('admin.settings.failedToLoad') + ': ' + (error.message || t('common.unknownError'))
     )
@@ -2370,6 +2480,35 @@ async function saveSettings() {
       return
     }
 
+    // Validate URL fields — novalidate disables browser-native checks, so we validate here
+    const isValidHttpUrl = (url: string): boolean => {
+      if (!url) return true
+      try {
+        const u = new URL(url)
+        return u.protocol === 'http:' || u.protocol === 'https:'
+      } catch {
+        return false
+      }
+    }
+    // Optional URL fields: auto-clear invalid values so they don't cause backend 400 errors
+    if (!isValidHttpUrl(form.frontend_url)) form.frontend_url = ''
+    if (!isValidHttpUrl(form.doc_url)) form.doc_url = ''
+    // Purchase URL: required when enabled; auto-clear when disabled to avoid backend rejection
+    if (form.purchase_subscription_enabled) {
+      if (!form.purchase_subscription_url) {
+        appStore.showError(t('admin.settings.purchase.url') + ': URL is required when purchase is enabled')
+        saving.value = false
+        return
+      }
+      if (!isValidHttpUrl(form.purchase_subscription_url)) {
+        appStore.showError(t('admin.settings.purchase.url') + ': must be an absolute http(s) URL (e.g. https://example.com)')
+        saving.value = false
+        return
+      }
+    } else if (!isValidHttpUrl(form.purchase_subscription_url)) {
+      form.purchase_subscription_url = ''
+    }
+
     const payload: UpdateSettingsRequest = {
       registration_enabled: form.registration_enabled,
       email_verify_enabled: form.email_verify_enabled,
@@ -2400,6 +2539,7 @@ async function saveSettings() {
       sora_client_enabled: form.sora_client_enabled,
       group_monitoring_enabled: form.group_monitoring_enabled,
       custom_menu_items: form.custom_menu_items,
+      custom_endpoints: form.custom_endpoints,
       frontend_url: form.frontend_url,
       smtp_host: form.smtp_host,
       smtp_port: form.smtp_port,
@@ -2423,6 +2563,7 @@ async function saveSettings() {
       enable_identity_patch: form.enable_identity_patch,
       identity_patch_prompt: form.identity_patch_prompt,
       min_claude_code_version: form.min_claude_code_version,
+      max_claude_code_version: form.max_claude_code_version,
       allow_ungrouped_key_scheduling: form.allow_ungrouped_key_scheduling,
       referral_enabled: form.referral_enabled,
       referral_reward_type: form.referral_reward_type,
@@ -2437,6 +2578,7 @@ async function saveSettings() {
     )
     registrationEmailSuffixWhitelistDraft.value = ''
     form.smtp_password = ''
+    smtpPasswordManuallyEdited.value = false
     form.turnstile_secret_key = ''
     form.linuxdo_connect_client_secret = ''
     // Refresh cached settings so sidebar/header update immediately
@@ -2455,11 +2597,12 @@ async function saveSettings() {
 async function testSmtpConnection() {
   testingSmtp.value = true
   try {
+    const smtpPasswordForTest = smtpPasswordManuallyEdited.value ? form.smtp_password : ''
     const result = await adminAPI.settings.testSmtpConnection({
       smtp_host: form.smtp_host,
       smtp_port: form.smtp_port,
       smtp_username: form.smtp_username,
-      smtp_password: form.smtp_password,
+      smtp_password: smtpPasswordForTest,
       smtp_use_tls: form.smtp_use_tls
     })
     // API returns { message: "..." } on success, errors are thrown as exceptions
@@ -2481,12 +2624,13 @@ async function sendTestEmail() {
 
   sendingTestEmail.value = true
   try {
+    const smtpPasswordForSend = smtpPasswordManuallyEdited.value ? form.smtp_password : ''
     const result = await adminAPI.settings.sendTestEmail({
       email: testEmailAddress.value,
       smtp_host: form.smtp_host,
       smtp_port: form.smtp_port,
       smtp_username: form.smtp_username,
-      smtp_password: form.smtp_password,
+      smtp_password: smtpPasswordForSend,
       smtp_from_email: form.smtp_from_email,
       smtp_from_name: form.smtp_from_name,
       smtp_use_tls: form.smtp_use_tls

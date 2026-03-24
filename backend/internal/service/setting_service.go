@@ -44,26 +44,27 @@ type SettingRepository interface {
 	Delete(ctx context.Context, key string) error
 }
 
-// cachedMinVersion 缓存最低 Claude Code 版本号（进程内缓存，60s TTL）
-type cachedMinVersion struct {
-	value     string // 空字符串 = 不检查
+// cachedVersionBounds 缓存 Claude Code 版本号上下限（进程内缓存，60s TTL）
+type cachedVersionBounds struct {
+	min       string // 空字符串 = 不检查
+	max       string // 空字符串 = 不检查
 	expiresAt int64  // unix nano
 }
 
-// minVersionCache 最低版本号进程内缓存
-var minVersionCache atomic.Value // *cachedMinVersion
+// versionBoundsCache 版本号上下限进程内缓存
+var versionBoundsCache atomic.Value // *cachedVersionBounds
 
-// minVersionSF 防止缓存过期时 thundering herd
-var minVersionSF singleflight.Group
+// versionBoundsSF 防止缓存过期时 thundering herd
+var versionBoundsSF singleflight.Group
 
-// minVersionCacheTTL 缓存有效期
-const minVersionCacheTTL = 60 * time.Second
+// versionBoundsCacheTTL 缓存有效期
+const versionBoundsCacheTTL = 60 * time.Second
 
-// minVersionErrorTTL DB 错误时的短缓存，快速重试
-const minVersionErrorTTL = 5 * time.Second
+// versionBoundsErrorTTL DB 错误时的短缓存，快速重试
+const versionBoundsErrorTTL = 5 * time.Second
 
-// minVersionDBTimeout singleflight 内 DB 查询超时，独立于请求 context
-const minVersionDBTimeout = 5 * time.Second
+// versionBoundsDBTimeout singleflight 内 DB 查询超时，独立于请求 context
+const versionBoundsDBTimeout = 5 * time.Second
 
 // cachedBackendMode Backend Mode cache (in-process, 60s TTL)
 type cachedBackendMode struct {
@@ -153,6 +154,7 @@ func (s *SettingService) GetPublicSettings(ctx context.Context) (*PublicSettings
 		SettingKeySoraClientEnabled,
 		SettingKeyGroupMonitoringEnabled,
 		SettingKeyCustomMenuItems,
+		SettingKeyCustomEndpoints,
 		SettingKeyLinuxDoConnectEnabled,
 		SettingKeyBackendModeEnabled,
 	}
@@ -202,6 +204,7 @@ func (s *SettingService) GetPublicSettings(ctx context.Context) (*PublicSettings
 		SoraClientEnabled:                settings[SettingKeySoraClientEnabled] == "true",
 		GroupMonitoringEnabled:           !isFalseSettingValue(settings[SettingKeyGroupMonitoringEnabled]),
 		CustomMenuItems:                  settings[SettingKeyCustomMenuItems],
+		CustomEndpoints:                  settings[SettingKeyCustomEndpoints],
 		LinuxDoOAuthEnabled:              linuxDoEnabled,
 		BackendModeEnabled:               settings[SettingKeyBackendModeEnabled] == "true",
 	}, nil
@@ -258,6 +261,7 @@ func (s *SettingService) GetPublicSettingsForInjection(ctx context.Context) (any
 		SoraClientEnabled                bool            `json:"sora_client_enabled"`
 		GroupMonitoringEnabled           bool            `json:"group_monitoring_enabled"`
 		CustomMenuItems                  json.RawMessage `json:"custom_menu_items"`
+		CustomEndpoints                  json.RawMessage `json:"custom_endpoints"`
 		LinuxDoOAuthEnabled              bool            `json:"linuxdo_oauth_enabled"`
 		BackendModeEnabled               bool            `json:"backend_mode_enabled"`
 		Version                          string          `json:"version,omitempty"`
@@ -287,6 +291,7 @@ func (s *SettingService) GetPublicSettingsForInjection(ctx context.Context) (any
 		SoraClientEnabled:                settings.SoraClientEnabled,
 		GroupMonitoringEnabled:           settings.GroupMonitoringEnabled,
 		CustomMenuItems:                  filterUserVisibleMenuItems(settings.CustomMenuItems),
+		CustomEndpoints:                  safeRawJSONArray(settings.CustomEndpoints),
 		LinuxDoOAuthEnabled:              settings.LinuxDoOAuthEnabled,
 		BackendModeEnabled:               settings.BackendModeEnabled,
 		Version:                          s.version,
@@ -327,6 +332,18 @@ func filterUserVisibleMenuItems(raw string) json.RawMessage {
 		return json.RawMessage("[]")
 	}
 	return result
+}
+
+// safeRawJSONArray returns raw as json.RawMessage if it's valid JSON, otherwise "[]".
+func safeRawJSONArray(raw string) json.RawMessage {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return json.RawMessage("[]")
+	}
+	if json.Valid([]byte(raw)) {
+		return json.RawMessage(raw)
+	}
+	return json.RawMessage("[]")
 }
 
 // GetFrameSrcOrigins returns deduplicated http(s) origins from purchase_subscription_url
@@ -478,6 +495,7 @@ func (s *SettingService) UpdateSettings(ctx context.Context, settings *SystemSet
 	updates[SettingKeySoraClientEnabled] = strconv.FormatBool(settings.SoraClientEnabled)
 	updates[SettingKeyGroupMonitoringEnabled] = strconv.FormatBool(settings.GroupMonitoringEnabled)
 	updates[SettingKeyCustomMenuItems] = settings.CustomMenuItems
+	updates[SettingKeyCustomEndpoints] = settings.CustomEndpoints
 
 	// 默认配置
 	updates[SettingKeyDefaultConcurrency] = strconv.Itoa(settings.DefaultConcurrency)
@@ -509,6 +527,7 @@ func (s *SettingService) UpdateSettings(ctx context.Context, settings *SystemSet
 
 	// Claude Code version check
 	updates[SettingKeyMinClaudeCodeVersion] = settings.MinClaudeCodeVersion
+	updates[SettingKeyMaxClaudeCodeVersion] = settings.MaxClaudeCodeVersion
 
 	// 分组隔离
 	updates[SettingKeyAllowUngroupedKeyScheduling] = strconv.FormatBool(settings.AllowUngroupedKeyScheduling)
@@ -526,10 +545,11 @@ func (s *SettingService) UpdateSettings(ctx context.Context, settings *SystemSet
 	err = s.settingRepo.SetMultiple(ctx, updates)
 	if err == nil {
 		// 先使 inflight singleflight 失效，再刷新缓存，缩小旧值覆盖新值的竞态窗口
-		minVersionSF.Forget("min_version")
-		minVersionCache.Store(&cachedMinVersion{
-			value:     settings.MinClaudeCodeVersion,
-			expiresAt: time.Now().Add(minVersionCacheTTL).UnixNano(),
+		versionBoundsSF.Forget("version_bounds")
+		versionBoundsCache.Store(&cachedVersionBounds{
+			min:       settings.MinClaudeCodeVersion,
+			max:       settings.MaxClaudeCodeVersion,
+			expiresAt: time.Now().Add(versionBoundsCacheTTL).UnixNano(),
 		})
 		backendModeSF.Forget("backend_mode")
 		backendModeCache.Store(&cachedBackendMode{
@@ -772,6 +792,7 @@ func (s *SettingService) InitializeDefaultSettings(ctx context.Context) error {
 		SettingKeyPurchaseChannelImage:             "",
 		SettingKeySoraClientEnabled:                "false",
 		SettingKeyCustomMenuItems:                  "[]",
+		SettingKeyCustomEndpoints:                  "[]",
 		SettingKeyDefaultConcurrency:               strconv.Itoa(s.cfg.Default.UserConcurrency),
 		SettingKeyDefaultBalance:                   strconv.FormatFloat(s.cfg.Default.UserBalance, 'f', 8, 64),
 		SettingKeyDefaultSubscriptions:             "[]",
@@ -795,6 +816,7 @@ func (s *SettingService) InitializeDefaultSettings(ctx context.Context) error {
 
 		// Claude Code version check (default: empty = disabled)
 		SettingKeyMinClaudeCodeVersion: "",
+		SettingKeyMaxClaudeCodeVersion: "",
 
 		// 分组隔离（默认不允许未分组 Key 调度）
 		SettingKeyAllowUngroupedKeyScheduling: "false",
@@ -839,6 +861,7 @@ func (s *SettingService) parseSettings(settings map[string]string) *SystemSettin
 		PurchaseChannelImage:             settings[SettingKeyPurchaseChannelImage],
 		SoraClientEnabled:                settings[SettingKeySoraClientEnabled] == "true",
 		CustomMenuItems:                  settings[SettingKeyCustomMenuItems],
+		CustomEndpoints:                  settings[SettingKeyCustomEndpoints],
 		BackendModeEnabled:               settings[SettingKeyBackendModeEnabled] == "true",
 	}
 
@@ -934,6 +957,7 @@ func (s *SettingService) parseSettings(settings map[string]string) *SystemSettin
 
 	// Claude Code version check
 	result.MinClaudeCodeVersion = settings[SettingKeyMinClaudeCodeVersion]
+	result.MaxClaudeCodeVersion = settings[SettingKeyMaxClaudeCodeVersion]
 
 	// 分组隔离
 	result.AllowUngroupedKeyScheduling = settings[SettingKeyAllowUngroupedKeyScheduling] == "true"
@@ -1348,51 +1372,61 @@ func (s *SettingService) IsUngroupedKeySchedulingAllowed(ctx context.Context) bo
 	return value == "true"
 }
 
-// GetMinClaudeCodeVersion 获取最低 Claude Code 版本号要求
+// GetClaudeCodeVersionBounds 获取 Claude Code 版本号上下限要求
 // 使用进程内 atomic.Value 缓存，60 秒 TTL，热路径零锁开销
 // singleflight 防止缓存过期时 thundering herd
-// 返回空字符串表示不做版本检查
-func (s *SettingService) GetMinClaudeCodeVersion(ctx context.Context) string {
-	if cached, ok := minVersionCache.Load().(*cachedMinVersion); ok {
+// 返回空字符串表示不做对应方向的版本检查
+func (s *SettingService) GetClaudeCodeVersionBounds(ctx context.Context) (min, max string) {
+	if cached, ok := versionBoundsCache.Load().(*cachedVersionBounds); ok {
 		if time.Now().UnixNano() < cached.expiresAt {
-			return cached.value
+			return cached.min, cached.max
 		}
 	}
 	// singleflight: 同一时刻只有一个 goroutine 查询 DB，其余复用结果
-	result, err, _ := minVersionSF.Do("min_version", func() (any, error) {
+	type bounds struct{ min, max string }
+	result, err, _ := versionBoundsSF.Do("version_bounds", func() (any, error) {
 		// 二次检查，避免排队的 goroutine 重复查询
-		if cached, ok := minVersionCache.Load().(*cachedMinVersion); ok {
+		if cached, ok := versionBoundsCache.Load().(*cachedVersionBounds); ok {
 			if time.Now().UnixNano() < cached.expiresAt {
-				return cached.value, nil
+				return bounds{cached.min, cached.max}, nil
 			}
 		}
 		// 使用独立 context：断开请求取消链，避免客户端断连导致空值被长期缓存
-		dbCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), minVersionDBTimeout)
+		dbCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), versionBoundsDBTimeout)
 		defer cancel()
-		value, err := s.settingRepo.GetValue(dbCtx, SettingKeyMinClaudeCodeVersion)
+		values, err := s.settingRepo.GetMultiple(dbCtx, []string{
+			SettingKeyMinClaudeCodeVersion,
+			SettingKeyMaxClaudeCodeVersion,
+		})
 		if err != nil {
 			// fail-open: DB 错误时不阻塞请求，但记录日志并使用短 TTL 快速重试
-			slog.Warn("failed to get min claude code version setting, skipping version check", "error", err)
-			minVersionCache.Store(&cachedMinVersion{
-				value:     "",
-				expiresAt: time.Now().Add(minVersionErrorTTL).UnixNano(),
+			slog.Warn("failed to get claude code version bounds setting, skipping version check", "error", err)
+			versionBoundsCache.Store(&cachedVersionBounds{
+				min:       "",
+				max:       "",
+				expiresAt: time.Now().Add(versionBoundsErrorTTL).UnixNano(),
 			})
-			return "", nil
+			return bounds{"", ""}, nil
 		}
-		minVersionCache.Store(&cachedMinVersion{
-			value:     value,
-			expiresAt: time.Now().Add(minVersionCacheTTL).UnixNano(),
+		b := bounds{
+			min: values[SettingKeyMinClaudeCodeVersion],
+			max: values[SettingKeyMaxClaudeCodeVersion],
+		}
+		versionBoundsCache.Store(&cachedVersionBounds{
+			min:       b.min,
+			max:       b.max,
+			expiresAt: time.Now().Add(versionBoundsCacheTTL).UnixNano(),
 		})
-		return value, nil
+		return b, nil
 	})
 	if err != nil {
-		return ""
+		return "", ""
 	}
-	ver, ok := result.(string)
+	b, ok := result.(bounds)
 	if !ok {
-		return ""
+		return "", ""
 	}
-	return ver
+	return b.min, b.max
 }
 
 // GetRectifierSettings 获取请求整流器配置

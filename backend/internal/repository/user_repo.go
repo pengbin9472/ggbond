@@ -11,6 +11,7 @@ import (
 
 	dbent "github.com/pengbin9472/ggbond/ent"
 	"github.com/pengbin9472/ggbond/ent/apikey"
+	dbgroup "github.com/pengbin9472/ggbond/ent/group"
 	dbuser "github.com/pengbin9472/ggbond/ent/user"
 	"github.com/pengbin9472/ggbond/ent/userallowedgroup"
 	"github.com/pengbin9472/ggbond/ent/usersubscription"
@@ -199,6 +200,12 @@ func (r *userRepository) ListWithFilters(ctx context.Context, params pagination.
 				dbuser.HasAPIKeysWith(apikey.KeyContainsFold(filters.Search)),
 			),
 		)
+	}
+
+	if filters.GroupName != "" {
+		q = q.Where(dbuser.HasAllowedGroupsWith(
+			dbgroup.NameContainsFold(filters.GroupName),
+		))
 	}
 
 	// If attribute filters are specified, we need to filter by user IDs first
@@ -452,6 +459,15 @@ func (r *userRepository) RemoveGroupFromAllowedGroups(ctx context.Context, group
 		return 0, err
 	}
 	return int64(affected), nil
+}
+
+// RemoveGroupFromUserAllowedGroups 移除单个用户的指定分组权限
+func (r *userRepository) RemoveGroupFromUserAllowedGroups(ctx context.Context, userID int64, groupID int64) error {
+	client := clientFromContext(ctx, r.client)
+	_, err := client.UserAllowedGroup.Delete().
+		Where(userallowedgroup.UserIDEQ(userID), userallowedgroup.GroupIDEQ(groupID)).
+		Exec(ctx)
+	return err
 }
 
 func (r *userRepository) GetFirstAdmin(ctx context.Context) (*service.User, error) {

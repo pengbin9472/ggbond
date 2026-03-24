@@ -46,6 +46,7 @@ type SystemSettings struct {
 	PurchaseChannelImage        string
 	SoraClientEnabled           bool
 	CustomMenuItems             string // JSON array of custom menu items
+	CustomEndpoints             string // JSON array of custom endpoints
 
 	DefaultConcurrency   int
 	DefaultBalance       float64
@@ -71,6 +72,7 @@ type SystemSettings struct {
 
 	// Claude Code version check
 	MinClaudeCodeVersion string
+	MaxClaudeCodeVersion string
 
 	// 分组隔离：允许未分组 Key 调度（默认 false → 403）
 	AllowUngroupedKeyScheduling bool
@@ -118,6 +120,7 @@ type PublicSettings struct {
 	SoraClientEnabled           bool
 	GroupMonitoringEnabled      bool
 	CustomMenuItems             string // JSON array of custom menu items
+	CustomEndpoints             string // JSON array of custom endpoints
 
 	LinuxDoOAuthEnabled bool
 	BackendModeEnabled  bool
