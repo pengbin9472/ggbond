@@ -153,6 +153,7 @@ export default {
     todayExpires: '(今日到期)',
     daysLeft: '({days} 天)',
     usedQuota: '已用额度',
+    resetNow: '即将重置',
     subscriptionType: '订阅类型',
     subscriptionExpires: '订阅到期',
     // Usage stat cells
@@ -438,7 +439,12 @@ export default {
       callbackProcessing: '正在验证登录信息，请稍候...',
       callbackHint: '如果页面未自动跳转，请返回登录页重试。',
       callbackMissingToken: '登录信息缺失，请返回重试。',
-      backToLogin: '返回登录'
+      backToLogin: '返回登录',
+      invitationRequired: '该 Linux.do 账号尚未注册，站点已开启邀请码注册，请输入邀请码以完成注册。',
+      invalidPendingToken: '注册凭证已失效，请重新使用 Linux.do 登录。',
+      completeRegistration: '完成注册',
+      completing: '正在完成注册...',
+      completeRegistrationFailed: '注册失败，请检查邀请码后重试。'
     },
     oauth: {
       code: '授权码',
@@ -569,6 +575,8 @@ export default {
     apiKey: 'API 密钥',
     group: '分组',
     noGroup: '无分组',
+    searchGroup: '搜索分组...',
+    noGroupFound: '未找到匹配的分组',
     created: '创建时间',
     copyToClipboard: '复制到剪贴板',
     copied: '已复制！',
@@ -696,6 +704,7 @@ export default {
     resetRateLimitConfirmMessage: '确定要重置密钥 "{name}" 的速率限制用量吗？所有时间窗口的已用额度将归零。此操作不可撤销。',
     rateLimitResetSuccess: '速率限制已重置',
     failedToResetRateLimit: '重置速率限制失败',
+    resetNow: '即将重置',
     expiration: '密钥有效期',
     expiresInDays: '{days} 天',
     extendDays: '+{days} 天',
@@ -770,8 +779,15 @@ export default {
     unknown: '未知',
     in: '输入',
     out: '输出',
+    inputTokenPrice: '输入单价',
+    outputTokenPrice: '输出单价',
+    perMillionTokens: '/ 1M Token',
     cacheRead: '读取',
     cacheWrite: '写入',
+    serviceTier: '服务档位',
+    serviceTierPriority: 'Fast',
+    serviceTierFlex: 'Flex',
+    serviceTierStandard: 'Standard',
     rate: '倍率',
     original: '原始',
     billed: '计费',
@@ -1796,6 +1812,14 @@ export default {
         fallbackGroup: '降级分组',
         fallbackHint: '非 Claude Code 请求将使用此分组，留空则直接拒绝',
         noFallback: '不降级（直接拒绝）'
+      },
+      openaiMessages: {
+        title: 'OpenAI Messages 调度配置',
+        allowDispatch: '允许 /v1/messages 调度',
+        allowDispatchHint: '启用后，此 OpenAI 分组的 API Key 可以通过 /v1/messages 端点调度请求',
+        defaultModel: '默认映射模型',
+        defaultModelPlaceholder: '例如: gpt-4.1',
+        defaultModelHint: '当账号未配置模型映射时，所有请求模型将映射到此模型'
       },
       invalidRequestFallback: {
         title: '无效请求兜底分组',
@@ -2909,6 +2933,7 @@ export default {
       connectedToApi: '已连接到 API',
       usingModel: '使用模型：{model}',
       sendingTestMessage: '发送测试消息："hi"',
+      sendingGeminiImageRequest: '发送 Gemini 生图测试请求...',
       response: '响应：',
       startTest: '开始测试',
       retry: '重试',
@@ -2992,7 +3017,21 @@ export default {
       failed: '失败',
       running: '运行中',
       schedule: '定时测试',
-      cronHelp: '标准 5 字段 cron 表达式（例如 */30 * * * *）'
+      cronHelp: '标准 5 字段 cron 表达式（例如 */30 * * * *）',
+      cronTooltipTitle: 'Cron 表达式示例：',
+      cronTooltipMeaning: '用于定义自动执行测试的时间规则，格式依次为：分钟 小时 日 月 星期。',
+      cronTooltipExampleEvery30Min: '*/30 * * * *：每 30 分钟运行一次',
+      cronTooltipExampleHourly: '0 * * * *：每小时整点运行一次',
+      cronTooltipExampleDaily: '0 9 * * *：每天 09:00 运行一次',
+      cronTooltipExampleWeekly: '0 9 * * 1：每周一 09:00 运行一次',
+      cronTooltipRange: '推荐填写范围：使用标准 5 字段 cron；如果只是健康检查，建议从每 30 分钟、每 1 小时或每天固定时间开始，不建议一开始就设置过高频率。',
+      maxResultsTooltipTitle: '最大结果数说明：',
+      maxResultsTooltipMeaning: '用于限制单个计划最多保留多少条历史测试结果，避免结果列表无限增长。',
+      maxResultsTooltipBody: '系统只会保留最近的测试结果；当保存数量超过这个值时，更早的历史记录会自动清理，避免列表过长和存储持续增长。',
+      maxResultsTooltipExample: '例如填写 100，表示最多保存最近 100 次测试结果；第 101 次结果写入后，最早的一条会被清理。',
+      maxResultsTooltipRange: '推荐填写范围：一般可填 20 到 200。只关注近期可用性时可填 20-50；需要回看较长时间的波动趋势时可填 100-200。',
+      autoRecover: '自动恢复',
+      autoRecoverHelp: '测试成功后自动恢复异常状态的账号'
     },
 
     // Proxies Management
@@ -3448,6 +3487,8 @@ export default {
       billingTypeBalance: '钱包余额',
       billingTypeSubscription: '订阅套餐',
       ipAddress: 'IP',
+      clickToViewBalance: '点击查看充值记录',
+      failedToLoadUser: '加载用户信息失败',
       cleanup: {
         button: '清理',
         title: '清理使用记录',

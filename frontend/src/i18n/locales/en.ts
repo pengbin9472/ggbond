@@ -153,6 +153,7 @@ export default {
     todayExpires: '(expires today)',
     daysLeft: '({days} days)',
     usedQuota: 'Used Quota',
+    resetNow: 'Resetting soon',
     subscriptionType: 'Subscription Type',
     subscriptionExpires: 'Subscription Expires',
     // Usage stat cells
@@ -439,7 +440,12 @@ export default {
       callbackProcessing: 'Completing login, please wait...',
       callbackHint: 'If you are not redirected automatically, go back to the login page and try again.',
       callbackMissingToken: 'Missing login token, please try again.',
-      backToLogin: 'Back to Login'
+      backToLogin: 'Back to Login',
+      invitationRequired: 'This Linux.do account is not yet registered. The site requires an invitation code — please enter one to complete registration.',
+      invalidPendingToken: 'The registration token has expired. Please sign in with Linux.do again.',
+      completeRegistration: 'Complete Registration',
+      completing: 'Completing registration…',
+      completeRegistrationFailed: 'Registration failed. Please check your invitation code and try again.'
     },
     oauth: {
       code: 'Code',
@@ -569,6 +575,8 @@ export default {
     apiKey: 'API Key',
     group: 'Group',
     noGroup: 'No group',
+    searchGroup: 'Search groups...',
+    noGroupFound: 'No groups found',
     created: 'Created',
     copyToClipboard: 'Copy to clipboard',
     copied: 'Copied!',
@@ -691,6 +699,7 @@ export default {
     resetRateLimitConfirmMessage: 'Are you sure you want to reset the rate limit usage for key "{name}"? All time window usage will be reset to zero. This action cannot be undone.',
     rateLimitResetSuccess: 'Rate limit usage reset successfully',
     failedToResetRateLimit: 'Failed to reset rate limit usage',
+    resetNow: 'Resetting soon',
     expiration: 'Expiration',
     expiresInDays: '{days} days',
     extendDays: '+{days} days',
@@ -765,8 +774,15 @@ export default {
     unknown: 'Unknown',
     in: 'In',
     out: 'Out',
+    inputTokenPrice: 'Input price',
+    outputTokenPrice: 'Output price',
+    perMillionTokens: '/ 1M tokens',
     cacheRead: 'Read',
     cacheWrite: 'Write',
+    serviceTier: 'Service tier',
+    serviceTierPriority: 'Fast',
+    serviceTierFlex: 'Flex',
+    serviceTierStandard: 'Standard',
     rate: 'Rate',
     original: 'Original',
     billed: 'Billed',
@@ -1709,6 +1725,14 @@ export default {
         fallbackGroup: 'Fallback Group',
         fallbackHint: 'Non-Claude Code requests will use this group. Leave empty to reject directly.',
         noFallback: 'No Fallback (Reject)'
+      },
+      openaiMessages: {
+        title: 'OpenAI Messages Dispatch',
+        allowDispatch: 'Allow /v1/messages dispatch',
+        allowDispatchHint: 'When enabled, API keys in this OpenAI group can dispatch requests through /v1/messages endpoint',
+        defaultModel: 'Default mapped model',
+        defaultModelPlaceholder: 'e.g., gpt-4.1',
+        defaultModelHint: 'When account has no model mapping configured, all request models will be mapped to this model'
       },
       invalidRequestFallback: {
         title: 'Invalid Request Fallback Group',
@@ -2777,6 +2801,7 @@ export default {
       connectedToApi: 'Connected to API',
       usingModel: 'Using model: {model}',
       sendingTestMessage: 'Sending test message: "hi"',
+      sendingGeminiImageRequest: 'Sending Gemini image generation test request...',
       response: 'Response:',
       startTest: 'Start Test',
       testing: 'Testing...',
@@ -2894,7 +2919,21 @@ export default {
       failed: 'Failed',
       running: 'Running',
       schedule: 'Schedule',
-      cronHelp: 'Standard 5-field cron expression (e.g., */30 * * * *)'
+      cronHelp: 'Standard 5-field cron expression (e.g., */30 * * * *)',
+      cronTooltipTitle: 'Cron expression examples:',
+      cronTooltipMeaning: 'Defines when the test runs automatically. The 5 fields are: minute, hour, day, month, and weekday.',
+      cronTooltipExampleEvery30Min: '*/30 * * * *: run every 30 minutes',
+      cronTooltipExampleHourly: '0 * * * *: run at the start of every hour',
+      cronTooltipExampleDaily: '0 9 * * *: run every day at 09:00',
+      cronTooltipExampleWeekly: '0 9 * * 1: run every Monday at 09:00',
+      cronTooltipRange: 'Recommended range: use standard 5-field cron. For health checks, start with a moderate frequency such as every 30 minutes, every hour, or once a day instead of running too often.',
+      maxResultsTooltipTitle: 'What Max Results means:',
+      maxResultsTooltipMeaning: 'Sets how many historical test results are kept for a single plan so the result list does not grow without limit.',
+      maxResultsTooltipBody: 'Only the newest test results are kept. Once the number of saved results exceeds this value, older records are pruned automatically so the history list and storage stay under control.',
+      maxResultsTooltipExample: 'For example, 100 means keeping at most the latest 100 test results. When the 101st result is saved, the oldest one is removed.',
+      maxResultsTooltipRange: 'Recommended range: usually 20 to 200. Use 20-50 when you only care about recent health status, or 100-200 if you want a longer trend history.',
+      autoRecover: 'Auto Recover',
+      autoRecoverHelp: 'Automatically recover account from error/rate-limited state on successful test'
     },
 
     // Proxies
@@ -3289,6 +3328,8 @@ export default {
       billingTypeBalance: 'Balance',
       billingTypeSubscription: 'Subscription',
       ipAddress: 'IP',
+      clickToViewBalance: 'Click to view balance history',
+      failedToLoadUser: 'Failed to load user info',
       cleanup: {
         button: 'Cleanup',
         title: 'Cleanup Usage Records',
