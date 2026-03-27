@@ -97,6 +97,10 @@ export interface SystemSettings {
   referral_cashback_percentage: number
   referral_fixed_amount: number
   referral_max_rewards_per_user: number
+
+  // Gateway forwarding behavior
+  enable_fingerprint_unification: boolean
+  enable_metadata_passthrough: boolean
 }
 
 export interface UpdateSettingsRequest {
@@ -162,6 +166,8 @@ export interface UpdateSettingsRequest {
   referral_cashback_percentage?: number
   referral_fixed_amount?: number
   referral_max_rewards_per_user?: number
+  enable_fingerprint_unification?: boolean
+  enable_metadata_passthrough?: boolean
 }
 
 /**
@@ -337,6 +343,8 @@ export interface RectifierSettings {
   enabled: boolean
   thinking_signature_enabled: boolean
   thinking_budget_enabled: boolean
+  apikey_signature_enabled: boolean
+  apikey_signature_patterns: string[]
 }
 
 /**

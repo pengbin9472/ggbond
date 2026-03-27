@@ -27,6 +27,7 @@ import (
 	"github.com/pengbin9472/ggbond/ent/referralreward"
 	"github.com/pengbin9472/ggbond/ent/securitysecret"
 	"github.com/pengbin9472/ggbond/ent/setting"
+	"github.com/pengbin9472/ggbond/ent/tlsfingerprintprofile"
 	"github.com/pengbin9472/ggbond/ent/usagecleanuptask"
 	"github.com/pengbin9472/ggbond/ent/usagelog"
 	"github.com/pengbin9472/ggbond/ent/user"
@@ -109,6 +110,7 @@ func checkColumn(t, c string) error {
 			referralreward.Table:          referralreward.ValidColumn,
 			securitysecret.Table:          securitysecret.ValidColumn,
 			setting.Table:                 setting.ValidColumn,
+			tlsfingerprintprofile.Table:   tlsfingerprintprofile.ValidColumn,
 			usagecleanuptask.Table:        usagecleanuptask.ValidColumn,
 			usagelog.Table:                usagelog.ValidColumn,
 			user.Table:                    user.ValidColumn,

@@ -248,6 +248,12 @@ const (
 	SettingKeyReferralCashbackPercentage = "referral_cashback_percentage"  // 返现比例(默认10)
 	SettingKeyReferralFixedAmount        = "referral_fixed_amount"         // 固定返现金额
 	SettingKeyReferralMaxRewardsPerUser  = "referral_max_rewards_per_user" // 每人最大返现总额(0=无限)
+
+	// Gateway Forwarding Behavior
+	// SettingKeyEnableFingerprintUnification 是否统一 OAuth 账号的 X-Stainless-* 指纹头（默认 true）
+	SettingKeyEnableFingerprintUnification = "enable_fingerprint_unification"
+	// SettingKeyEnableMetadataPassthrough 是否透传客户端原始 metadata.user_id（默认 false）
+	SettingKeyEnableMetadataPassthrough = "enable_metadata_passthrough"
 )
 
 // AdminAPIKeyPrefix is the prefix for admin API keys (distinct from user "sk-" keys).
