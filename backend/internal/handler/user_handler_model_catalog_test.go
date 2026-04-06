@@ -85,4 +85,40 @@ func TestUserHandlerGetModelCatalog_HidesInternalIDs(t *testing.T) {
 	require.Len(t, resp.Data.Models, 1)
 	require.Equal(t, 2, resp.Data.Models[0].AccountCount)
 	require.Equal(t, 2, resp.Data.Models[0].GroupCount)
+	require.NotNil(t, resp.Data.Models[0].CacheWritePrice)
+	require.NotNil(t, resp.Data.Models[0].CacheReadPrice)
+}
+
+func TestUserHandlerGetModelCatalog_IncludesImageOutputPricing(t *testing.T) {
+	router := setupUserModelCatalogRouter([]service.Account{
+		{
+			ID:       1,
+			Name:     "acc-image",
+			Platform: service.PlatformGemini,
+			Type:     service.AccountTypeAPIKey,
+			Status:   service.StatusActive,
+			GroupIDs: []int64{10},
+			Credentials: map[string]any{
+				"model_mapping": map[string]any{
+					"gemini-3-pro-image-preview": "gemini-3-pro-image-preview",
+				},
+			},
+		},
+	})
+
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/models/catalog", nil)
+	router.ServeHTTP(rec, req)
+
+	require.Equal(t, http.StatusOK, rec.Code)
+
+	var resp struct {
+		Data struct {
+			Models []modelCatalogEntry `json:"models"`
+			Total  int                 `json:"total"`
+		} `json:"data"`
+	}
+	require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &resp))
+	require.Equal(t, 1, resp.Data.Total)
+	require.NotNil(t, resp.Data.Models[0].ImageOutputPrice)
 }

@@ -24,7 +24,7 @@ const (
 	PlatformOpenAI      = domain.PlatformOpenAI
 	PlatformGemini      = domain.PlatformGemini
 	PlatformAntigravity = domain.PlatformAntigravity
-	PlatformSora        = domain.PlatformSora
+	PlatformSora        = "sora"
 )
 
 // Account type constants
@@ -107,7 +107,6 @@ const (
 	SettingKeyLinuxDoConnectRedirectURL  = "linuxdo_connect_redirect_url"
 
 	// OEM设置
-	SettingKeySoraClientEnabled           = "sora_client_enabled"           // 是否启用 Sora 客户端（管理员手动控制）
 	SettingKeySiteName                    = "site_name"                     // 网站名称
 	SettingKeySiteLogo                    = "site_logo"                     // 网站Logo (base64)
 	SettingKeySiteSubtitle                = "site_subtitle"                 // 网站副标题
@@ -120,7 +119,8 @@ const (
 	SettingKeyPurchaseSubscriptionURL     = "purchase_subscription_url"     // "购买订阅"页面 URL（作为 iframe src）
 	SettingKeyPurchaseChannelEnabled      = "purchase_channel_enabled"      // 是否展示"购买渠道"页面入口
 	SettingKeyPurchaseChannelURL          = "purchase_channel_url"          // "购买渠道"页面 URL（作为 iframe src）
-	SettingKeyPurchaseChannelImage           = "purchase_channel_image"          // "购买渠道"页面展示图片（base64）
+	SettingKeyPurchaseChannelImage        = "purchase_channel_image"        // "购买渠道"页面展示图片（base64）
+	SettingKeySoraClientEnabled           = "sora_client_enabled"           // 是否展示 Sora 客户端入口
 	SettingKeyCustomMenuItems             = "custom_menu_items"             // 自定义菜单项（JSON 数组）
 	SettingKeyCustomEndpoints             = "custom_endpoints"              // 自定义端点列表（JSON 数组）
 
@@ -204,27 +204,6 @@ const (
 
 	// SettingKeyBetaPolicySettings stores JSON config for beta policy rules.
 	SettingKeyBetaPolicySettings = "beta_policy_settings"
-
-	// =========================
-	// Sora S3 存储配置
-	// =========================
-
-	SettingKeySoraS3Enabled         = "sora_s3_enabled"           // 是否启用 Sora S3 存储
-	SettingKeySoraS3Endpoint        = "sora_s3_endpoint"          // S3 端点地址
-	SettingKeySoraS3Region          = "sora_s3_region"            // S3 区域
-	SettingKeySoraS3Bucket          = "sora_s3_bucket"            // S3 存储桶名称
-	SettingKeySoraS3AccessKeyID     = "sora_s3_access_key_id"     // S3 Access Key ID
-	SettingKeySoraS3SecretAccessKey = "sora_s3_secret_access_key" // S3 Secret Access Key（加密存储）
-	SettingKeySoraS3Prefix          = "sora_s3_prefix"            // S3 对象键前缀
-	SettingKeySoraS3ForcePathStyle  = "sora_s3_force_path_style"  // 是否强制 Path Style（兼容 MinIO 等）
-	SettingKeySoraS3CDNURL          = "sora_s3_cdn_url"           // CDN 加速 URL（可选）
-	SettingKeySoraS3Profiles        = "sora_s3_profiles"          // Sora S3 多配置（JSON）
-
-	// =========================
-	// Sora 用户存储配额
-	// =========================
-
-	SettingKeySoraDefaultStorageQuotaBytes = "sora_default_storage_quota_bytes" // 新用户默认 Sora 存储配额（字节）
 
 	// =========================
 	// Claude Code Version Check

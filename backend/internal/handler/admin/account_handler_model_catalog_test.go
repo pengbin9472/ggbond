@@ -79,6 +79,8 @@ func TestAccountHandlerGetModelCatalog_DeduplicatesAcrossAccountsAndAddsPricing(
 	require.Equal(t, 2, haiku.GroupCount)
 	require.NotNil(t, haiku.InputPrice)
 	require.NotNil(t, haiku.OutputPrice)
+	require.NotNil(t, haiku.CacheWritePrice)
+	require.NotNil(t, haiku.CacheReadPrice)
 }
 
 func TestAccountHandlerGetModelCatalog_UsesMappingTargetWhenWhitelistMissing(t *testing.T) {
@@ -115,4 +117,40 @@ func TestAccountHandlerGetModelCatalog_UsesMappingTargetWhenWhitelistMissing(t *
 	require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &resp))
 	require.Equal(t, 1, resp.Data.Total)
 	require.Equal(t, "claude-opus-4-5-20251101", resp.Data.Models[0].ID)
+}
+
+func TestAccountHandlerGetModelCatalog_IncludesImageOutputPricing(t *testing.T) {
+	adminSvc := newStubAdminService()
+	adminSvc.accounts = []service.Account{
+		{
+			ID:       1,
+			Name:     "acc-image",
+			Platform: service.PlatformGemini,
+			Type:     service.AccountTypeAPIKey,
+			Status:   service.StatusActive,
+			GroupIDs: []int64{12},
+			Credentials: map[string]any{
+				"model_mapping": map[string]any{
+					"gemini-3-pro-image-preview": "gemini-3-pro-image-preview",
+				},
+			},
+		},
+	}
+
+	router := setupModelCatalogRouter(adminSvc)
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/admin/accounts/models/catalog", nil)
+	router.ServeHTTP(rec, req)
+
+	require.Equal(t, http.StatusOK, rec.Code)
+
+	var resp struct {
+		Data struct {
+			Models []adminModelCatalogEntry `json:"models"`
+			Total  int                      `json:"total"`
+		} `json:"data"`
+	}
+	require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &resp))
+	require.Equal(t, 1, resp.Data.Total)
+	require.NotNil(t, resp.Data.Models[0].ImageOutputPrice)
 }

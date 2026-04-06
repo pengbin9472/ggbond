@@ -198,6 +198,17 @@ func TestGetModelPricing_OpenAIGPT54NanoFallback(t *testing.T) {
 	require.Zero(t, pricing.LongContextInputThreshold)
 }
 
+func TestGetModelPricing_GeminiImageFallback(t *testing.T) {
+	svc := newTestBillingService()
+
+	pricing, err := svc.GetModelPricing("gemini-3-pro-image-preview")
+	require.NoError(t, err)
+	require.NotNil(t, pricing)
+	require.InDelta(t, 2e-6, pricing.InputPricePerToken, 1e-12)
+	require.InDelta(t, 12e-6, pricing.OutputPricePerToken, 1e-12)
+	require.InDelta(t, 120e-6, pricing.ImageOutputPricePerToken, 1e-12)
+}
+
 func TestCalculateCost_OpenAIGPT54LongContextAppliesWholeSessionMultipliers(t *testing.T) {
 	svc := newTestBillingService()
 
@@ -230,6 +241,7 @@ func TestGetFallbackPricing_FamilyMatching(t *testing.T) {
 		{name: "claude opus 4.6", model: "claude-opus-4.6-20260201", expectedInput: 5e-6},
 		{name: "claude opus 4.5 alt separator", model: "claude-opus-4-5-20260101", expectedInput: 5e-6},
 		{name: "claude generic model fallback sonnet", model: "claude-foo-bar", expectedInput: 3e-6},
+		{name: "gemini image fallback", model: "gemini-3-pro-image-preview", expectedInput: 2e-6},
 		{name: "gemini explicit fallback", model: "gemini-3-1-pro", expectedInput: 2e-6},
 		{name: "gemini unknown no fallback", model: "gemini-2.0-pro", expectNilPricing: true},
 		{name: "openai gpt5.1", model: "gpt-5.1", expectedInput: 1.25e-6},
@@ -363,29 +375,6 @@ func TestCalculateImageCost(t *testing.T) {
 	require.InDelta(t, 0.134*3, cost.ActualCost, 1e-10)
 }
 
-func TestCalculateSoraVideoCost(t *testing.T) {
-	svc := newTestBillingService()
-
-	price := 0.5
-	cfg := &SoraPriceConfig{VideoPricePerRequest: &price}
-	cost := svc.CalculateSoraVideoCost("sora-video", cfg, 1.0)
-
-	require.InDelta(t, 0.5, cost.TotalCost, 1e-10)
-}
-
-func TestCalculateSoraVideoCost_HDModel(t *testing.T) {
-	svc := newTestBillingService()
-
-	hdPrice := 1.0
-	normalPrice := 0.5
-	cfg := &SoraPriceConfig{
-		VideoPricePerRequest:   &normalPrice,
-		VideoPricePerRequestHD: &hdPrice,
-	}
-	cost := svc.CalculateSoraVideoCost("sora2pro-hd", cfg, 1.0)
-	require.InDelta(t, 1.0, cost.TotalCost, 1e-10)
-}
-
 func TestIsModelSupported(t *testing.T) {
 	svc := newTestBillingService()
 
@@ -462,33 +451,6 @@ func TestForceUpdatePricing_NilService(t *testing.T) {
 	err := svc.ForceUpdatePricing()
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "not initialized")
-}
-
-func TestCalculateSoraImageCost(t *testing.T) {
-	svc := newTestBillingService()
-
-	price360 := 0.05
-	price540 := 0.08
-	cfg := &SoraPriceConfig{ImagePrice360: &price360, ImagePrice540: &price540}
-
-	cost := svc.CalculateSoraImageCost("360", 2, cfg, 1.0)
-	require.InDelta(t, 0.10, cost.TotalCost, 1e-10)
-
-	cost540 := svc.CalculateSoraImageCost("540", 1, cfg, 2.0)
-	require.InDelta(t, 0.08, cost540.TotalCost, 1e-10)
-	require.InDelta(t, 0.16, cost540.ActualCost, 1e-10)
-}
-
-func TestCalculateSoraImageCost_ZeroCount(t *testing.T) {
-	svc := newTestBillingService()
-	cost := svc.CalculateSoraImageCost("360", 0, nil, 1.0)
-	require.Equal(t, 0.0, cost.TotalCost)
-}
-
-func TestCalculateSoraVideoCost_NilConfig(t *testing.T) {
-	svc := newTestBillingService()
-	cost := svc.CalculateSoraVideoCost("sora-video", nil, 1.0)
-	require.Equal(t, 0.0, cost.TotalCost)
 }
 
 func TestCalculateCostWithLongContext_PropagatesError(t *testing.T) {

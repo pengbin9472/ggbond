@@ -171,17 +171,20 @@ type AccountWithConcurrency struct {
 }
 
 type adminModelCatalogEntry struct {
-	ID              string   `json:"id"`
-	DisplayName     string   `json:"display_name"`
-	Type            string   `json:"type"`
-	Platform        string   `json:"platform"`
-	InputPrice      *float64 `json:"input_price,omitempty"`
-	OutputPrice     *float64 `json:"output_price,omitempty"`
-	AccountCount    int      `json:"account_count"`
-	GroupCount      int      `json:"group_count"`
-	AccountIDs      []int64  `json:"account_ids,omitempty"`
-	GroupIDs        []int64  `json:"group_ids,omitempty"`
-	PricingFallback bool     `json:"pricing_fallback"`
+	ID               string   `json:"id"`
+	DisplayName      string   `json:"display_name"`
+	Type             string   `json:"type"`
+	Platform         string   `json:"platform"`
+	InputPrice       *float64 `json:"input_price,omitempty"`
+	OutputPrice      *float64 `json:"output_price,omitempty"`
+	CacheWritePrice  *float64 `json:"cache_write_price,omitempty"`
+	CacheReadPrice   *float64 `json:"cache_read_price,omitempty"`
+	ImageOutputPrice *float64 `json:"image_output_price,omitempty"`
+	AccountCount     int      `json:"account_count"`
+	GroupCount       int      `json:"group_count"`
+	AccountIDs       []int64  `json:"account_ids,omitempty"`
+	GroupIDs         []int64  `json:"group_ids,omitempty"`
+	PricingFallback  bool     `json:"pricing_fallback"`
 }
 
 type adminModelCatalogResponse struct {
@@ -868,6 +871,7 @@ func (h *AccountHandler) refreshSingleAccount(ctx context.Context, account *serv
 			if updateErr != nil {
 				return nil, "", fmt.Errorf("failed to update credentials: %w", updateErr)
 			}
+			h.adminService.EnsureAntigravityPrivacy(ctx, updatedAccount)
 			return updatedAccount, "missing_project_id_temporary", nil
 		}
 
@@ -1903,12 +1907,6 @@ func (h *AccountHandler) GetAvailableModels(c *gin.Context) {
 		return
 	}
 
-	// Handle Sora accounts
-	if account.Platform == service.PlatformSora {
-		response.Success(c, service.DefaultSoraModels(nil))
-		return
-	}
-
 	// Handle Claude/Anthropic accounts
 	// For OAuth and Setup-Token accounts: return default models
 	if account.IsOAuth() {
@@ -2071,6 +2069,9 @@ func (h *AccountHandler) mergeModelCatalogEntry(accumulators map[string]*modelCa
 		if pricing, err := h.lookupModelPricing(modelID); err == nil && pricing != nil {
 			item.entry.InputPrice = floatPtr(pricing.InputPricePerToken * 1_000_000)
 			item.entry.OutputPrice = floatPtr(pricing.OutputPricePerToken * 1_000_000)
+			item.entry.CacheWritePrice = floatPtr(pricing.CacheCreationPricePerToken * 1_000_000)
+			item.entry.CacheReadPrice = floatPtr(pricing.CacheReadPricePerToken * 1_000_000)
+			item.entry.ImageOutputPrice = floatPtr(pricing.ImageOutputPricePerToken * 1_000_000)
 		} else {
 			item.entry.PricingFallback = true
 		}

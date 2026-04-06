@@ -33,6 +33,7 @@ func ProvideAdminHandlers(
 	tlsFingerprintProfileHandler *admin.TLSFingerprintProfileHandler,
 	apiKeyHandler *admin.AdminAPIKeyHandler,
 	scheduledTestHandler *admin.ScheduledTestHandler,
+	channelHandler *admin.ChannelHandler,
 ) *AdminHandlers {
 	return &AdminHandlers{
 		Dashboard:             dashboardHandler,
@@ -59,6 +60,7 @@ func ProvideAdminHandlers(
 		TLSFingerprintProfile: tlsFingerprintProfileHandler,
 		APIKey:                apiKeyHandler,
 		ScheduledTest:         scheduledTestHandler,
+		Channel:               channelHandler,
 	}
 }
 
@@ -70,6 +72,11 @@ func ProvideSystemHandler(updateService *service.UpdateService, lockService *ser
 // ProvideSettingHandler creates SettingHandler with version from BuildInfo
 func ProvideSettingHandler(settingService *service.SettingService, buildInfo BuildInfo) *SettingHandler {
 	return NewSettingHandler(settingService, buildInfo.Version)
+}
+
+// ProvideAccountCatalogService adapts AdminService to the lightweight account catalog interface used by UserHandler.
+func ProvideAccountCatalogService(adminService service.AdminService) accountCatalogService {
+	return adminService
 }
 
 // ProvideHandlers creates the Handlers struct
@@ -84,8 +91,6 @@ func ProvideHandlers(
 	adminHandlers *AdminHandlers,
 	gatewayHandler *GatewayHandler,
 	openaiGatewayHandler *OpenAIGatewayHandler,
-	soraGatewayHandler *SoraGatewayHandler,
-	soraClientHandler *SoraClientHandler,
 	settingHandler *SettingHandler,
 	totpHandler *TotpHandler,
 	monitoringHandler *MonitoringHandler,
@@ -104,8 +109,6 @@ func ProvideHandlers(
 		Admin:         adminHandlers,
 		Gateway:       gatewayHandler,
 		OpenAIGateway: openaiGatewayHandler,
-		SoraGateway:   soraGatewayHandler,
-		SoraClient:    soraClientHandler,
 		Setting:       settingHandler,
 		Totp:          totpHandler,
 		Monitoring:    monitoringHandler,
@@ -125,10 +128,10 @@ var ProviderSet = wire.NewSet(
 	NewAnnouncementHandler,
 	NewGatewayHandler,
 	NewOpenAIGatewayHandler,
-	NewSoraGatewayHandler,
 	NewTotpHandler,
 	NewReferralHandler,
 	ProvideSettingHandler,
+	ProvideAccountCatalogService,
 
 	// Monitoring handler
 	NewMonitoringHandler,
@@ -158,6 +161,7 @@ var ProviderSet = wire.NewSet(
 	admin.NewTLSFingerprintProfileHandler,
 	admin.NewAdminAPIKeyHandler,
 	admin.NewScheduledTestHandler,
+	admin.NewChannelHandler,
 
 	// AdminHandlers and Handlers constructors
 	ProvideAdminHandlers,

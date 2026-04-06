@@ -101,9 +101,12 @@
                   </button>
                 </div>
 
-                <div class="flex flex-wrap items-center gap-x-5 gap-y-2 text-[1.05rem] text-slate-600 dark:text-slate-300">
+                <div class="grid gap-2 text-[1.05rem] text-slate-600 dark:text-slate-300 sm:grid-cols-2">
                   <span>{{ t('admin.models.inputPrice') }} {{ formatPrice(model.input_price) }}</span>
                   <span>{{ t('admin.models.outputPrice') }} {{ formatPrice(model.output_price) }}</span>
+                  <span v-if="model.cache_write_price != null">{{ t('admin.models.cacheWritePrice') }} {{ formatPrice(model.cache_write_price) }}</span>
+                  <span v-if="model.cache_read_price != null">{{ t('admin.models.cacheReadPrice') }} {{ formatPrice(model.cache_read_price) }}</span>
+                  <span v-if="model.image_output_price != null">{{ t('admin.models.imageOutputPrice') }} {{ formatPrice(model.image_output_price) }}</span>
                 </div>
               </div>
             </div>
@@ -113,7 +116,7 @@
                 {{ t('admin.models.metered') }}
               </span>
               <span
-                v-if="model.pricing_fallback || model.input_price == null || model.output_price == null"
+                v-if="isPriceMissing(model)"
                 class="inline-flex items-center rounded-full bg-amber-100 px-3 py-1.5 text-sm text-amber-700 dark:bg-amber-500/15 dark:text-amber-200"
               >
                 {{ t('admin.models.priceMissing') }}
@@ -181,7 +184,19 @@ const filteredModels = computed(() => {
   })
 })
 
-const pricedModelsCount = computed(() => models.value.filter(model => model.input_price != null && model.output_price != null).length)
+const pricedModelsCount = computed(() => models.value.filter(hasCompletePricing).length)
+
+function hasAnyOutputPricing(model: ModelCatalogEntry): boolean {
+  return model.output_price != null || model.image_output_price != null
+}
+
+function hasCompletePricing(model: ModelCatalogEntry): boolean {
+  return model.input_price != null && hasAnyOutputPricing(model)
+}
+
+function isPriceMissing(model: ModelCatalogEntry): boolean {
+  return model.pricing_fallback || !hasCompletePricing(model)
+}
 
 function platformLabel(platform: string): string {
   if (!platform) {
