@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	entsql "entgo.io/ent/dialect/sql"
 	dbent "github.com/pengbin9472/ggbond/ent"
 	"github.com/pengbin9472/ggbond/ent/apikey"
 	dbgroup "github.com/pengbin9472/ggbond/ent/group"
@@ -62,6 +63,11 @@ func (r *userRepository) Create(ctx context.Context, userIn *service.User) error
 		SetBalance(userIn.Balance).
 		SetConcurrency(userIn.Concurrency).
 		SetStatus(userIn.Status).
+		SetBalanceNotifyEnabled(userIn.BalanceNotifyEnabled).
+		SetBalanceNotifyThresholdType(userIn.BalanceNotifyThresholdType).
+		SetNillableBalanceNotifyThreshold(userIn.BalanceNotifyThreshold).
+		SetBalanceNotifyExtraEmails(marshalExtraEmails(userIn.BalanceNotifyExtraEmails)).
+		SetTotalRecharged(userIn.TotalRecharged).
 		SetNillableReferredBy(userIn.ReferredBy).
 		Save(ctx)
 	if err != nil {
@@ -136,7 +142,7 @@ func (r *userRepository) Update(ctx context.Context, userIn *service.User) error
 		txClient = r.client
 	}
 
-	updated, err := txClient.User.UpdateOneID(userIn.ID).
+	updateOp := txClient.User.UpdateOneID(userIn.ID).
 		SetEmail(userIn.Email).
 		SetUsername(userIn.Username).
 		SetNotes(userIn.Notes).
@@ -145,7 +151,20 @@ func (r *userRepository) Update(ctx context.Context, userIn *service.User) error
 		SetBalance(userIn.Balance).
 		SetConcurrency(userIn.Concurrency).
 		SetStatus(userIn.Status).
-		Save(ctx)
+		SetBalanceNotifyEnabled(userIn.BalanceNotifyEnabled).
+		SetBalanceNotifyThresholdType(userIn.BalanceNotifyThresholdType).
+		SetNillableBalanceNotifyThreshold(userIn.BalanceNotifyThreshold).
+		SetBalanceNotifyExtraEmails(marshalExtraEmails(userIn.BalanceNotifyExtraEmails)).
+		SetTotalRecharged(userIn.TotalRecharged)
+	if userIn.ReferredBy != nil {
+		updateOp = updateOp.SetReferredBy(*userIn.ReferredBy)
+	} else {
+		updateOp = updateOp.ClearReferredBy()
+	}
+	if userIn.BalanceNotifyThreshold == nil {
+		updateOp = updateOp.ClearBalanceNotifyThreshold()
+	}
+	updated, err := updateOp.Save(ctx)
 	if err != nil {
 		return translatePersistenceError(err, service.ErrUserNotFound, service.ErrEmailExists)
 	}
@@ -225,11 +244,14 @@ func (r *userRepository) ListWithFilters(ctx context.Context, params pagination.
 		return nil, nil, err
 	}
 
-	users, err := q.
+	usersQuery := q.
 		Offset(params.Offset()).
-		Limit(params.Limit()).
-		Order(dbent.Desc(dbuser.FieldID)).
-		All(ctx)
+		Limit(params.Limit())
+	for _, order := range userListOrder(params) {
+		usersQuery = usersQuery.Order(order)
+	}
+
+	users, err := usersQuery.All(ctx)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -280,6 +302,50 @@ func (r *userRepository) ListWithFilters(ctx context.Context, params pagination.
 	}
 
 	return outUsers, paginationResultFromTotal(int64(total), params), nil
+}
+
+func userListOrder(params pagination.PaginationParams) []func(*entsql.Selector) {
+	sortBy := strings.ToLower(strings.TrimSpace(params.SortBy))
+	sortOrder := params.NormalizedSortOrder(pagination.SortOrderDesc)
+
+	var field string
+	defaultField := true
+	switch sortBy {
+	case "email":
+		field = dbuser.FieldEmail
+		defaultField = false
+	case "username":
+		field = dbuser.FieldUsername
+		defaultField = false
+	case "role":
+		field = dbuser.FieldRole
+		defaultField = false
+	case "balance":
+		field = dbuser.FieldBalance
+		defaultField = false
+	case "concurrency":
+		field = dbuser.FieldConcurrency
+		defaultField = false
+	case "status":
+		field = dbuser.FieldStatus
+		defaultField = false
+	case "created_at":
+		field = dbuser.FieldCreatedAt
+		defaultField = false
+	default:
+		field = dbuser.FieldID
+	}
+
+	if sortOrder == pagination.SortOrderAsc {
+		if defaultField && field == dbuser.FieldID {
+			return []func(*entsql.Selector){dbent.Asc(dbuser.FieldID)}
+		}
+		return []func(*entsql.Selector){dbent.Asc(field), dbent.Asc(dbuser.FieldID)}
+	}
+	if defaultField && field == dbuser.FieldID {
+		return []func(*entsql.Selector){dbent.Desc(dbuser.FieldID)}
+	}
+	return []func(*entsql.Selector){dbent.Desc(field), dbent.Desc(dbuser.FieldID)}
 }
 
 // filterUsersByAttributes returns user IDs that match ALL the given attribute filters
@@ -334,7 +400,12 @@ func (r *userRepository) filterUsersByAttributes(ctx context.Context, attrs map[
 
 func (r *userRepository) UpdateBalance(ctx context.Context, id int64, amount float64) error {
 	client := clientFromContext(ctx, r.client)
-	n, err := client.User.Update().Where(dbuser.IDEQ(id)).AddBalance(amount).Save(ctx)
+	update := client.User.Update().Where(dbuser.IDEQ(id)).AddBalance(amount)
+	// Track cumulative recharge amount for percentage-based notifications
+	if amount > 0 {
+		update = update.AddTotalRecharged(amount)
+	}
+	n, err := update.Save(ctx)
 	if err != nil {
 		return translatePersistenceError(err, service.ErrUserNotFound, nil)
 	}
@@ -499,6 +570,11 @@ func applyUserEntityToService(dst *service.User, src *dbent.User) {
 	dst.ID = src.ID
 	dst.CreatedAt = src.CreatedAt
 	dst.UpdatedAt = src.UpdatedAt
+}
+
+// marshalExtraEmails serializes notify email entries to JSON for storage.
+func marshalExtraEmails(entries []service.NotifyEmailEntry) string {
+	return service.MarshalNotifyEmails(entries)
 }
 
 // UpdateTotpSecret 更新用户的 TOTP 加密密钥

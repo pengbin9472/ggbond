@@ -284,6 +284,9 @@ export const useAppStore = defineStore('app', () => {
    * Apply settings to store state (internal helper to avoid code duplication)
    */
   function applySettings(config: PublicSettings): void {
+    if (typeof window !== 'undefined') {
+      window.__APP_CONFIG__ = { ...config }
+    }
     cachedPublicSettings.value = config
     siteName.value = config.site_name || 'GGbond'
     siteLogo.value = config.site_logo || ''
@@ -333,12 +336,19 @@ export const useAppStore = defineStore('app', () => {
         purchase_channel_url: '',
         purchase_channel_image: '',
         group_monitoring_enabled: true,
+        payment_enabled: false,
+        table_default_page_size: 20,
+        table_page_size_options: [10, 20, 50, 100],
         custom_menu_items: [],
         custom_endpoints: [],
         linuxdo_oauth_enabled: false,
-        sora_client_enabled: false,
+        oidc_oauth_enabled: false,
+        oidc_oauth_provider_name: 'OIDC',
         backend_mode_enabled: false,
-        version: siteVersion.value
+        version: siteVersion.value,
+        balance_low_notify_enabled: false,
+        account_quota_notify_enabled: false,
+        balance_low_notify_threshold: 0,
       }
     }
 

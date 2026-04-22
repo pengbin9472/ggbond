@@ -16,7 +16,7 @@ type stubAccountCatalogService struct {
 	accounts []service.Account
 }
 
-func (s *stubAccountCatalogService) ListAccounts(_ context.Context, page, pageSize int, platform, accountType, status, search string, groupID int64, privacyMode string) ([]service.Account, int64, error) {
+func (s *stubAccountCatalogService) ListAccounts(_ context.Context, page, pageSize int, platform, accountType, status, search string, groupID int64, privacyMode, sortBy, sortOrder string) ([]service.Account, int64, error) {
 	start := (page - 1) * pageSize
 	if start >= len(s.accounts) {
 		return nil, int64(len(s.accounts)), nil
@@ -31,7 +31,7 @@ func (s *stubAccountCatalogService) ListAccounts(_ context.Context, page, pageSi
 func setupUserModelCatalogRouter(accounts []service.Account) *gin.Engine {
 	gin.SetMode(gin.TestMode)
 	router := gin.New()
-	handler := NewUserHandler(nil, &stubAccountCatalogService{accounts: accounts}, service.NewBillingService(nil, nil))
+	handler := NewUserHandler(nil, &stubAccountCatalogService{accounts: accounts}, service.NewBillingService(nil, nil), nil, nil)
 	router.GET("/api/v1/models/catalog", handler.GetModelCatalog)
 	return router
 }
