@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/pengbin9472/ggbond/internal/config"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/pengbin9472/ggbond/internal/config"
 	"github.com/stretchr/testify/require"
 )
 

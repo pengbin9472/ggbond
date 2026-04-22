@@ -92,7 +92,7 @@ func initializeApplication(buildInfo handler.BuildInfo) (*Application, error) {
 		return nil, err
 	}
 	billingService := service.NewBillingService(configConfig, pricingService)
-	userHandler := handler.NewUserHandler(userService, accountCatalogService, billingService, emailService, emailCache)
+	userHandler := handler.NewUserHandler(userService, accountCatalogService, billingService, authService, emailService, emailCache)
 	apiKeyHandler := handler.NewAPIKeyHandler(apiKeyService)
 	usageLogRepository := repository.NewUsageLogRepository(client, db)
 	usageService := service.NewUsageService(usageLogRepository, userRepository, client, apiKeyAuthCacheInvalidator)
