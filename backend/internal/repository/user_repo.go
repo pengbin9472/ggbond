@@ -98,6 +98,7 @@ func (r *userRepository) Create(ctx context.Context, userIn *service.User) error
 		SetNillableLastActiveAt(userIn.LastActiveAt).
 		SetTotalRecharged(userIn.TotalRecharged).
 		SetNillableReferredBy(userIn.ReferredBy).
+		SetRpmLimit(userIn.RPMLimit).
 		Save(txCtx)
 	if err != nil {
 		return translatePersistenceError(err, nil, service.ErrEmailExists)
@@ -230,6 +231,7 @@ func (r *userRepository) Update(ctx context.Context, userIn *service.User) error
 	} else {
 		updateOp = updateOp.ClearReferredBy()
 	}
+	updateOp = updateOp.SetRpmLimit(userIn.RPMLimit)
 	if userIn.SignupSource != "" {
 		updateOp = updateOp.SetSignupSource(userIn.SignupSource)
 	}

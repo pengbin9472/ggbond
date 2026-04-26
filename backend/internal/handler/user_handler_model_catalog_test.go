@@ -31,7 +31,7 @@ func (s *stubAccountCatalogService) ListAccounts(_ context.Context, page, pageSi
 func setupUserModelCatalogRouter(accounts []service.Account) *gin.Engine {
 	gin.SetMode(gin.TestMode)
 	router := gin.New()
-	handler := NewUserHandler(nil, &stubAccountCatalogService{accounts: accounts}, service.NewBillingService(nil, nil), nil, nil, nil)
+	handler := NewUserHandler(nil, &stubAccountCatalogService{accounts: accounts}, service.NewBillingService(nil, nil), nil, nil, nil, nil)
 	router.GET("/api/v1/models/catalog", handler.GetModelCatalog)
 	return router
 }
