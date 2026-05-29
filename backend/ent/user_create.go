@@ -11,18 +11,19 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/pengbin9472/ggbond/ent/announcementread"
-	"github.com/pengbin9472/ggbond/ent/apikey"
-	"github.com/pengbin9472/ggbond/ent/authidentity"
-	"github.com/pengbin9472/ggbond/ent/group"
-	"github.com/pengbin9472/ggbond/ent/paymentorder"
-	"github.com/pengbin9472/ggbond/ent/pendingauthsession"
-	"github.com/pengbin9472/ggbond/ent/promocodeusage"
-	"github.com/pengbin9472/ggbond/ent/redeemcode"
-	"github.com/pengbin9472/ggbond/ent/usagelog"
-	"github.com/pengbin9472/ggbond/ent/user"
-	"github.com/pengbin9472/ggbond/ent/userattributevalue"
-	"github.com/pengbin9472/ggbond/ent/usersubscription"
+	"github.com/Wei-Shaw/sub2api/ent/announcementread"
+	"github.com/Wei-Shaw/sub2api/ent/apikey"
+	"github.com/Wei-Shaw/sub2api/ent/authidentity"
+	"github.com/Wei-Shaw/sub2api/ent/group"
+	"github.com/Wei-Shaw/sub2api/ent/paymentorder"
+	"github.com/Wei-Shaw/sub2api/ent/pendingauthsession"
+	"github.com/Wei-Shaw/sub2api/ent/promocodeusage"
+	"github.com/Wei-Shaw/sub2api/ent/redeemcode"
+	"github.com/Wei-Shaw/sub2api/ent/usagelog"
+	"github.com/Wei-Shaw/sub2api/ent/user"
+	"github.com/Wei-Shaw/sub2api/ent/userattributevalue"
+	"github.com/Wei-Shaw/sub2api/ent/userplatformquota"
+	"github.com/Wei-Shaw/sub2api/ent/usersubscription"
 )
 
 // UserCreate is the builder for creating a User entity.
@@ -533,6 +534,21 @@ func (_c *UserCreate) AddPendingAuthSessions(v ...*PendingAuthSession) *UserCrea
 	return _c.AddPendingAuthSessionIDs(ids...)
 }
 
+// AddPlatformQuotaIDs adds the "platform_quotas" edge to the UserPlatformQuota entity by IDs.
+func (_c *UserCreate) AddPlatformQuotaIDs(ids ...int64) *UserCreate {
+	_c.mutation.AddPlatformQuotaIDs(ids...)
+	return _c
+}
+
+// AddPlatformQuotas adds the "platform_quotas" edges to the UserPlatformQuota entity.
+func (_c *UserCreate) AddPlatformQuotas(v ...*UserPlatformQuota) *UserCreate {
+	ids := make([]int64, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddPlatformQuotaIDs(ids...)
+}
+
 // Mutation returns the UserMutation object of the builder.
 func (_c *UserCreate) Mutation() *UserMutation {
 	return _c.mutation
@@ -1034,6 +1050,22 @@ func (_c *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(pendingauthsession.FieldID, field.TypeInt64),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.PlatformQuotasIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.PlatformQuotasTable,
+			Columns: []string{user.PlatformQuotasColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(userplatformquota.FieldID, field.TypeInt64),
 			},
 		}
 		for _, k := range nodes {

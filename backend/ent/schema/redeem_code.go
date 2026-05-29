@@ -63,6 +63,10 @@ func (RedeemCode) Fields() []ent.Field {
 			Immutable().
 			Default(time.Now).
 			SchemaType(map[string]string{dialect.Postgres: "timestamptz"}),
+		field.Time("expires_at").
+			Optional().
+			Nillable().
+			SchemaType(map[string]string{dialect.Postgres: "timestamptz"}),
 		field.Int64("group_id").
 			Optional().
 			Nillable(),
@@ -93,6 +97,6 @@ func (RedeemCode) Indexes() []ent.Index {
 		index.Fields("status"),
 		index.Fields("used_by"),
 		index.Fields("group_id"),
-		index.Fields("inviter_user_id"),
+		index.Fields("expires_at"),
 	}
 }

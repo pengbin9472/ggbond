@@ -102,7 +102,7 @@ type CreateAccountRequest struct {
 	Name                    string         `json:"name" binding:"required"`
 	Notes                   *string        `json:"notes"`
 	Platform                string         `json:"platform" binding:"required"`
-	Type                    string         `json:"type" binding:"required,oneof=oauth setup-token apikey upstream bedrock"`
+	Type                    string         `json:"type" binding:"required,oneof=oauth setup-token apikey upstream bedrock service_account"`
 	Credentials             map[string]any `json:"credentials" binding:"required"`
 	Extra                   map[string]any `json:"extra"`
 	ProxyID                 *int64         `json:"proxy_id"`
@@ -121,7 +121,7 @@ type CreateAccountRequest struct {
 type UpdateAccountRequest struct {
 	Name                    string         `json:"name"`
 	Notes                   *string        `json:"notes"`
-	Type                    string         `json:"type" binding:"omitempty,oneof=oauth setup-token apikey upstream bedrock"`
+	Type                    string         `json:"type" binding:"omitempty,oneof=oauth setup-token apikey upstream bedrock service_account"`
 	Credentials             map[string]any `json:"credentials"`
 	Extra                   map[string]any `json:"extra"`
 	ProxyID                 *int64         `json:"proxy_id"`
@@ -138,19 +138,29 @@ type UpdateAccountRequest struct {
 
 // BulkUpdateAccountsRequest represents the payload for bulk editing accounts
 type BulkUpdateAccountsRequest struct {
-	AccountIDs              []int64        `json:"account_ids" binding:"required,min=1"`
-	Name                    string         `json:"name"`
-	ProxyID                 *int64         `json:"proxy_id"`
-	Concurrency             *int           `json:"concurrency"`
-	Priority                *int           `json:"priority"`
-	RateMultiplier          *float64       `json:"rate_multiplier"`
-	LoadFactor              *int           `json:"load_factor"`
-	Status                  string         `json:"status" binding:"omitempty,oneof=active inactive error"`
-	Schedulable             *bool          `json:"schedulable"`
-	GroupIDs                *[]int64       `json:"group_ids"`
-	Credentials             map[string]any `json:"credentials"`
-	Extra                   map[string]any `json:"extra"`
-	ConfirmMixedChannelRisk *bool          `json:"confirm_mixed_channel_risk"` // 用户确认混合渠道风险
+	AccountIDs              []int64                   `json:"account_ids"`
+	Filters                 *BulkUpdateAccountFilters `json:"filters"`
+	Name                    string                    `json:"name"`
+	ProxyID                 *int64                    `json:"proxy_id"`
+	Concurrency             *int                      `json:"concurrency"`
+	Priority                *int                      `json:"priority"`
+	RateMultiplier          *float64                  `json:"rate_multiplier"`
+	LoadFactor              *int                      `json:"load_factor"`
+	Status                  string                    `json:"status" binding:"omitempty,oneof=active inactive error"`
+	Schedulable             *bool                     `json:"schedulable"`
+	GroupIDs                *[]int64                  `json:"group_ids"`
+	Credentials             map[string]any            `json:"credentials"`
+	Extra                   map[string]any            `json:"extra"`
+	ConfirmMixedChannelRisk *bool                     `json:"confirm_mixed_channel_risk"` // 用户确认混合渠道风险
+}
+
+type BulkUpdateAccountFilters struct {
+	Platform    string `json:"platform"`
+	Type        string `json:"type"`
+	Status      string `json:"status"`
+	Group       string `json:"group"`
+	Search      string `json:"search"`
+	PrivacyMode string `json:"privacy_mode"`
 }
 
 // CheckMixedChannelRequest represents check mixed channel risk request
@@ -550,6 +560,10 @@ func (h *AccountHandler) Create(c *gin.Context) {
 	// 确定是否跳过混合渠道检查
 	skipCheck := req.ConfirmMixedChannelRisk != nil && *req.ConfirmMixedChannelRisk
 
+	// 捕获闭包内创建的账号引用，用于创建成功后触发异步探测。
+	// 幂等重放时闭包不会执行 → createdAccount 为 nil → 不重复调度。
+	var createdAccount *service.Account
+
 	result, err := executeAdminIdempotent(c, "admin.accounts.create", req, service.DefaultWriteIdempotencyTTL(), func(ctx context.Context) (any, error) {
 		account, execErr := h.adminService.CreateAccount(ctx, &service.CreateAccountInput{
 			Name:                  req.Name,
@@ -571,6 +585,7 @@ func (h *AccountHandler) Create(c *gin.Context) {
 		if execErr != nil {
 			return nil, execErr
 		}
+		createdAccount = account
 		// Antigravity OAuth: 新账号直接设置隐私
 		h.adminService.ForceAntigravityPrivacy(ctx, account)
 		// OpenAI OAuth: 新账号直接设置隐私
@@ -599,6 +614,9 @@ func (h *AccountHandler) Create(c *gin.Context) {
 	if result != nil && result.Replayed {
 		c.Header("X-Idempotency-Replayed", "true")
 	}
+	// OpenAI APIKey 账号创建后异步探测上游 /v1/responses 能力。
+	// 探测失败不影响账号创建响应。
+	h.scheduleOpenAIResponsesProbe(createdAccount)
 	response.Success(c, result.Data)
 }
 
@@ -659,7 +677,37 @@ func (h *AccountHandler) Update(c *gin.Context) {
 		return
 	}
 
+	// OpenAI APIKey: credentials 修改后重新探测上游能力（base_url/api_key 可能变更）。
+	// 异步执行，探测失败不影响账号更新响应。
+	if len(req.Credentials) > 0 {
+		h.scheduleOpenAIResponsesProbe(account)
+	}
+
 	response.Success(c, h.buildAccountResponseWithRuntime(c.Request.Context(), account))
+}
+
+// scheduleOpenAIResponsesProbe 异步触发 OpenAI APIKey 账号的 Responses API 能力探测。
+//
+// 仅对 platform=openai && type=apikey 账号生效；其他账号无操作。
+// 探测本身在 goroutine 中执行（会发一次 HTTP 请求到上游），不会阻塞
+// 当前请求。探测错误仅记录日志，不向上下文传播：探测失败时标记保持缺失，
+// 网关会按"现状即证据"默认走 Responses。
+func (h *AccountHandler) scheduleOpenAIResponsesProbe(account *service.Account) {
+	if account == nil || account.Platform != service.PlatformOpenAI || account.Type != service.AccountTypeAPIKey {
+		return
+	}
+	if h.accountTestService == nil {
+		return
+	}
+	accountID := account.ID
+	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				slog.Error("openai_responses_probe_panic", "account_id", accountID, "recover", r)
+			}
+		}()
+		h.accountTestService.ProbeOpenAIAPIKeyResponsesSupport(context.Background(), accountID)
+	}()
 }
 
 // Delete handles deleting an account
@@ -965,6 +1013,100 @@ func (h *AccountHandler) Refresh(c *gin.Context) {
 	response.Success(c, h.buildAccountResponseWithRuntime(c.Request.Context(), updatedAccount))
 }
 
+// ApplyOAuthCredentialsRequest is the payload for persisting re-authorized OAuth credentials.
+type ApplyOAuthCredentialsRequest struct {
+	Type        string         `json:"type" binding:"required,oneof=oauth setup-token"`
+	Credentials map[string]any `json:"credentials" binding:"required"`
+	Extra       map[string]any `json:"extra"`
+}
+
+// ApplyOAuthCredentials 将"重新授权"得到的新凭据原子落库。
+// POST /api/v1/admin/accounts/:id/apply-oauth-credentials
+//
+// 与通用 PUT /:id (Update) 接口的关键区别：
+//   - 仅接收 type / credentials / extra 三个字段（不接受 concurrency / rpm / quota_* 等可能误传的字段）
+//   - Extra 走 UpdateAccountExtra(JSONB key 级合并)，**绝不**全量覆盖；
+//     避免 base_rpm / window_cost_limit / max_sessions / quota_* / privacy_mode
+//     等持久化配置在重新授权后丢失
+//   - 内置 ClearError + InvalidateToken，避免前端额外两次调用，
+//     并修复旧路径未失效 token 缓存导致重新授权后立即 401 的隐性 bug
+//
+// 与 /refresh 的区别：/refresh 用现有 refresh_token 换 access_token（无用户交互），
+// 本接口承接前端完成完整 OAuth 流程后的落库步骤。
+func (h *AccountHandler) ApplyOAuthCredentials(c *gin.Context) {
+	accountID, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil {
+		response.BadRequest(c, "Invalid account ID")
+		return
+	}
+
+	var req ApplyOAuthCredentialsRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "Invalid request: "+err.Error())
+		return
+	}
+
+	ctx := c.Request.Context()
+
+	// 预检查账号存在 + OAuth 类型（与 Refresh handler 语义一致，提供更友好的错误信息）。
+	existing, err := h.adminService.GetAccount(ctx, accountID)
+	if err != nil {
+		response.NotFound(c, "Account not found")
+		return
+	}
+	if !existing.IsOAuth() {
+		response.ErrorFrom(c, infraerrors.BadRequest("NOT_OAUTH", "cannot apply oauth credentials to non-OAuth account"))
+		return
+	}
+
+	updatedAccount, err := h.adminService.UpdateAccount(ctx, accountID, &service.UpdateAccountInput{
+		Type:        req.Type,
+		Credentials: req.Credentials,
+	})
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+
+	// 增量合并 Extra（JSONB key 级 merge，绝不覆盖 base_rpm / window_cost_limit /
+	// max_sessions / quota_* / privacy_mode 等持久化键）。
+	// best-effort：失败仅记日志；下方 ClearAccountError 会从 DB 重新读取最新 account，
+	// 因此响应里的 extra 始终以 DB 为准——这里不需要手动维护内存快照。
+	if len(req.Extra) > 0 {
+		if extraErr := h.adminService.UpdateAccountExtra(ctx, accountID, req.Extra); extraErr != nil {
+			extraKeys := make([]string, 0, len(req.Extra))
+			for k := range req.Extra {
+				extraKeys = append(extraKeys, k)
+			}
+			slog.Error("apply_oauth_credentials.update_extra_failed",
+				"account_id", accountID,
+				"extra_keys", extraKeys,
+				"err", extraErr,
+			)
+		}
+	}
+
+	if cleared, clearErr := h.adminService.ClearAccountError(ctx, accountID); clearErr != nil {
+		slog.Warn("apply_oauth_credentials.clear_error_failed",
+			"account_id", accountID,
+			"err", clearErr,
+		)
+	} else if cleared != nil {
+		updatedAccount = cleared
+	}
+
+	if h.tokenCacheInvalidator != nil && updatedAccount.IsOAuth() {
+		if invalidateErr := h.tokenCacheInvalidator.InvalidateToken(ctx, updatedAccount); invalidateErr != nil {
+			slog.Warn("apply_oauth_credentials.invalidate_token_failed",
+				"account_id", accountID,
+				"err", invalidateErr,
+			)
+		}
+	}
+
+	response.Success(c, h.buildAccountResponseWithRuntime(ctx, updatedAccount))
+}
+
 // GetStats handles getting account statistics
 // GET /api/v1/admin/accounts/:id/stats
 func (h *AccountHandler) GetStats(c *gin.Context) {
@@ -1253,6 +1395,8 @@ func (h *AccountHandler) BatchCreate(c *gin.Context) {
 					openaiPrivacyAccounts = append(openaiPrivacyAccounts, account)
 				}
 			}
+			// OpenAI APIKey 账号异步探测 /v1/responses 能力。
+			h.scheduleOpenAIResponsesProbe(account)
 			success++
 			results = append(results, gin.H{
 				"name":    item.Name,
@@ -1401,6 +1545,10 @@ func (h *AccountHandler) BulkUpdate(c *gin.Context) {
 		response.BadRequest(c, "rate_multiplier must be >= 0")
 		return
 	}
+	if len(req.AccountIDs) == 0 && req.Filters == nil {
+		response.BadRequest(c, "account_ids or filters is required")
+		return
+	}
 	// base_rpm 输入校验：负值归零，超过 10000 截断
 	sanitizeExtraBaseRPM(req.Extra)
 
@@ -1426,6 +1574,7 @@ func (h *AccountHandler) BulkUpdate(c *gin.Context) {
 
 	result, err := h.adminService.BulkUpdateAccounts(c.Request.Context(), &service.BulkUpdateAccountsInput{
 		AccountIDs:            req.AccountIDs,
+		Filters:               toServiceBulkUpdateAccountFilters(req.Filters),
 		Name:                  req.Name,
 		ProxyID:               req.ProxyID,
 		Concurrency:           req.Concurrency,
@@ -1459,6 +1608,20 @@ func (h *AccountHandler) BulkUpdate(c *gin.Context) {
 	}
 
 	response.Success(c, result)
+}
+
+func toServiceBulkUpdateAccountFilters(filters *BulkUpdateAccountFilters) *service.BulkUpdateAccountFilters {
+	if filters == nil {
+		return nil
+	}
+	return &service.BulkUpdateAccountFilters{
+		Platform:    filters.Platform,
+		Type:        filters.Type,
+		Status:      filters.Status,
+		Group:       filters.Group,
+		Search:      filters.Search,
+		PrivacyMode: filters.PrivacyMode,
+	}
 }
 
 // ========== OAuth Handlers ==========
@@ -1606,7 +1769,7 @@ func (h *OAuthHandler) SetupTokenCookieAuth(c *gin.Context) {
 }
 
 // GetUsage handles getting account usage information
-// GET /api/v1/admin/accounts/:id/usage?source=passive|active
+// GET /api/v1/admin/accounts/:id/usage?source=passive|active&force=true
 func (h *AccountHandler) GetUsage(c *gin.Context) {
 	accountID, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
@@ -1615,12 +1778,13 @@ func (h *AccountHandler) GetUsage(c *gin.Context) {
 	}
 
 	source := c.DefaultQuery("source", "active")
+	force := c.Query("force") == "true"
 
 	var usage *service.UsageInfo
 	if source == "passive" {
 		usage, err = h.accountUsageService.GetPassiveUsage(c.Request.Context(), accountID)
 	} else {
-		usage, err = h.accountUsageService.GetUsage(c.Request.Context(), accountID)
+		usage, err = h.accountUsageService.GetUsage(c.Request.Context(), accountID, force)
 	}
 	if err != nil {
 		response.ErrorFrom(c, err)
@@ -1957,316 +2121,46 @@ func (h *AccountHandler) GetAvailableModels(c *gin.Context) {
 	response.Success(c, models)
 }
 
-// GetModelCatalog handles the admin platform-wide model catalog.
-// GET /api/v1/admin/accounts/models/catalog
-func (h *AccountHandler) GetModelCatalog(c *gin.Context) {
-	const pageSize = 500
-
-	accumulators := make(map[string]*modelCatalogAccumulator)
-	page := 1
-
-	for {
-		accounts, total, err := h.adminService.ListAccounts(c.Request.Context(), page, pageSize, "", "", "", "", 0, "", "", "")
-		if err != nil {
-			response.ErrorFrom(c, err)
-			return
-		}
-
-		for i := range accounts {
-			account := &accounts[i]
-			for _, modelID := range h.accountAvailableModelIDs(account) {
-				h.mergeModelCatalogEntry(accumulators, account, modelID)
-			}
-		}
-
-		if len(accounts) < pageSize || int64(page*pageSize) >= total {
-			break
-		}
-		page++
-	}
-
-	models := make([]adminModelCatalogEntry, 0, len(accumulators))
-	for _, acc := range accumulators {
-		acc.entry.AccountCount = len(acc.accountSet)
-		acc.entry.GroupCount = len(acc.groupSet)
-		acc.entry.AccountIDs = sortedInt64Keys(acc.accountSet)
-		acc.entry.GroupIDs = sortedInt64Keys(acc.groupSet)
-		models = append(models, acc.entry)
-	}
-
-	sort.Slice(models, func(i, j int) bool {
-		if models[i].Platform != models[j].Platform {
-			return models[i].Platform < models[j].Platform
-		}
-		return models[i].ID < models[j].ID
-	})
-
-	response.Success(c, adminModelCatalogResponse{
-		Models: models,
-		Total:  len(models),
-	})
-}
-
-func (h *AccountHandler) accountAvailableModelIDs(account *service.Account) []string {
-	if account == nil {
-		return nil
-	}
-
-	if account.IsOpenAI() {
-		if account.IsOpenAIPassthroughEnabled() {
-			return openAIModelIDs(openai.DefaultModels)
-		}
-		if models := whitelistOrMappedModels(account); len(models) > 0 {
-			return models
-		}
-		return openAIModelIDs(openai.DefaultModels)
-	}
-
-	if account.IsGemini() {
-		if !account.IsOAuth() {
-			if models := whitelistOrMappedModels(account); len(models) > 0 {
-				return models
-			}
-		}
-		return geminiModelIDs(geminicli.DefaultModels)
-	}
-
-	if account.Platform == service.PlatformAntigravity {
-		if models := whitelistOrMappedModels(account); len(models) > 0 {
-			return models
-		}
-		return antigravityModelIDs(antigravity.DefaultModels())
-	}
-
-	if account.Platform == service.PlatformSora {
-		if models := whitelistOrMappedModels(account); len(models) > 0 {
-			return models
-		}
-		return soraModelIDs(service.DefaultSoraModels(nil))
-	}
-
-	if account.IsOAuth() {
-		if models := whitelistOrMappedModels(account); len(models) > 0 {
-			return models
-		}
-		return claudeModelIDs(claude.DefaultModels)
-	}
-
-	if models := whitelistOrMappedModels(account); len(models) > 0 {
-		return models
-	}
-	return claudeModelIDs(claude.DefaultModels)
-}
-
-func (h *AccountHandler) mergeModelCatalogEntry(accumulators map[string]*modelCatalogAccumulator, account *service.Account, modelID string) {
-	if strings.TrimSpace(modelID) == "" || account == nil {
+// SyncUpstreamModels handles syncing live supported models from an account's upstream.
+// POST /api/v1/admin/accounts/:id/models/sync-upstream
+func (h *AccountHandler) SyncUpstreamModels(c *gin.Context) {
+	accountID, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil {
+		response.BadRequest(c, "Invalid account ID")
 		return
 	}
 
-	item, ok := accumulators[modelID]
-	if !ok {
-		item = &modelCatalogAccumulator{
-			entry: adminModelCatalogEntry{
-				ID:          modelID,
-				DisplayName: modelID,
-				Type:        "model",
-				Platform:    inferModelPlatform(modelID, account.Platform),
-			},
-			accountSet: make(map[int64]struct{}),
-			groupSet:   make(map[int64]struct{}),
-		}
-		if pricing, err := h.lookupModelPricing(modelID); err == nil && pricing != nil {
-			item.entry.InputPrice = floatPtr(pricing.InputPricePerToken * 1_000_000)
-			item.entry.OutputPrice = floatPtr(pricing.OutputPricePerToken * 1_000_000)
-			item.entry.CacheWritePrice = floatPtr(pricing.CacheCreationPricePerToken * 1_000_000)
-			item.entry.CacheReadPrice = floatPtr(pricing.CacheReadPricePerToken * 1_000_000)
-			item.entry.ImageOutputPrice = floatPtr(pricing.ImageOutputPricePerToken * 1_000_000)
-		} else {
-			item.entry.PricingFallback = true
-		}
-		accumulators[modelID] = item
+	account, err := h.adminService.GetAccount(c.Request.Context(), accountID)
+	if err != nil {
+		response.NotFound(c, "Account not found")
+		return
 	}
 
-	item.accountSet[account.ID] = struct{}{}
-	for _, groupID := range account.GroupIDs {
-		if groupID > 0 {
-			item.groupSet[groupID] = struct{}{}
-		}
+	if h.accountTestService == nil {
+		response.InternalError(c, "Account test service is not configured")
+		return
 	}
-}
 
-func (h *AccountHandler) lookupModelPricing(modelID string) (*service.ModelPricing, error) {
-	if h.billingService == nil {
-		return nil, fmt.Errorf("billing service unavailable")
-	}
-	return h.billingService.GetModelPricing(modelID)
-}
-
-func sortedModelMappingKeys(mapping map[string]string) []string {
-	keys := make([]string, 0, len(mapping))
-	for model := range mapping {
-		keys = append(keys, model)
-	}
-	sort.Strings(keys)
-	return keys
-}
-
-func whitelistOrMappedModels(account *service.Account) []string {
-	if account == nil {
-		return nil
-	}
-	// Priority 1: explicit whitelist (legacy model_whitelist + identity mappings).
-	whitelist := explicitWhitelistModels(account)
-	if len(whitelist) > 0 {
-		return whitelist
-	}
-	// Priority 2: fallback to mapping targets.
-	return mappedTargetModels(account)
-}
-
-func explicitWhitelistModels(account *service.Account) []string {
-	result := make(map[string]struct{})
-
-	if account != nil && account.Credentials != nil {
-		// Backward compatibility: legacy model_whitelist field.
-		if raw, ok := account.Credentials["model_whitelist"]; ok {
-			switch v := raw.(type) {
-			case []string:
-				for _, model := range v {
-					model = strings.TrimSpace(model)
-					if model == "" || strings.Contains(model, "*") {
-						continue
-					}
-					result[model] = struct{}{}
-				}
-			case []any:
-				for _, item := range v {
-					model, ok := item.(string)
-					if !ok {
-						continue
-					}
-					model = strings.TrimSpace(model)
-					if model == "" || strings.Contains(model, "*") {
-						continue
-					}
-					result[model] = struct{}{}
-				}
+	models, err := h.accountTestService.FetchUpstreamSupportedModels(c.Request.Context(), account)
+	if err != nil {
+		var syncErr *service.UpstreamModelSyncError
+		if errors.As(err, &syncErr) {
+			switch syncErr.Kind {
+			case service.UpstreamModelSyncErrorConfiguration, service.UpstreamModelSyncErrorUnsupported:
+				response.BadRequest(c, syncErr.SafeMessage())
+			default:
+				slog.Warn("sync_upstream_models_failed", "account_id", accountID, "kind", syncErr.Kind)
+				response.Error(c, http.StatusBadGateway, syncErr.SafeMessage())
 			}
+			return
 		}
+
+		slog.Warn("sync_upstream_models_failed", "account_id", accountID)
+		response.Error(c, http.StatusBadGateway, "Failed to sync upstream models from upstream")
+		return
 	}
 
-	// Current encoding for whitelist mode: model_mapping with exact identity pairs.
-	for from, to := range account.GetModelMapping() {
-		from = strings.TrimSpace(from)
-		to = strings.TrimSpace(to)
-		if from == "" || to == "" {
-			continue
-		}
-		if strings.Contains(from, "*") || strings.Contains(to, "*") {
-			continue
-		}
-		if from == to {
-			result[from] = struct{}{}
-		}
-	}
-
-	return sortedStringKeys(result)
-}
-
-func mappedTargetModels(account *service.Account) []string {
-	result := make(map[string]struct{})
-	for _, to := range account.GetModelMapping() {
-		to = strings.TrimSpace(to)
-		if to == "" || strings.Contains(to, "*") {
-			continue
-		}
-		result[to] = struct{}{}
-	}
-	return sortedStringKeys(result)
-}
-
-func sortedStringKeys(values map[string]struct{}) []string {
-	if len(values) == 0 {
-		return nil
-	}
-	out := make([]string, 0, len(values))
-	for key := range values {
-		out = append(out, key)
-	}
-	sort.Strings(out)
-	return out
-}
-
-func claudeModelIDs(models []claude.Model) []string {
-	ids := make([]string, 0, len(models))
-	for _, model := range models {
-		ids = append(ids, model.ID)
-	}
-	return ids
-}
-
-func geminiModelIDs(models []geminicli.Model) []string {
-	ids := make([]string, 0, len(models))
-	for _, model := range models {
-		ids = append(ids, model.ID)
-	}
-	return ids
-}
-
-func openAIModelIDs(models []openai.Model) []string {
-	ids := make([]string, 0, len(models))
-	for _, model := range models {
-		ids = append(ids, model.ID)
-	}
-	return ids
-}
-
-func antigravityModelIDs(models []antigravity.ClaudeModel) []string {
-	ids := make([]string, 0, len(models))
-	for _, model := range models {
-		ids = append(ids, model.ID)
-	}
-	return ids
-}
-
-func soraModelIDs(models []openai.Model) []string {
-	ids := make([]string, 0, len(models))
-	for _, model := range models {
-		ids = append(ids, model.ID)
-	}
-	return ids
-}
-
-func inferModelPlatform(modelID string, fallback string) string {
-	lower := strings.ToLower(strings.TrimSpace(modelID))
-	switch {
-	case strings.HasPrefix(lower, "claude"):
-		return service.PlatformAnthropic
-	case strings.HasPrefix(lower, "gpt"), strings.HasPrefix(lower, "o1"), strings.HasPrefix(lower, "o3"), strings.HasPrefix(lower, "o4"), strings.HasPrefix(lower, "chatgpt"):
-		return service.PlatformOpenAI
-	case strings.HasPrefix(lower, "gemini"):
-		return service.PlatformGemini
-	case strings.HasPrefix(lower, "sora"), strings.HasPrefix(lower, "gpt-image"), strings.HasPrefix(lower, "prompt-enhance"):
-		return service.PlatformSora
-	default:
-		return fallback
-	}
-}
-
-func sortedInt64Keys(values map[int64]struct{}) []int64 {
-	if len(values) == 0 {
-		return nil
-	}
-	ids := make([]int64, 0, len(values))
-	for id := range values {
-		ids = append(ids, id)
-	}
-	sort.Slice(ids, func(i, j int) bool { return ids[i] < ids[j] })
-	return ids
-}
-
-func floatPtr(v float64) *float64 {
-	return &v
+	response.Success(c, gin.H{"models": models})
 }
 
 // SetPrivacy handles setting privacy for a single OpenAI/Antigravity OAuth account

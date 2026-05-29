@@ -5,15 +5,13 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+	"time"
 
-	"github.com/pengbin9472/ggbond/internal/handler/dto"
-	"github.com/pengbin9472/ggbond/internal/pkg/antigravity"
-	"github.com/pengbin9472/ggbond/internal/pkg/claude"
-	"github.com/pengbin9472/ggbond/internal/pkg/geminicli"
-	"github.com/pengbin9472/ggbond/internal/pkg/openai"
-	"github.com/pengbin9472/ggbond/internal/pkg/response"
-	middleware2 "github.com/pengbin9472/ggbond/internal/server/middleware"
-	"github.com/pengbin9472/ggbond/internal/service"
+	"github.com/Wei-Shaw/sub2api/internal/handler/dto"
+	"github.com/Wei-Shaw/sub2api/internal/handler/quotaview"
+	"github.com/Wei-Shaw/sub2api/internal/pkg/response"
+	middleware2 "github.com/Wei-Shaw/sub2api/internal/server/middleware"
+	"github.com/Wei-Shaw/sub2api/internal/service"
 
 	"github.com/gin-gonic/gin"
 )
@@ -25,12 +23,11 @@ type accountCatalogService interface {
 // UserHandler handles user-related requests
 type UserHandler struct {
 	userService           *service.UserService
-	accountCatalogService accountCatalogService
-	billingService        *service.BillingService
 	authService           *service.AuthService
 	emailService          *service.EmailService
 	emailCache            service.EmailCache
 	affiliateService      *service.AffiliateService
+	userPlatformQuotaRepo service.UserPlatformQuotaRepository
 }
 
 // NewUserHandler creates a new UserHandler
@@ -42,42 +39,42 @@ func NewUserHandler(
 	emailService *service.EmailService,
 	emailCache service.EmailCache,
 	affiliateService *service.AffiliateService,
+	userPlatformQuotaRepo service.UserPlatformQuotaRepository,
 ) *UserHandler {
 	return &UserHandler{
 		userService:           userService,
-		accountCatalogService: accountCatalogService,
-		billingService:        billingService,
 		authService:           authService,
 		emailService:          emailService,
 		emailCache:            emailCache,
 		affiliateService:      affiliateService,
+		userPlatformQuotaRepo: userPlatformQuotaRepo,
 	}
 }
 
-type modelCatalogEntry struct {
-	ID               string   `json:"id"`
-	DisplayName      string   `json:"display_name"`
-	Type             string   `json:"type"`
-	Platform         string   `json:"platform"`
-	InputPrice       *float64 `json:"input_price,omitempty"`
-	OutputPrice      *float64 `json:"output_price,omitempty"`
-	CacheWritePrice  *float64 `json:"cache_write_price,omitempty"`
-	CacheReadPrice   *float64 `json:"cache_read_price,omitempty"`
-	ImageOutputPrice *float64 `json:"image_output_price,omitempty"`
-	AccountCount     int      `json:"account_count"`
-	GroupCount       int      `json:"group_count"`
-	PricingFallback  bool     `json:"pricing_fallback"`
-}
-
-type modelCatalogResponse struct {
-	Models []modelCatalogEntry `json:"models"`
-	Total  int                 `json:"total"`
-}
-
-type modelCatalogAccumulator struct {
-	entry      modelCatalogEntry
-	accountSet map[int64]struct{}
-	groupSet   map[int64]struct{}
+// GetMyPlatformQuotas GET /user/platform-quotas
+// 返回当前 JWT 用户的 platform quota 状态。
+// D14: 对每条记录逐档判断窗口过期，过期档位 usage=0、window_resets_at=null（不写 DB）
+func (h *UserHandler) GetMyPlatformQuotas(c *gin.Context) {
+	subject, ok := middleware2.GetAuthSubjectFromContext(c)
+	if !ok {
+		response.Unauthorized(c, "User not authenticated")
+		return
+	}
+	if h.userPlatformQuotaRepo == nil {
+		response.Success(c, map[string]any{"platform_quotas": []any{}})
+		return
+	}
+	records, err := h.userPlatformQuotaRepo.ListByUser(c.Request.Context(), subject.UserID)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	now := time.Now().UTC()
+	out := make([]map[string]any, 0, len(records))
+	for _, r := range records {
+		out = append(out, quotaview.LazyZeroQuotaForResponse(r, now, false))
+	}
+	response.Success(c, map[string]any{"platform_quotas": out})
 }
 
 // ChangePasswordRequest represents the change password request payload
@@ -109,6 +106,7 @@ type userProfileResponse struct {
 	LinuxDoBound      bool                                   `json:"linuxdo_bound"`
 	OIDCBound         bool                                   `json:"oidc_bound"`
 	WeChatBound       bool                                   `json:"wechat_bound"`
+	DingTalkBound     bool                                   `json:"dingtalk_bound"`
 }
 
 type userProfileSourceContext struct {
@@ -376,7 +374,7 @@ func (h *UserHandler) SendEmailBindingCode(c *gin.Context) {
 		return
 	}
 
-	if err := h.authService.SendEmailIdentityBindCode(c.Request.Context(), subject.UserID, req.Email); err != nil {
+	if err := h.authService.SendEmailIdentityBindCode(c.Request.Context(), subject.UserID, req.Email, c.GetHeader("Accept-Language")); err != nil {
 		response.ErrorFrom(c, err)
 		return
 	}
@@ -696,7 +694,7 @@ func (h *UserHandler) SendNotifyEmailCode(c *gin.Context) {
 		return
 	}
 
-	err := h.userService.SendNotifyEmailCode(c.Request.Context(), subject.UserID, req.Email, h.emailService, h.emailCache)
+	err := h.userService.SendNotifyEmailCode(c.Request.Context(), subject.UserID, req.Email, h.emailService, h.emailCache, c.GetHeader("Accept-Language"))
 	if err != nil {
 		response.ErrorFrom(c, err)
 		return
@@ -862,15 +860,17 @@ func userProfileResponseFromService(user *service.User, identities service.UserI
 		LinuxDoBound:      identities.LinuxDo.Bound,
 		OIDCBound:         identities.OIDC.Bound,
 		WeChatBound:       identities.WeChat.Bound,
+		DingTalkBound:     identities.DingTalk.Bound,
 	}
 }
 
 func userProfileBindingMap(identities service.UserIdentitySummarySet) map[string]service.UserIdentitySummary {
 	return map[string]service.UserIdentitySummary{
-		"email":   identities.Email,
-		"linuxdo": identities.LinuxDo,
-		"oidc":    identities.OIDC,
-		"wechat":  identities.WeChat,
+		"email":    identities.Email,
+		"linuxdo":  identities.LinuxDo,
+		"oidc":     identities.OIDC,
+		"wechat":   identities.WeChat,
+		"dingtalk": identities.DingTalk,
 	}
 }
 
@@ -919,7 +919,7 @@ func inferUserProfileSources(user *service.User, identities service.UserIdentity
 
 func thirdPartyIdentityProviders(identities service.UserIdentitySummarySet) []service.UserIdentitySummary {
 	out := make([]service.UserIdentitySummary, 0, 3)
-	for _, summary := range []service.UserIdentitySummary{identities.LinuxDo, identities.OIDC, identities.WeChat} {
+	for _, summary := range []service.UserIdentitySummary{identities.LinuxDo, identities.OIDC, identities.WeChat, identities.DingTalk} {
 		if summary.Bound {
 			out = append(out, summary)
 		}

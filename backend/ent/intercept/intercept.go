@@ -7,43 +7,43 @@ import (
 	"fmt"
 
 	"entgo.io/ent/dialect/sql"
-	"github.com/pengbin9472/ggbond/ent"
-	"github.com/pengbin9472/ggbond/ent/account"
-	"github.com/pengbin9472/ggbond/ent/accountgroup"
-	"github.com/pengbin9472/ggbond/ent/announcement"
-	"github.com/pengbin9472/ggbond/ent/announcementread"
-	"github.com/pengbin9472/ggbond/ent/apikey"
-	"github.com/pengbin9472/ggbond/ent/authidentity"
-	"github.com/pengbin9472/ggbond/ent/authidentitychannel"
-	"github.com/pengbin9472/ggbond/ent/channelmonitor"
-	"github.com/pengbin9472/ggbond/ent/channelmonitordailyrollup"
-	"github.com/pengbin9472/ggbond/ent/channelmonitorhistory"
-	"github.com/pengbin9472/ggbond/ent/channelmonitorrequesttemplate"
-	"github.com/pengbin9472/ggbond/ent/errorpassthroughrule"
-	"github.com/pengbin9472/ggbond/ent/group"
-	"github.com/pengbin9472/ggbond/ent/idempotencyrecord"
-	"github.com/pengbin9472/ggbond/ent/identityadoptiondecision"
-	"github.com/pengbin9472/ggbond/ent/paymentauditlog"
-	"github.com/pengbin9472/ggbond/ent/paymentorder"
-	"github.com/pengbin9472/ggbond/ent/paymentproviderinstance"
-	"github.com/pengbin9472/ggbond/ent/pendingauthsession"
-	"github.com/pengbin9472/ggbond/ent/predicate"
-	"github.com/pengbin9472/ggbond/ent/promocode"
-	"github.com/pengbin9472/ggbond/ent/promocodeusage"
-	"github.com/pengbin9472/ggbond/ent/proxy"
-	"github.com/pengbin9472/ggbond/ent/redeemcode"
-	"github.com/pengbin9472/ggbond/ent/referralreward"
-	"github.com/pengbin9472/ggbond/ent/securitysecret"
-	"github.com/pengbin9472/ggbond/ent/setting"
-	"github.com/pengbin9472/ggbond/ent/subscriptionplan"
-	"github.com/pengbin9472/ggbond/ent/tlsfingerprintprofile"
-	"github.com/pengbin9472/ggbond/ent/usagecleanuptask"
-	"github.com/pengbin9472/ggbond/ent/usagelog"
-	"github.com/pengbin9472/ggbond/ent/user"
-	"github.com/pengbin9472/ggbond/ent/userallowedgroup"
-	"github.com/pengbin9472/ggbond/ent/userattributedefinition"
-	"github.com/pengbin9472/ggbond/ent/userattributevalue"
-	"github.com/pengbin9472/ggbond/ent/usersubscription"
+	"github.com/Wei-Shaw/sub2api/ent"
+	"github.com/Wei-Shaw/sub2api/ent/account"
+	"github.com/Wei-Shaw/sub2api/ent/accountgroup"
+	"github.com/Wei-Shaw/sub2api/ent/announcement"
+	"github.com/Wei-Shaw/sub2api/ent/announcementread"
+	"github.com/Wei-Shaw/sub2api/ent/apikey"
+	"github.com/Wei-Shaw/sub2api/ent/authidentity"
+	"github.com/Wei-Shaw/sub2api/ent/authidentitychannel"
+	"github.com/Wei-Shaw/sub2api/ent/channelmonitor"
+	"github.com/Wei-Shaw/sub2api/ent/channelmonitordailyrollup"
+	"github.com/Wei-Shaw/sub2api/ent/channelmonitorhistory"
+	"github.com/Wei-Shaw/sub2api/ent/channelmonitorrequesttemplate"
+	"github.com/Wei-Shaw/sub2api/ent/errorpassthroughrule"
+	"github.com/Wei-Shaw/sub2api/ent/group"
+	"github.com/Wei-Shaw/sub2api/ent/idempotencyrecord"
+	"github.com/Wei-Shaw/sub2api/ent/identityadoptiondecision"
+	"github.com/Wei-Shaw/sub2api/ent/paymentauditlog"
+	"github.com/Wei-Shaw/sub2api/ent/paymentorder"
+	"github.com/Wei-Shaw/sub2api/ent/paymentproviderinstance"
+	"github.com/Wei-Shaw/sub2api/ent/pendingauthsession"
+	"github.com/Wei-Shaw/sub2api/ent/predicate"
+	"github.com/Wei-Shaw/sub2api/ent/promocode"
+	"github.com/Wei-Shaw/sub2api/ent/promocodeusage"
+	"github.com/Wei-Shaw/sub2api/ent/proxy"
+	"github.com/Wei-Shaw/sub2api/ent/redeemcode"
+	"github.com/Wei-Shaw/sub2api/ent/securitysecret"
+	"github.com/Wei-Shaw/sub2api/ent/setting"
+	"github.com/Wei-Shaw/sub2api/ent/subscriptionplan"
+	"github.com/Wei-Shaw/sub2api/ent/tlsfingerprintprofile"
+	"github.com/Wei-Shaw/sub2api/ent/usagecleanuptask"
+	"github.com/Wei-Shaw/sub2api/ent/usagelog"
+	"github.com/Wei-Shaw/sub2api/ent/user"
+	"github.com/Wei-Shaw/sub2api/ent/userallowedgroup"
+	"github.com/Wei-Shaw/sub2api/ent/userattributedefinition"
+	"github.com/Wei-Shaw/sub2api/ent/userattributevalue"
+	"github.com/Wei-Shaw/sub2api/ent/userplatformquota"
+	"github.com/Wei-Shaw/sub2api/ent/usersubscription"
 )
 
 // The Query interface represents an operation that queries a graph.
@@ -1020,6 +1020,33 @@ func (f TraverseUserAttributeValue) Traverse(ctx context.Context, q ent.Query) e
 	return fmt.Errorf("unexpected query type %T. expect *ent.UserAttributeValueQuery", q)
 }
 
+// The UserPlatformQuotaFunc type is an adapter to allow the use of ordinary function as a Querier.
+type UserPlatformQuotaFunc func(context.Context, *ent.UserPlatformQuotaQuery) (ent.Value, error)
+
+// Query calls f(ctx, q).
+func (f UserPlatformQuotaFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.UserPlatformQuotaQuery); ok {
+		return f(ctx, q)
+	}
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.UserPlatformQuotaQuery", q)
+}
+
+// The TraverseUserPlatformQuota type is an adapter to allow the use of ordinary function as Traverser.
+type TraverseUserPlatformQuota func(context.Context, *ent.UserPlatformQuotaQuery) error
+
+// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
+func (f TraverseUserPlatformQuota) Intercept(next ent.Querier) ent.Querier {
+	return next
+}
+
+// Traverse calls f(ctx, q).
+func (f TraverseUserPlatformQuota) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.UserPlatformQuotaQuery); ok {
+		return f(ctx, q)
+	}
+	return fmt.Errorf("unexpected query type %T. expect *ent.UserPlatformQuotaQuery", q)
+}
+
 // The UserSubscriptionFunc type is an adapter to allow the use of ordinary function as a Querier.
 type UserSubscriptionFunc func(context.Context, *ent.UserSubscriptionQuery) (ent.Value, error)
 
@@ -1118,6 +1145,8 @@ func NewQuery(q ent.Query) (Query, error) {
 		return &query[*ent.UserAttributeDefinitionQuery, predicate.UserAttributeDefinition, userattributedefinition.OrderOption]{typ: ent.TypeUserAttributeDefinition, tq: q}, nil
 	case *ent.UserAttributeValueQuery:
 		return &query[*ent.UserAttributeValueQuery, predicate.UserAttributeValue, userattributevalue.OrderOption]{typ: ent.TypeUserAttributeValue, tq: q}, nil
+	case *ent.UserPlatformQuotaQuery:
+		return &query[*ent.UserPlatformQuotaQuery, predicate.UserPlatformQuota, userplatformquota.OrderOption]{typ: ent.TypeUserPlatformQuota, tq: q}, nil
 	case *ent.UserSubscriptionQuery:
 		return &query[*ent.UserSubscriptionQuery, predicate.UserSubscription, usersubscription.OrderOption]{typ: ent.TypeUserSubscription, tq: q}, nil
 	default:

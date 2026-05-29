@@ -3,8 +3,9 @@ package middleware
 import (
 	"time"
 
-	"github.com/pengbin9472/ggbond/internal/pkg/ctxkey"
-	"github.com/pengbin9472/ggbond/internal/pkg/logger"
+	"github.com/Wei-Shaw/sub2api/internal/pkg/ctxkey"
+	"github.com/Wei-Shaw/sub2api/internal/pkg/ip"
+	"github.com/Wei-Shaw/sub2api/internal/pkg/logger"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 )
@@ -31,7 +32,7 @@ func Logger() gin.HandlerFunc {
 
 		method := c.Request.Method
 		statusCode := c.Writer.Status()
-		clientIP := c.ClientIP()
+		clientIP := ip.GetClientIP(c)
 		protocol := c.Request.Proto
 		accountID, hasAccountID := c.Request.Context().Value(ctxkey.AccountID).(int64)
 		platform, _ := c.Request.Context().Value(ctxkey.Platform).(string)
