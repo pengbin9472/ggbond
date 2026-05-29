@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Wei-Shaw/sub2api/internal/config"
+	"github.com/pengbin9472/ggbond/internal/config"
 )
 
 func TestGetOpsAdvancedSettings_DefaultHidesOpenAITokenStats(t *testing.T) {

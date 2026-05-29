@@ -9,10 +9,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Wei-Shaw/sub2api/internal/config"
-	"github.com/Wei-Shaw/sub2api/internal/pkg/tlsfingerprint"
-	"github.com/Wei-Shaw/sub2api/internal/service"
 	"github.com/gin-gonic/gin"
+	"github.com/pengbin9472/ggbond/internal/config"
+	"github.com/pengbin9472/ggbond/internal/pkg/tlsfingerprint"
 	"github.com/pengbin9472/ggbond/internal/service"
 	"github.com/stretchr/testify/require"
 )
@@ -66,7 +65,7 @@ func setupSyncUpstreamModelsRouter(adminSvc service.AdminService, upstream servi
 		&config.Config{Security: config.SecurityConfig{URLAllowlist: config.URLAllowlistConfig{Enabled: false}}},
 		nil,
 	)
-	handler := NewAccountHandler(adminSvc, nil, nil, nil, nil, nil, nil, accountTestSvc, nil, nil, nil, nil, nil)
+	handler := NewAccountHandler(adminSvc, nil, nil, nil, nil, nil, nil, accountTestSvc, nil, nil, nil, nil, nil, nil)
 	router.POST("/api/v1/admin/accounts/:id/models/sync-upstream", handler.SyncUpstreamModels)
 	return router
 }

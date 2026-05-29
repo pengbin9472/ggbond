@@ -7,11 +7,15 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Wei-Shaw/sub2api/internal/handler/dto"
-	"github.com/Wei-Shaw/sub2api/internal/handler/quotaview"
-	"github.com/Wei-Shaw/sub2api/internal/pkg/response"
-	middleware2 "github.com/Wei-Shaw/sub2api/internal/server/middleware"
-	"github.com/Wei-Shaw/sub2api/internal/service"
+	"github.com/pengbin9472/ggbond/internal/handler/dto"
+	"github.com/pengbin9472/ggbond/internal/handler/quotaview"
+	"github.com/pengbin9472/ggbond/internal/pkg/antigravity"
+	"github.com/pengbin9472/ggbond/internal/pkg/claude"
+	"github.com/pengbin9472/ggbond/internal/pkg/geminicli"
+	"github.com/pengbin9472/ggbond/internal/pkg/openai"
+	"github.com/pengbin9472/ggbond/internal/pkg/response"
+	middleware2 "github.com/pengbin9472/ggbond/internal/server/middleware"
+	"github.com/pengbin9472/ggbond/internal/service"
 
 	"github.com/gin-gonic/gin"
 )
@@ -23,6 +27,8 @@ type accountCatalogService interface {
 // UserHandler handles user-related requests
 type UserHandler struct {
 	userService           *service.UserService
+	accountCatalogService accountCatalogService
+	billingService        *service.BillingService
 	authService           *service.AuthService
 	emailService          *service.EmailService
 	emailCache            service.EmailCache
@@ -43,6 +49,8 @@ func NewUserHandler(
 ) *UserHandler {
 	return &UserHandler{
 		userService:           userService,
+		accountCatalogService: accountCatalogService,
+		billingService:        billingService,
 		authService:           authService,
 		emailService:          emailService,
 		emailCache:            emailCache,
@@ -112,6 +120,32 @@ type userProfileResponse struct {
 type userProfileSourceContext struct {
 	Provider string `json:"provider,omitempty"`
 	Source   string `json:"source,omitempty"`
+}
+
+type modelCatalogEntry struct {
+	ID               string   `json:"id"`
+	DisplayName      string   `json:"display_name"`
+	Type             string   `json:"type"`
+	Platform         string   `json:"platform"`
+	InputPrice       *float64 `json:"input_price,omitempty"`
+	OutputPrice      *float64 `json:"output_price,omitempty"`
+	CacheWritePrice  *float64 `json:"cache_write_price,omitempty"`
+	CacheReadPrice   *float64 `json:"cache_read_price,omitempty"`
+	ImageOutputPrice *float64 `json:"image_output_price,omitempty"`
+	PricingFallback  bool     `json:"pricing_fallback"`
+	AccountCount     int      `json:"account_count"`
+	GroupCount       int      `json:"group_count"`
+}
+
+type modelCatalogResponse struct {
+	Models []modelCatalogEntry `json:"models"`
+	Total  int                 `json:"total"`
+}
+
+type modelCatalogAccumulator struct {
+	entry      modelCatalogEntry
+	accountSet map[int64]struct{}
+	groupSet   map[int64]struct{}
 }
 
 // GetProfile handles getting user profile

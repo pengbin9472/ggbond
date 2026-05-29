@@ -2121,6 +2121,293 @@ func (h *AccountHandler) GetAvailableModels(c *gin.Context) {
 	response.Success(c, models)
 }
 
+// GetModelCatalog returns the admin-visible model catalog aggregated from accounts.
+// GET /api/v1/admin/accounts/models/catalog
+func (h *AccountHandler) GetModelCatalog(c *gin.Context) {
+	const pageSize = 500
+
+	accumulators := make(map[string]*modelCatalogAccumulator)
+	page := 1
+
+	for {
+		accounts, total, err := h.adminService.ListAccounts(c.Request.Context(), page, pageSize, "", "", "", "", 0, "", "", "")
+		if err != nil {
+			response.ErrorFrom(c, err)
+			return
+		}
+
+		for i := range accounts {
+			account := &accounts[i]
+			for _, modelID := range adminAccountAvailableModelIDs(account) {
+				h.mergeAdminModelCatalogEntry(accumulators, account, modelID)
+			}
+		}
+
+		if len(accounts) < pageSize || int64(page*pageSize) >= total {
+			break
+		}
+		page++
+	}
+
+	models := make([]adminModelCatalogEntry, 0, len(accumulators))
+	for _, acc := range accumulators {
+		acc.entry.AccountCount = len(acc.accountSet)
+		acc.entry.GroupCount = len(acc.groupSet)
+		models = append(models, acc.entry)
+	}
+
+	sort.Slice(models, func(i, j int) bool {
+		if models[i].Platform != models[j].Platform {
+			return models[i].Platform < models[j].Platform
+		}
+		return models[i].ID < models[j].ID
+	})
+
+	response.Success(c, adminModelCatalogResponse{
+		Models: models,
+		Total:  len(models),
+	})
+}
+
+func (h *AccountHandler) mergeAdminModelCatalogEntry(accumulators map[string]*modelCatalogAccumulator, account *service.Account, modelID string) {
+	if strings.TrimSpace(modelID) == "" || account == nil {
+		return
+	}
+
+	item, ok := accumulators[modelID]
+	if !ok {
+		item = &modelCatalogAccumulator{
+			entry: adminModelCatalogEntry{
+				ID:          modelID,
+				DisplayName: modelID,
+				Type:        "model",
+				Platform:    inferAdminModelPlatform(modelID, account.Platform),
+			},
+			accountSet: make(map[int64]struct{}),
+			groupSet:   make(map[int64]struct{}),
+		}
+		if pricing, err := h.lookupAdminModelPricing(modelID); err == nil && pricing != nil {
+			item.entry.InputPrice = adminFloatPtr(pricing.InputPricePerToken * 1_000_000)
+			item.entry.OutputPrice = adminFloatPtr(pricing.OutputPricePerToken * 1_000_000)
+			item.entry.CacheWritePrice = adminFloatPtr(pricing.CacheCreationPricePerToken * 1_000_000)
+			item.entry.CacheReadPrice = adminFloatPtr(pricing.CacheReadPricePerToken * 1_000_000)
+			item.entry.ImageOutputPrice = adminFloatPtr(pricing.ImageOutputPricePerToken * 1_000_000)
+		} else {
+			item.entry.PricingFallback = true
+		}
+		accumulators[modelID] = item
+	}
+
+	item.accountSet[account.ID] = struct{}{}
+	for _, groupID := range account.GroupIDs {
+		if groupID > 0 {
+			item.groupSet[groupID] = struct{}{}
+		}
+	}
+}
+
+func (h *AccountHandler) lookupAdminModelPricing(modelID string) (*service.ModelPricing, error) {
+	if h.billingService == nil {
+		return nil, fmt.Errorf("billing service unavailable")
+	}
+	return h.billingService.GetModelPricing(modelID)
+}
+
+func adminAccountAvailableModelIDs(account *service.Account) []string {
+	if account == nil {
+		return nil
+	}
+
+	if account.IsOpenAI() {
+		if account.IsOpenAIPassthroughEnabled() {
+			return adminOpenAIModelIDs(openai.DefaultModels)
+		}
+		if models := adminWhitelistOrMappedModels(account); len(models) > 0 {
+			return models
+		}
+		return adminOpenAIModelIDs(openai.DefaultModels)
+	}
+
+	if account.IsGemini() {
+		if !account.IsOAuth() {
+			if models := adminWhitelistOrMappedModels(account); len(models) > 0 {
+				return models
+			}
+		}
+		return adminGeminiModelIDs(geminicli.DefaultModels)
+	}
+
+	if account.Platform == service.PlatformAntigravity {
+		if models := adminWhitelistOrMappedModels(account); len(models) > 0 {
+			return models
+		}
+		return adminAntigravityModelIDs(antigravity.DefaultModels())
+	}
+
+	if account.Platform == service.PlatformSora {
+		if models := adminWhitelistOrMappedModels(account); len(models) > 0 {
+			return models
+		}
+		return adminSoraModelIDs(service.DefaultSoraModels(nil))
+	}
+
+	if account.IsOAuth() {
+		if models := adminWhitelistOrMappedModels(account); len(models) > 0 {
+			return models
+		}
+		return adminClaudeModelIDs(claude.DefaultModels)
+	}
+
+	if models := adminWhitelistOrMappedModels(account); len(models) > 0 {
+		return models
+	}
+	return adminClaudeModelIDs(claude.DefaultModels)
+}
+
+func adminWhitelistOrMappedModels(account *service.Account) []string {
+	if account == nil {
+		return nil
+	}
+
+	whitelist := adminExplicitWhitelistModels(account)
+	if len(whitelist) > 0 {
+		return whitelist
+	}
+
+	return adminMappedTargetModels(account)
+}
+
+func adminExplicitWhitelistModels(account *service.Account) []string {
+	result := make(map[string]struct{})
+
+	if account != nil && account.Credentials != nil {
+		if raw, ok := account.Credentials["model_whitelist"]; ok {
+			switch v := raw.(type) {
+			case []string:
+				for _, model := range v {
+					model = strings.TrimSpace(model)
+					if model == "" || strings.Contains(model, "*") {
+						continue
+					}
+					result[model] = struct{}{}
+				}
+			case []any:
+				for _, item := range v {
+					model, ok := item.(string)
+					if !ok {
+						continue
+					}
+					model = strings.TrimSpace(model)
+					if model == "" || strings.Contains(model, "*") {
+						continue
+					}
+					result[model] = struct{}{}
+				}
+			}
+		}
+	}
+
+	for from, to := range account.GetModelMapping() {
+		from = strings.TrimSpace(from)
+		to = strings.TrimSpace(to)
+		if from == "" || to == "" {
+			continue
+		}
+		if strings.Contains(from, "*") || strings.Contains(to, "*") {
+			continue
+		}
+		if from == to {
+			result[from] = struct{}{}
+		}
+	}
+
+	return adminSortedStringKeys(result)
+}
+
+func adminMappedTargetModels(account *service.Account) []string {
+	result := make(map[string]struct{})
+	for _, to := range account.GetModelMapping() {
+		to = strings.TrimSpace(to)
+		if to == "" || strings.Contains(to, "*") {
+			continue
+		}
+		result[to] = struct{}{}
+	}
+	return adminSortedStringKeys(result)
+}
+
+func adminSortedStringKeys(values map[string]struct{}) []string {
+	if len(values) == 0 {
+		return nil
+	}
+	out := make([]string, 0, len(values))
+	for key := range values {
+		out = append(out, key)
+	}
+	sort.Strings(out)
+	return out
+}
+
+func adminClaudeModelIDs(models []claude.Model) []string {
+	ids := make([]string, 0, len(models))
+	for _, model := range models {
+		ids = append(ids, model.ID)
+	}
+	return ids
+}
+
+func adminGeminiModelIDs(models []geminicli.Model) []string {
+	ids := make([]string, 0, len(models))
+	for _, model := range models {
+		ids = append(ids, model.ID)
+	}
+	return ids
+}
+
+func adminOpenAIModelIDs(models []openai.Model) []string {
+	ids := make([]string, 0, len(models))
+	for _, model := range models {
+		ids = append(ids, model.ID)
+	}
+	return ids
+}
+
+func adminAntigravityModelIDs(models []antigravity.ClaudeModel) []string {
+	ids := make([]string, 0, len(models))
+	for _, model := range models {
+		ids = append(ids, model.ID)
+	}
+	return ids
+}
+
+func adminSoraModelIDs(models []openai.Model) []string {
+	ids := make([]string, 0, len(models))
+	for _, model := range models {
+		ids = append(ids, model.ID)
+	}
+	return ids
+}
+
+func inferAdminModelPlatform(modelID string, fallback string) string {
+	lower := strings.ToLower(strings.TrimSpace(modelID))
+	switch {
+	case strings.HasPrefix(lower, "claude"):
+		return service.PlatformAnthropic
+	case strings.HasPrefix(lower, "gpt"), strings.HasPrefix(lower, "o1"), strings.HasPrefix(lower, "o3"), strings.HasPrefix(lower, "o4"), strings.HasPrefix(lower, "chatgpt"):
+		return service.PlatformOpenAI
+	case strings.HasPrefix(lower, "gemini"):
+		return service.PlatformGemini
+	case strings.HasPrefix(lower, "sora"), strings.HasPrefix(lower, "gpt-image"), strings.HasPrefix(lower, "prompt-enhance"):
+		return service.PlatformSora
+	default:
+		return fallback
+	}
+}
+
+func adminFloatPtr(v float64) *float64 {
+	return &v
+}
+
 // SyncUpstreamModels handles syncing live supported models from an account's upstream.
 // POST /api/v1/admin/accounts/:id/models/sync-upstream
 func (h *AccountHandler) SyncUpstreamModels(c *gin.Context) {

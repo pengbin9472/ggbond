@@ -6,9 +6,9 @@ import (
 	"strings"
 	"time"
 
-	dbent "github.com/Wei-Shaw/sub2api/ent"
-	"github.com/Wei-Shaw/sub2api/ent/userplatformquota"
-	"github.com/Wei-Shaw/sub2api/internal/pkg/timezone"
+	dbent "github.com/pengbin9472/ggbond/ent"
+	"github.com/pengbin9472/ggbond/ent/userplatformquota"
+	"github.com/pengbin9472/ggbond/internal/pkg/timezone"
 )
 
 // UserPlatformQuotaRecord 是 repository 层的传输结构体，

@@ -7,8 +7,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	middleware2 "github.com/Wei-Shaw/sub2api/internal/server/middleware"
-	"github.com/Wei-Shaw/sub2api/internal/service"
+	middleware2 "github.com/pengbin9472/ggbond/internal/server/middleware"
+	"github.com/pengbin9472/ggbond/internal/service"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/require"
 )

@@ -9,9 +9,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Wei-Shaw/sub2api/internal/pkg/logger"
-	"github.com/Wei-Shaw/sub2api/internal/pkg/openai"
-	"github.com/Wei-Shaw/sub2api/internal/pkg/openai_compat"
+	"github.com/pengbin9472/ggbond/internal/pkg/logger"
+	"github.com/pengbin9472/ggbond/internal/pkg/openai"
+	"github.com/pengbin9472/ggbond/internal/pkg/openai_compat"
 )
 
 // openaiResponsesProbeTimeout 是探测请求的超时时长。

@@ -10,9 +10,9 @@ import (
 	"strings"
 	"unsafe"
 
-	"github.com/Wei-Shaw/sub2api/internal/domain"
-	"github.com/Wei-Shaw/sub2api/internal/pkg/antigravity"
-	"github.com/Wei-Shaw/sub2api/internal/pkg/logger"
+	"github.com/pengbin9472/ggbond/internal/domain"
+	"github.com/pengbin9472/ggbond/internal/pkg/antigravity"
+	"github.com/pengbin9472/ggbond/internal/pkg/logger"
 	"github.com/tidwall/gjson"
 	"github.com/tidwall/sjson"
 )

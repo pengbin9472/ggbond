@@ -20,8 +20,8 @@ import (
 	"sync/atomic"
 	"time"
 
-	infraerrors "github.com/Wei-Shaw/sub2api/internal/pkg/errors"
-	"github.com/Wei-Shaw/sub2api/internal/pkg/pagination"
+	infraerrors "github.com/pengbin9472/ggbond/internal/pkg/errors"
+	"github.com/pengbin9472/ggbond/internal/pkg/pagination"
 )
 
 const (

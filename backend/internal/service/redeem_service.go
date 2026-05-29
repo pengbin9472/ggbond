@@ -9,10 +9,10 @@ import (
 	"strings"
 	"time"
 
-	dbent "github.com/Wei-Shaw/sub2api/ent"
-	infraerrors "github.com/Wei-Shaw/sub2api/internal/pkg/errors"
-	"github.com/Wei-Shaw/sub2api/internal/pkg/logger"
-	"github.com/Wei-Shaw/sub2api/internal/pkg/pagination"
+	dbent "github.com/pengbin9472/ggbond/ent"
+	infraerrors "github.com/pengbin9472/ggbond/internal/pkg/errors"
+	"github.com/pengbin9472/ggbond/internal/pkg/logger"
+	"github.com/pengbin9472/ggbond/internal/pkg/pagination"
 )
 
 var (
@@ -141,6 +141,7 @@ type RedeemService struct {
 	entClient            *dbent.Client
 	authCacheInvalidator APIKeyAuthCacheInvalidator
 	affiliateService     *AffiliateService
+	referralService      *ReferralService
 }
 
 // NewRedeemService 创建兑换码服务实例

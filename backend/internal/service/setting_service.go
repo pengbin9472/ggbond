@@ -17,11 +17,9 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/Wei-Shaw/sub2api/internal/config"
-	"github.com/Wei-Shaw/sub2api/internal/pkg/antigravity"
-	infraerrors "github.com/Wei-Shaw/sub2api/internal/pkg/errors"
 	"github.com/imroc/req/v3"
 	"github.com/pengbin9472/ggbond/internal/config"
+	"github.com/pengbin9472/ggbond/internal/pkg/antigravity"
 	infraerrors "github.com/pengbin9472/ggbond/internal/pkg/errors"
 	"golang.org/x/sync/singleflight"
 )
@@ -1135,6 +1133,7 @@ func (s *SettingService) SetVersion(version string) {
 type PublicSettingsInjectionPayload struct {
 	RegistrationEnabled              bool                     `json:"registration_enabled"`
 	EmailVerifyEnabled               bool                     `json:"email_verify_enabled"`
+	ForceEmailOnThirdPartySignup     bool                     `json:"force_email_on_third_party_signup"`
 	RegistrationEmailSuffixWhitelist []string                 `json:"registration_email_suffix_whitelist"`
 	PromoCodeEnabled                 bool                     `json:"promo_code_enabled"`
 	PasswordResetEnabled             bool                     `json:"password_reset_enabled"`
@@ -1157,6 +1156,11 @@ type PublicSettingsInjectionPayload struct {
 	HideCcsImportButton              bool                     `json:"hide_ccs_import_button"`
 	PurchaseSubscriptionEnabled      bool                     `json:"purchase_subscription_enabled"`
 	PurchaseSubscriptionURL          string                   `json:"purchase_subscription_url"`
+	PurchaseChannelEnabled           bool                     `json:"purchase_channel_enabled"`
+	PurchaseChannelURL               string                   `json:"purchase_channel_url"`
+	PurchaseChannelImage             string                   `json:"purchase_channel_image"`
+	SoraClientEnabled                bool                     `json:"sora_client_enabled"`
+	GroupMonitoringEnabled           bool                     `json:"group_monitoring_enabled"`
 	TableDefaultPageSize             int                      `json:"table_default_page_size"`
 	TablePageSizeOptions             []int                    `json:"table_page_size_options"`
 	CustomMenuItems                  json.RawMessage          `json:"custom_menu_items"`

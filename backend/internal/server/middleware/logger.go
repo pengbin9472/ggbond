@@ -3,9 +3,9 @@ package middleware
 import (
 	"time"
 
-	"github.com/Wei-Shaw/sub2api/internal/pkg/ctxkey"
-	"github.com/Wei-Shaw/sub2api/internal/pkg/ip"
-	"github.com/Wei-Shaw/sub2api/internal/pkg/logger"
+	"github.com/pengbin9472/ggbond/internal/pkg/ctxkey"
+	"github.com/pengbin9472/ggbond/internal/pkg/ip"
+	"github.com/pengbin9472/ggbond/internal/pkg/logger"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 )

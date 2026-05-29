@@ -1286,7 +1286,7 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 
 	channelImage := previousSettings.PurchaseChannelImage
 	if req.PurchaseChannelImage != nil {
-		channelImage = *req.PurchaseChannelImage
+		channelImage = strings.TrimSpace(*req.PurchaseChannelImage)
 	}
 
 	if channelEnabled {
@@ -1301,6 +1301,12 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 	} else if channelURL != "" {
 		if err := config.ValidateAbsoluteHTTPURL(channelURL); err != nil {
 			response.BadRequest(c, "Purchase Channel URL must be an absolute http(s) URL")
+			return
+		}
+	}
+	if channelImage != "" {
+		if err := config.ValidateAbsoluteHTTPURL(channelImage); err != nil {
+			response.BadRequest(c, "Purchase Channel Image must be an absolute http(s) URL")
 			return
 		}
 	}

@@ -9,8 +9,8 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
-	"github.com/Wei-Shaw/sub2api/ent/user"
-	"github.com/Wei-Shaw/sub2api/ent/userplatformquota"
+	"github.com/pengbin9472/ggbond/ent/user"
+	"github.com/pengbin9472/ggbond/ent/userplatformquota"
 )
 
 // UserPlatformQuota is the model entity for the UserPlatformQuota schema.
