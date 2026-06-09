@@ -9,11 +9,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/gin-gonic/gin"
+	"github.com/gin-gonic/gin/binding"
 	"github.com/pengbin9472/ggbond/internal/pkg/response"
 	"github.com/pengbin9472/ggbond/internal/server/middleware"
 	"github.com/pengbin9472/ggbond/internal/service"
-	"github.com/gin-gonic/gin"
-	"github.com/gin-gonic/gin/binding"
 )
 
 var validOpsAlertMetricTypes = []string{
@@ -29,7 +29,10 @@ var validOpsAlertMetricTypes = []string{
 	"account_rate_limited_count",
 	"account_error_count",
 	"account_error_ratio",
+	"account_temp_unscheduled_count",
 	"overload_account_count",
+	"proxy_expired_count",
+	"proxy_expiring_soon_count",
 }
 
 var validOpsAlertMetricTypeSet = func() map[string]struct{} {

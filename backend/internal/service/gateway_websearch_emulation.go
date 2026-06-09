@@ -11,9 +11,9 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/pengbin9472/ggbond/internal/pkg/websearch"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"github.com/pengbin9472/ggbond/internal/pkg/websearch"
 	"github.com/tidwall/gjson"
 )
 
@@ -150,7 +150,7 @@ func (s *GatewayService) handleWebSearchEmulation(
 		parsed.OnUpstreamAccepted()
 	}
 
-	query := extractSearchQueryFromBody(parsed.Body)
+	query := extractSearchQueryFromBody(parsed.Body.Bytes())
 	if query == "" {
 		return nil, fmt.Errorf("web search emulation: no query found in messages")
 	}
