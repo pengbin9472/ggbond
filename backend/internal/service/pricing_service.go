@@ -51,6 +51,15 @@ var (
 		Mode:                    "chat",
 		SupportsPromptCaching:   true,
 	}
+	claudeFable5FallbackPricing = &LiteLLMModelPricing{
+		InputCostPerToken:           10e-06,
+		OutputCostPerToken:          50e-06,
+		CacheCreationInputTokenCost: 12.5e-06,
+		CacheReadInputTokenCost:     1e-06,
+		LiteLLMProvider:             "anthropic",
+		Mode:                        "chat",
+		SupportsPromptCaching:       true,
+	}
 )
 
 // LiteLLMModelPricing LiteLLM价格数据结构
@@ -564,12 +573,18 @@ func (s *PricingService) GetModelPricing(modelName string) *LiteLLMModelPricing 
 		}
 	}
 
-	// 4. 基于模型系列匹配（Claude）
+	// 4. 专用静态回退。必须放在 Claude family 模糊匹配之前，
+	// 否则远程价格文件缺少 fable 时会回退到 Sonnet 价格。
+	if strings.Contains(lookupCandidates[0], "fable") {
+		return claudeFable5FallbackPricing
+	}
+
+	// 5. 基于模型系列匹配（Claude）
 	if pricing := s.matchByModelFamily(lookupCandidates[0]); pricing != nil {
 		return pricing
 	}
 
-	// 5. OpenAI 模型回退策略
+	// 6. OpenAI 模型回退策略
 	if strings.HasPrefix(lookupCandidates[0], "gpt-") {
 		return s.matchOpenAIModel(lookupCandidates[0])
 	}
