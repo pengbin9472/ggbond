@@ -5,10 +5,10 @@ package repository
 import (
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/pengbin9472/ggbond/internal/pkg/pagination"
 	"github.com/pengbin9472/ggbond/internal/pkg/usagestats"
 	"github.com/pengbin9472/ggbond/internal/service"
-	"github.com/google/uuid"
 )
 
 func (s *UsageLogRepoSuite) TestListWithFilters_SortByModelAsc() {

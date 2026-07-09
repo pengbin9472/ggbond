@@ -16,9 +16,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/pengbin9472/ggbond/internal/pkg/proxyurl"
 	"github.com/pengbin9472/ggbond/internal/pkg/proxyutil"
-	"github.com/golang-jwt/jwt/v5"
 )
 
 const (

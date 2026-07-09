@@ -7,8 +7,8 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/pengbin9472/ggbond/internal/config"
 	"github.com/imroc/req/v3"
+	"github.com/pengbin9472/ggbond/internal/config"
 	"github.com/stretchr/testify/require"
 )
 

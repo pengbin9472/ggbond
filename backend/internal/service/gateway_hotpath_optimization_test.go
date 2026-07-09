@@ -8,10 +8,10 @@ import (
 	"testing"
 	"time"
 
+	gocache "github.com/patrickmn/go-cache"
 	"github.com/pengbin9472/ggbond/internal/config"
 	"github.com/pengbin9472/ggbond/internal/pkg/ctxkey"
 	"github.com/pengbin9472/ggbond/internal/pkg/usagestats"
-	gocache "github.com/patrickmn/go-cache"
 	"github.com/stretchr/testify/require"
 )
 

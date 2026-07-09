@@ -13,10 +13,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/pengbin9472/ggbond/internal/config"
-	"github.com/pengbin9472/ggbond/internal/pkg/tlsfingerprint"
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
+	"github.com/pengbin9472/ggbond/internal/config"
+	"github.com/pengbin9472/ggbond/internal/pkg/tlsfingerprint"
 	"github.com/stretchr/testify/require"
 	"github.com/tidwall/gjson"
 )
@@ -607,6 +607,7 @@ func TestNewOpenAIGatewayService_InitializesOpenAIWSResolver(t *testing.T) {
 		nil,
 		nil,
 		cfg,
+		nil,
 		nil,
 		nil,
 		nil,

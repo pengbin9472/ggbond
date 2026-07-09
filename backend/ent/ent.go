@@ -19,6 +19,9 @@ import (
 	"github.com/pengbin9472/ggbond/ent/apikey"
 	"github.com/pengbin9472/ggbond/ent/authidentity"
 	"github.com/pengbin9472/ggbond/ent/authidentitychannel"
+	"github.com/pengbin9472/ggbond/ent/batchimageevent"
+	"github.com/pengbin9472/ggbond/ent/batchimageitem"
+	"github.com/pengbin9472/ggbond/ent/batchimagejob"
 	"github.com/pengbin9472/ggbond/ent/channelmonitor"
 	"github.com/pengbin9472/ggbond/ent/channelmonitordailyrollup"
 	"github.com/pengbin9472/ggbond/ent/channelmonitorhistory"
@@ -115,6 +118,9 @@ func checkColumn(t, c string) error {
 			announcementread.Table:              announcementread.ValidColumn,
 			authidentity.Table:                  authidentity.ValidColumn,
 			authidentitychannel.Table:           authidentitychannel.ValidColumn,
+			batchimageevent.Table:               batchimageevent.ValidColumn,
+			batchimageitem.Table:                batchimageitem.ValidColumn,
+			batchimagejob.Table:                 batchimagejob.ValidColumn,
 			channelmonitor.Table:                channelmonitor.ValidColumn,
 			channelmonitordailyrollup.Table:     channelmonitordailyrollup.ValidColumn,
 			channelmonitorhistory.Table:         channelmonitorhistory.ValidColumn,

@@ -6,8 +6,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/pengbin9472/ggbond/internal/pkg/ctxkey"
 	"github.com/gin-gonic/gin"
+	"github.com/pengbin9472/ggbond/internal/pkg/ctxkey"
 	"github.com/stretchr/testify/require"
 )
 

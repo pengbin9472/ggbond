@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/pengbin9472/ggbond/internal/pkg/logger"
 	"github.com/gin-gonic/gin"
+	"github.com/pengbin9472/ggbond/internal/pkg/logger"
 	"github.com/stretchr/testify/require"
 )
 

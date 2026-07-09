@@ -10,8 +10,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/pengbin9472/ggbond/internal/server/middleware"
 	"github.com/gin-gonic/gin"
+	"github.com/pengbin9472/ggbond/internal/server/middleware"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -77,6 +77,25 @@ func TestInjectSiteTitle(t *testing.T) {
 
 		// Should return unchanged since <title> with attributes is not matched
 		assert.Equal(t, string(html), string(result))
+	})
+
+	t.Run("escapes_html_in_site_name", func(t *testing.T) {
+		html := []byte(`<html><head><title>Sub2API - AI API Gateway</title></head><body></body></html>`)
+		settingsJSON := []byte(`{"site_name":"</title><script>alert(1)</script><title>"}`)
+
+		result := injectSiteTitle(html, settingsJSON)
+
+		assert.NotContains(t, string(result), "<script>")
+		assert.Contains(t, string(result), "&lt;/title&gt;&lt;script&gt;alert(1)&lt;/script&gt;&lt;title&gt;")
+	})
+
+	t.Run("escapes_ampersand_in_site_name", func(t *testing.T) {
+		html := []byte(`<html><head><title>Sub2API</title></head><body></body></html>`)
+		settingsJSON := []byte(`{"site_name":"A&B"}`)
+
+		result := injectSiteTitle(html, settingsJSON)
+
+		assert.Contains(t, string(result), "<title>A&amp;B - AI API Gateway</title>")
 	})
 
 	t.Run("preserves_rest_of_html", func(t *testing.T) {

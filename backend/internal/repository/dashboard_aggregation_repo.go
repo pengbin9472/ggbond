@@ -8,9 +8,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/lib/pq"
 	"github.com/pengbin9472/ggbond/internal/pkg/timezone"
 	"github.com/pengbin9472/ggbond/internal/service"
-	"github.com/lib/pq"
 )
 
 type dashboardAggregationRepository struct {

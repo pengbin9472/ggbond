@@ -6,8 +6,8 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/pengbin9472/ggbond/internal/config"
 	"github.com/gin-gonic/gin"
+	"github.com/pengbin9472/ggbond/internal/config"
 )
 
 var ErrUpstreamResponseBodyTooLarge = errors.New("upstream response body too large")

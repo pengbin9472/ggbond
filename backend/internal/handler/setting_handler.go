@@ -7,6 +7,7 @@ import (
 
 	"github.com/pengbin9472/ggbond/internal/handler/dto"
 	"github.com/pengbin9472/ggbond/internal/pkg/response"
+	"github.com/pengbin9472/ggbond/internal/pkg/timezone"
 	"github.com/pengbin9472/ggbond/internal/service"
 
 	"github.com/gin-gonic/gin"
@@ -85,6 +86,8 @@ func (h *SettingHandler) GetPublicSettings(c *gin.Context) {
 		BackendModeEnabled:               settings.BackendModeEnabled,
 		PaymentEnabled:                   settings.PaymentEnabled,
 		Version:                          h.version,
+		ServerTimezone:                   timezone.Name(),
+		ServerUTCOffset:                  timezone.UTCOffset(),
 		BalanceLowNotifyEnabled:          settings.BalanceLowNotifyEnabled,
 		AccountQuotaNotifyEnabled:        settings.AccountQuotaNotifyEnabled,
 		BalanceLowNotifyThreshold:        settings.BalanceLowNotifyThreshold,
