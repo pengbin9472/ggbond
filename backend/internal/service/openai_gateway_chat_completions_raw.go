@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/pengbin9472/ggbond/internal/pkg/apicompat"
 	"github.com/pengbin9472/ggbond/internal/pkg/logger"
 	"github.com/pengbin9472/ggbond/internal/pkg/xai"
 	"github.com/pengbin9472/ggbond/internal/util/responseheaders"
