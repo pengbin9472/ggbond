@@ -119,8 +119,9 @@ func ProvideAccountHandler(
 	sessionLimitCache service.SessionLimitCache,
 	rpmCache service.RPMCache,
 	tokenCacheInvalidator service.TokenCacheInvalidator,
+	grokQuotaService *service.GrokQuotaService,
 ) *admin.AccountHandler {
-	return admin.NewAccountHandler(
+	return admin.ProvideAccountHandler(
 		adminService,
 		oauthService,
 		openaiOAuthService,
@@ -135,6 +136,7 @@ func ProvideAccountHandler(
 		sessionLimitCache,
 		rpmCache,
 		tokenCacheInvalidator,
+		grokQuotaService,
 	)
 }
 
