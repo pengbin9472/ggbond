@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/google/uuid"
 	"github.com/pengbin9472/ggbond/internal/pkg/openai"
 )
 
@@ -28,6 +29,15 @@ func ensureCodexIdentityHeaders(h http.Header) {
 		h.Set("version", codexCLIVersion)
 	}
 	h.Set("OpenAI-Beta", "responses=experimental")
+}
+
+// applyOpenAICodexProbeHeaders 为合成探测请求补齐 Codex 身份和引擎指纹。
+func applyOpenAICodexProbeHeaders(h http.Header) {
+	if h == nil {
+		return
+	}
+	ensureCodexIdentityHeaders(h)
+	h.Set("X-Codex-Window-ID", uuid.NewString())
 }
 
 // enforceCodexIdentityHeaders 收口 OAuth（ChatGPT 内部接口）出站请求的客户端身份头。

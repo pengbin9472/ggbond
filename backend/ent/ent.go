@@ -26,6 +26,7 @@ import (
 	"github.com/pengbin9472/ggbond/ent/channelmonitordailyrollup"
 	"github.com/pengbin9472/ggbond/ent/channelmonitorhistory"
 	"github.com/pengbin9472/ggbond/ent/channelmonitorrequesttemplate"
+	"github.com/pengbin9472/ggbond/ent/compositemodelroute"
 	"github.com/pengbin9472/ggbond/ent/errorpassthroughrule"
 	"github.com/pengbin9472/ggbond/ent/group"
 	"github.com/pengbin9472/ggbond/ent/idempotencyrecord"
@@ -125,6 +126,7 @@ func checkColumn(t, c string) error {
 			channelmonitordailyrollup.Table:     channelmonitordailyrollup.ValidColumn,
 			channelmonitorhistory.Table:         channelmonitorhistory.ValidColumn,
 			channelmonitorrequesttemplate.Table: channelmonitorrequesttemplate.ValidColumn,
+			compositemodelroute.Table:           compositemodelroute.ValidColumn,
 			errorpassthroughrule.Table:          errorpassthroughrule.ValidColumn,
 			group.Table:                         group.ValidColumn,
 			idempotencyrecord.Table:             idempotencyrecord.ValidColumn,
