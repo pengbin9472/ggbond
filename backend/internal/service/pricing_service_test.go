@@ -217,6 +217,30 @@ func TestDefaultPricingIncludesOfficialGPT56Rates(t *testing.T) {
 	}
 }
 
+func TestDefaultPricingIncludesClaudeOpus5AtOpus48Rate(t *testing.T) {
+	data, err := os.ReadFile(filepath.Join("..", "..", "resources", "model-pricing", "model_prices_and_context_window.json"))
+	require.NoError(t, err)
+
+	pricingSvc := &PricingService{}
+	pricingData, err := pricingSvc.parsePricingData(data)
+	require.NoError(t, err)
+	pricingSvc.pricingData = pricingData
+	billingSvc := NewBillingService(&config.Config{}, pricingSvc)
+
+	opus48, err := billingSvc.GetModelPricing("claude-opus-4-8")
+	require.NoError(t, err)
+	opus5, err := billingSvc.GetModelPricing("claude-opus-5")
+	require.NoError(t, err)
+
+	require.InDelta(t, opus48.InputPricePerToken, opus5.InputPricePerToken, 1e-12)
+	require.InDelta(t, opus48.OutputPricePerToken, opus5.OutputPricePerToken, 1e-12)
+	require.InDelta(t, opus48.CacheCreationPricePerToken, opus5.CacheCreationPricePerToken, 1e-12)
+	require.InDelta(t, opus48.CacheReadPricePerToken, opus5.CacheReadPricePerToken, 1e-12)
+	require.Equal(t, opus48.LongContextInputThreshold, opus5.LongContextInputThreshold)
+	require.InDelta(t, opus48.LongContextInputMultiplier, opus5.LongContextInputMultiplier, 1e-12)
+	require.InDelta(t, opus48.LongContextOutputMultiplier, opus5.LongContextOutputMultiplier, 1e-12)
+}
+
 func TestGPT56DedicatedFallbacksUseOfficialRates(t *testing.T) {
 	tests := []struct {
 		model                             string

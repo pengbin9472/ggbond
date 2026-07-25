@@ -97,6 +97,8 @@ func TestGetModelPricing_FallbackMatchesByFamily(t *testing.T) {
 		model         string
 		expectedInput float64
 	}{
+		{"claude-opus-5", 5e-6},
+		{"claude-opus-4-8", 5e-6},
 		{"claude-opus-4.5-20250101", 5e-6},
 		{"claude-3-opus-20240229", 15e-6},
 		{"claude-sonnet-4-20250514", 3e-6},
@@ -833,8 +835,8 @@ func TestComputeTokenBreakdown_GptImage2ImageEditIssue4386(t *testing.T) {
 
 	cost := svc.computeTokenBreakdown(pricing, tokens, 1.0, "", false)
 
-	wantTextInput := float64(19) * 5e-6    // 0.000095
-	wantImageInput := float64(352) * 8e-6  // 0.002816
+	wantTextInput := float64(19) * 5e-6     // 0.000095
+	wantImageInput := float64(352) * 8e-6   // 0.002816
 	wantImageOutput := float64(439) * 30e-6 // 0.013170
 	require.InDelta(t, wantTextInput, cost.InputCost, 1e-15, "InputCost 仅含文本输入")
 	require.InDelta(t, wantImageInput, cost.ImageInputCost, 1e-15, "图片输入按 $8/1M 独立计费")

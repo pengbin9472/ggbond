@@ -258,6 +258,12 @@ func (s *BillingService) initFallbackPricing() {
 	// Claude 4.7 Opus (暂与4.6同价，待官方定价更新)
 	s.fallbackPrices["claude-opus-4.7"] = s.fallbackPrices["claude-opus-4.6"]
 
+	// Claude 4.8 Opus (与4.7/4.6同价)
+	s.fallbackPrices["claude-opus-4.8"] = s.fallbackPrices["claude-opus-4.7"]
+
+	// Claude Opus 5 (与4.8同价)
+	s.fallbackPrices["claude-opus-5"] = s.fallbackPrices["claude-opus-4.8"]
+
 	// Claude Fable 5
 	s.fallbackPrices["claude-fable-5"] = &ModelPricing{
 		InputPricePerToken:         10e-6,   // $10 per MTok
@@ -607,6 +613,12 @@ func (s *BillingService) getFallbackPricing(model string) *ModelPricing {
 		return s.fallbackPrices["claude-fable-5"]
 	}
 	if strings.Contains(modelLower, "opus") {
+		if strings.Contains(modelLower, "opus-5") || strings.Contains(modelLower, "opus5") {
+			return s.fallbackPrices["claude-opus-5"]
+		}
+		if strings.Contains(modelLower, "4.8") || strings.Contains(modelLower, "4-8") {
+			return s.fallbackPrices["claude-opus-4.8"]
+		}
 		if strings.Contains(modelLower, "4.7") || strings.Contains(modelLower, "4-7") {
 			return s.fallbackPrices["claude-opus-4.7"]
 		}

@@ -225,6 +225,7 @@ func TestAntigravityGatewayService_IsModelSupported(t *testing.T) {
 	}{
 		// 直接支持
 		{"直接支持 - claude-fable-5", "claude-fable-5", true},
+		{"直接支持 - claude-opus-5", "claude-opus-5", true},
 		{"直接支持 - claude-sonnet-4-5", "claude-sonnet-4-5", true},
 		{"直接支持 - gemini-3-flash", "gemini-3-flash", true},
 
