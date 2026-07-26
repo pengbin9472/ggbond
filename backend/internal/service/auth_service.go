@@ -230,6 +230,11 @@ func (s *AuthService) RegisterWithVerification(ctx context.Context, email, passw
 		Status:       StatusActive,
 	}
 
+	// 邀请码可复用，但仍记录推荐人关系用于邀请链路统计。
+	if invitationRedeemCode != nil && invitationRedeemCode.InviterUserID != nil {
+		user.ReferredBy = invitationRedeemCode.InviterUserID
+	}
+
 	if err := s.userRepo.CreateWithEmailAliasGuard(ctx, user); err != nil {
 		// 优先检查邮箱冲突错误（竞态条件下可能发生）
 		if errors.Is(err, ErrEmailExists) {

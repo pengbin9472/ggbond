@@ -12,7 +12,7 @@ import (
 	"io"
 	"strings"
 
-	"github.com/Wei-Shaw/sub2api/internal/config"
+	"github.com/pengbin9472/ggbond/internal/config"
 )
 
 const liveAttestationHeader = "x-oai-attestation"

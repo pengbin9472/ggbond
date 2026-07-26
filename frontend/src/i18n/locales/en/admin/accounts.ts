@@ -640,6 +640,9 @@ export default {
       poolModeRetryStatusCodes: 'Retry Status Codes',
       poolModeRetryStatusCodesHint:
         'Comma-separated HTTP status codes (100-599) that trigger same-account retry in pool mode. Leave blank to use defaults ({default}).',
+      customUserAgent: 'Custom User-Agent',
+      customUserAgentPlaceholder: 'Leave blank to use the system default User-Agent',
+      customUserAgentHint: 'Only affects the User-Agent used when this account forwards requests upstream.',
       customErrorCodes: 'Custom Error Codes',
       customErrorCodesHint: 'Only stop scheduling for selected error codes',
       customErrorCodesWarning:
