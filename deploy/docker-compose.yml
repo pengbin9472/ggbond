@@ -19,6 +19,8 @@ services:
     image: weishaw/ggbond:latest
     container_name: ggbond
     restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
     ulimits:
       nofile:
         soft: 100000

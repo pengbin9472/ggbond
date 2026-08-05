@@ -60,9 +60,11 @@ type Handlers struct {
 	Totp             *TotpHandler
 	Monitoring       *MonitoringHandler
 	Referral         *ReferralHandler
+	Passkey          *PasskeyHandler
 	Payment          *PaymentHandler
 	PaymentWebhook   *PaymentWebhookHandler
 	AvailableChannel *AvailableChannelHandler
+	ModelPlaza       *ModelPlazaHandler
 	AsyncImage       *AsyncImageHandler
 	BatchImage       *BatchImageHandler
 }
