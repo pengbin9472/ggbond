@@ -3,7 +3,7 @@ package service
 import (
 	"time"
 
-	"github.com/Wei-Shaw/sub2api/internal/pkg/timezone"
+	"github.com/pengbin9472/ggbond/internal/pkg/timezone"
 )
 
 const subscriptionDayDuration = 24 * time.Hour

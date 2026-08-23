@@ -6,8 +6,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"github.com/Wei-Shaw/sub2api/internal/pkg/tlsfingerprint"
-	"github.com/Wei-Shaw/sub2api/internal/pkg/xai"
+	"github.com/pengbin9472/ggbond/internal/pkg/tlsfingerprint"
+	"github.com/pengbin9472/ggbond/internal/pkg/xai"
 )
 
 // grokUpstreamUserAgent is kept for compatibility with older Grok request

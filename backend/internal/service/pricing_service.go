@@ -709,6 +709,54 @@ func (s *PricingService) GetModelPricing(modelName string) *LiteLLMModelPricing 
 	return nil
 }
 
+// GetIdentifiedModelPricing 在价格表中确定性地识别模型，识别不到时返回 nil。
+// 与 GetModelPricing 的区别：不会退化成按系列子串猜价的回退逻辑。
+func (s *PricingService) GetIdentifiedModelPricing(modelName string) *LiteLLMModelPricing {
+	if s == nil {
+		return nil
+	}
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	modelLower := strings.ToLower(strings.TrimSpace(modelName))
+	if modelLower == "" {
+		return nil
+	}
+	return s.lookupIdentifiedModelPricingLocked(s.buildModelLookupCandidates(modelLower))
+}
+
+func (s *PricingService) lookupIdentifiedModelPricingLocked(lookupCandidates []string) *LiteLLMModelPricing {
+	for _, candidate := range lookupCandidates {
+		if candidate == "" {
+			continue
+		}
+		if pricing, ok := s.pricingData[candidate]; ok {
+			return pricing
+		}
+	}
+
+	for _, candidate := range lookupCandidates {
+		normalized := strings.ReplaceAll(candidate, "-4-5-", "-4.5-")
+		if pricing, ok := s.pricingData[normalized]; ok {
+			return pricing
+		}
+	}
+
+	baseName := s.extractBaseName(lookupCandidates[0])
+	for key, pricing := range s.pricingData {
+		keyBase := s.extractBaseName(strings.ToLower(key))
+		if keyBase == baseName {
+			return pricing
+		}
+	}
+
+	if strings.Contains(lookupCandidates[0], "fable") {
+		return claudeFable5FallbackPricing
+	}
+
+	return nil
+}
+
 func (s *PricingService) buildModelLookupCandidates(modelLower string) []string {
 	rawCandidates := []string{
 		modelLower,

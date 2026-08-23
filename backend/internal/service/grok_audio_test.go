@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/Wei-Shaw/sub2api/internal/pkg/xai"
+	"github.com/pengbin9472/ggbond/internal/pkg/xai"
 	"github.com/stretchr/testify/require"
 )
 
