@@ -1440,7 +1440,8 @@
     ]
   },
   "gemini-2.5-pro": {
-    "cache_creation_input_token_cost_above_200k_tokens": 2.5e-07,
+    "cache_creation_input_token_cost": 1.25e-06,
+    "cache_creation_input_token_cost_above_200k_tokens": 2.5e-06,
     "cache_read_input_token_cost": 1.25e-07,
     "cache_read_input_token_cost_above_200k_tokens": 2.5e-07,
     "input_cost_per_token": 1.25e-06,
@@ -1728,7 +1729,10 @@
     "web_search_billing_unit": "per_query"
   },
   "gemini-3-pro-preview": {
-    "cache_creation_input_token_cost_above_200k_tokens": 2.5e-07,
+    "cache_creation_input_token_cost": 2e-06,
+    "cache_creation_input_token_cost_above_200k_tokens": 4e-06,
+    "cache_creation_input_token_cost_above_200k_tokens_priority": 7.2e-06,
+    "cache_creation_input_token_cost_priority": 3.6e-06,
     "cache_read_input_token_cost": 2e-07,
     "cache_read_input_token_cost_above_200k_tokens": 4e-07,
     "cache_read_input_token_cost_above_200k_tokens_priority": 7.2e-07,
@@ -2057,7 +2061,10 @@
     "supports_web_search": true
   },
   "gemini-3.1-pro-high": {
-    "cache_creation_input_token_cost_above_200k_tokens": 2.5e-07,
+    "cache_creation_input_token_cost": 2e-06,
+    "cache_creation_input_token_cost_above_200k_tokens": 4e-06,
+    "cache_creation_input_token_cost_above_200k_tokens_priority": 7.2e-06,
+    "cache_creation_input_token_cost_priority": 3.6e-06,
     "cache_read_input_token_cost": 2e-07,
     "cache_read_input_token_cost_above_200k_tokens": 4e-07,
     "cache_read_input_token_cost_above_200k_tokens_priority": 7.2e-07,
@@ -2121,7 +2128,10 @@
     "web_search_billing_unit": "per_query"
   },
   "gemini-3.1-pro-low": {
-    "cache_creation_input_token_cost_above_200k_tokens": 2.5e-07,
+    "cache_creation_input_token_cost": 2e-06,
+    "cache_creation_input_token_cost_above_200k_tokens": 4e-06,
+    "cache_creation_input_token_cost_above_200k_tokens_priority": 7.2e-06,
+    "cache_creation_input_token_cost_priority": 3.6e-06,
     "cache_read_input_token_cost": 2e-07,
     "cache_read_input_token_cost_above_200k_tokens": 4e-07,
     "cache_read_input_token_cost_above_200k_tokens_priority": 7.2e-07,
@@ -2185,7 +2195,10 @@
     "web_search_billing_unit": "per_query"
   },
   "gemini-3.1-pro-preview": {
-    "cache_creation_input_token_cost_above_200k_tokens": 2.5e-07,
+    "cache_creation_input_token_cost": 2e-06,
+    "cache_creation_input_token_cost_above_200k_tokens": 4e-06,
+    "cache_creation_input_token_cost_above_200k_tokens_priority": 7.2e-06,
+    "cache_creation_input_token_cost_priority": 3.6e-06,
     "cache_read_input_token_cost": 2e-07,
     "cache_read_input_token_cost_above_200k_tokens": 4e-07,
     "cache_read_input_token_cost_above_200k_tokens_priority": 7.2e-07,
@@ -2249,7 +2262,8 @@
     "web_search_billing_unit": "per_query"
   },
   "gemini-3.1-pro-preview-customtools": {
-    "cache_creation_input_token_cost_above_200k_tokens": 2.5e-07,
+    "cache_creation_input_token_cost": 2e-06,
+    "cache_creation_input_token_cost_above_200k_tokens": 4e-06,
     "cache_read_input_token_cost": 2e-07,
     "cache_read_input_token_cost_above_200k_tokens": 4e-07,
     "input_cost_per_token": 2e-06,

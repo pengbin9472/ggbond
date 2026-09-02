@@ -634,6 +634,7 @@ export interface SystemSettings {
   referral_max_rewards_per_user: number
 
   // Gateway forwarding behavior
+  openai_ttft_mode: string;
   enable_fingerprint_unification: boolean;
   enable_metadata_passthrough: boolean;
   enable_cch_signing: boolean;
@@ -961,6 +962,7 @@ export interface UpdateSettingsRequest {
   referral_cashback_percentage?: number;
   referral_fixed_amount?: number;
   referral_max_rewards_per_user?: number;
+  openai_ttft_mode?: string;
   enable_fingerprint_unification?: boolean;
   enable_metadata_passthrough?: boolean;
   enable_cch_signing?: boolean;
