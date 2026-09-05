@@ -920,32 +920,6 @@ export interface ClaudeModel {
   created_at: string
 }
 
-export interface AdminModelCatalogEntry {
-  id: string
-  display_name: string
-  type: string
-  platform: string
-  input_price?: number | null
-  output_price?: number | null
-  cache_write_price?: number | null
-  cache_read_price?: number | null
-  image_output_price?: number | null
-  account_count: number
-  group_count: number
-  account_ids?: number[]
-  group_ids?: number[]
-  pricing_fallback: boolean
-}
-
-export interface AdminModelCatalogResponse {
-  models: AdminModelCatalogEntry[]
-  total: number
-}
-
-export type ModelCatalogEntry = AdminModelCatalogEntry
-
-export type ModelCatalogResponse = AdminModelCatalogResponse
-
 export interface Proxy {
   id: number
   name: string
@@ -1970,36 +1944,6 @@ export interface GroupStat {
   cost: number // 标准计费
   actual_cost: number // 实际扣除
   account_cost?: number // 账号成本（仅管理员接口返回）
-}
-
-// ==================== Group Monitoring Types ====================
-
-export interface GroupMonitoringStat {
-  group_id: number
-  group_name: string
-  platform: string
-  total_accounts: number
-  normal_accounts: number
-  error_accounts: number
-  ratelimit_accounts: number
-  overload_accounts: number
-  disabled_accounts: number
-  rate_multiplier: number
-  sort_order: number
-  availability_rate: number
-  cache_hit_rate: number
-  avg_response_time: number
-  probe_status: string
-  last_probe_at: number
-  last_probe_success_at: number
-  last_probe_latency_ms: number
-  last_probe_error: string
-}
-
-export interface MonitoringHistoryPoint {
-  availability_rate: number
-  cache_hit_rate: number
-  recorded_at: number
 }
 
 export interface UserBreakdownItem {

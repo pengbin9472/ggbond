@@ -229,30 +229,6 @@ const routes: RouteRecordRaw[] = [
     }
   },
   {
-    path: '/monitoring',
-    name: 'Monitoring',
-    component: () => import('@/views/MonitoringView.vue'),
-    meta: {
-      requiresAuth: true,
-      requiresAdmin: false,
-      title: 'Group Monitoring',
-      titleKey: 'monitoring.title',
-      descriptionKey: 'monitoring.description'
-    }
-  },
-  {
-    path: '/models',
-    name: 'Models',
-    component: () => import('@/views/admin/ModelsView.vue'),
-    meta: {
-      requiresAuth: true,
-      requiresAdmin: false,
-      title: 'Model Plaza',
-      titleKey: 'admin.models.title',
-      descriptionKey: 'admin.models.description'
-    }
-  },
-  {
     path: '/usage',
     name: 'Usage',
     component: () => import('@/views/user/UsageView.vue'),
