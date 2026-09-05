@@ -171,6 +171,27 @@ func TestFilterCodexModelIDsForGroupOmitsWildcardKeys(t *testing.T) {
 	require.Equal(t, []string{"deepseek-v4-pro", "gpt-5.5"}, got)
 }
 
+func TestNewConfiguredCodexModelDescriptorGPT6Astra(t *testing.T) {
+	descriptor := newConfiguredCodexModelDescriptor("gpt-6-astra")
+
+	require.Equal(t, "GPT-6 Astra", descriptor.DisplayName)
+	require.Equal(t, int64(1_050_000), descriptor.ContextWindow)
+	require.Equal(t, int64(922_000), descriptor.MaxContextWindow)
+	require.Equal(t, []string{"text", "image"}, descriptor.InputModalities)
+	require.True(t, descriptor.SupportVerbosity)
+	require.True(t, descriptor.SupportsParallelToolCalls)
+	require.Equal(t, []string{"low", "medium", "high", "xhigh", "max"}, func() []string {
+		efforts := make([]string, 0, len(descriptor.SupportedReasoningLevels))
+		for _, level := range descriptor.SupportedReasoningLevels {
+			efforts = append(efforts, level.Effort)
+		}
+		return efforts
+	}())
+	require.Equal(t, "medium", *descriptor.DefaultReasoningLevel)
+	require.Len(t, descriptor.ServiceTiers, 1)
+	require.Equal(t, "priority", descriptor.ServiceTiers[0].ID)
+}
+
 func decodeCodexManifestModels(t *testing.T, body []byte) []map[string]any {
 	t.Helper()
 

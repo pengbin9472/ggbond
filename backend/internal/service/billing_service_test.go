@@ -131,6 +131,63 @@ func TestGetModelPricing_CaseInsensitive(t *testing.T) {
 	require.Equal(t, p1.InputPricePerToken, p2.InputPricePerToken)
 }
 
+func TestGetModelPricing_GPT6AstraUsesOfficialFallback(t *testing.T) {
+	svc := newTestBillingService()
+
+	pricing, err := svc.GetModelPricing("openai/GPT6_ASTRA-max")
+	require.NoError(t, err)
+	require.InDelta(t, 10e-6, pricing.InputPricePerToken, 1e-12)
+	require.InDelta(t, 50e-6, pricing.OutputPricePerToken, 1e-12)
+	require.InDelta(t, 12.5e-6, pricing.CacheCreationPricePerToken, 1e-12)
+	require.InDelta(t, 1e-6, pricing.CacheReadPricePerToken, 1e-12)
+	require.Equal(t, 272000, pricing.LongContextInputThreshold)
+	require.InDelta(t, 2.0, pricing.LongContextInputMultiplier, 1e-12)
+	require.InDelta(t, 1.5, pricing.LongContextOutputMultiplier, 1e-12)
+}
+
+func TestCalculateCostWithServiceTier_GPT6AstraMatchesOfficialRates(t *testing.T) {
+	svc := newTestBillingService()
+	tokens := UsageTokens{
+		InputTokens:         100,
+		OutputTokens:        50,
+		CacheCreationTokens: 25,
+		CacheReadTokens:     40,
+	}
+
+	base, err := svc.CalculateCost("gpt-6-astra", tokens, 1)
+	require.NoError(t, err)
+	require.InDelta(t, 100*10e-6, base.InputCost, 1e-12)
+	require.InDelta(t, 50*50e-6, base.OutputCost, 1e-12)
+	require.InDelta(t, 25*12.5e-6, base.CacheCreationCost, 1e-12)
+	require.InDelta(t, 40*1e-6, base.CacheReadCost, 1e-12)
+
+	priority, err := svc.CalculateCostWithServiceTier("gpt-6-astra", tokens, 1, "priority")
+	require.NoError(t, err)
+	require.InDelta(t, base.TotalCost*2, priority.TotalCost, 1e-12)
+
+	flex, err := svc.CalculateCostWithServiceTier("gpt-6-astra", tokens, 1, "flex")
+	require.NoError(t, err)
+	require.InDelta(t, base.TotalCost*0.5, flex.TotalCost, 1e-12)
+}
+
+func TestCalculateCost_GPT6AstraLongContextUsesOfficialMultipliers(t *testing.T) {
+	svc := newTestBillingService()
+	tokens := UsageTokens{
+		InputTokens:         272001,
+		OutputTokens:        100,
+		CacheCreationTokens: 10,
+		CacheReadTokens:     20,
+	}
+
+	cost, err := svc.CalculateCost("gpt-6-astra", tokens, 1)
+	require.NoError(t, err)
+	require.True(t, cost.LongContextBillingApplied)
+	require.InDelta(t, 272001*10e-6*2, cost.InputCost, 1e-9)
+	require.InDelta(t, 100*50e-6*1.5, cost.OutputCost, 1e-12)
+	require.InDelta(t, 10*12.5e-6*2, cost.CacheCreationCost, 1e-12)
+	require.InDelta(t, 20*1e-6*2, cost.CacheReadCost, 1e-12)
+}
+
 // issue #3394: fallback warn 应按模型名去重,每个模型每进程最多打一条,
 // 避免热路径每请求刷屏 ops_system_logs。
 func TestGetModelPricing_FallbackWarnLoggedOncePerModel(t *testing.T) {

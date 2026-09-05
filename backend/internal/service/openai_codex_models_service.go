@@ -311,6 +311,8 @@ const (
 	configuredCodexGrokContext         = 500_000
 	configuredCodexGrokBuildContext    = 256_000
 	configuredCodexGPT56MaxContext     = 872_000
+	configuredCodexGPT6AstraContext    = 1_050_000
+	configuredCodexGPT6AstraMaxInput   = 922_000
 	configuredCodexToolOutputMaxTokens = 10_000
 )
 
@@ -490,6 +492,12 @@ func newConfiguredCodexModelDescriptor(modelID string) configuredCodexModelDescr
 			if isOpenAIGPT56Model(modelID) {
 				descriptor.MaxContextWindow = configuredCodexGPT56MaxContext
 			}
+			if isOpenAIGPT6AstraModel(modelID) {
+				descriptor.ContextWindow = configuredCodexGPT6AstraContext
+				descriptor.MaxContextWindow = configuredCodexGPT6AstraMaxInput
+				descriptor.InputModalities = []string{"text", "image"}
+				descriptor.SupportsImageDetailOriginal = true
+			}
 		}
 		if SupportsVerbosity(modelID) {
 			defaultVerbosity := "low"
@@ -503,12 +511,25 @@ func newConfiguredCodexModelDescriptor(modelID string) configuredCodexModelDescr
 
 func configuredCodexSupportsPriorityServiceTier(modelID string) bool {
 	normalized := canonicalizeOpenAIModelAliasSpelling(modelID)
-	for _, family := range []string{"gpt-5.4", "gpt-5.5", "gpt-5.6"} {
+	for _, family := range []string{"gpt-5.4", "gpt-5.5", "gpt-5.6", "gpt-6-astra"} {
 		if normalized == family || strings.HasPrefix(normalized, family+"-") {
 			return true
 		}
 	}
 	return false
+}
+
+func enforceOpenAIGPT6AstraDescriptorLimits(
+	descriptor *configuredCodexModelDescriptor,
+	modelID string,
+) {
+	if descriptor == nil || !isOpenAIGPT6AstraModel(modelID) {
+		return
+	}
+	descriptor.ContextWindow = configuredCodexGPT6AstraContext
+	descriptor.MaxContextWindow = configuredCodexGPT6AstraMaxInput
+	descriptor.InputModalities = []string{"text", "image"}
+	descriptor.SupportsImageDetailOriginal = true
 }
 
 func configuredCodexGrokReasoningLevels(modelID string) []configuredCodexReasoningLevel {
@@ -567,7 +588,7 @@ func configuredCodexGPTReasoningLevels(modelID string) []configuredCodexReasonin
 		{Effort: "xhigh", Description: "Extra-high reasoning depth for difficult tasks"},
 	}
 	normalized := getNormalizedCodexModel(modelID)
-	if isOpenAIGPT56Model(modelID) {
+	if isOpenAIGPT56Model(modelID) || isOpenAIGPT6AstraModel(modelID) {
 		levels = append(levels, configuredCodexReasoningLevel{
 			Effort:      "max",
 			Description: "Maximum reasoning depth for complex tasks",
@@ -592,12 +613,13 @@ func isOpenAICodexGPTModel(modelID string) bool {
 
 func isOpenAICodexReasoningGPTModel(modelID string) bool {
 	normalized := canonicalizeOpenAIModelAliasSpelling(modelID)
-	return strings.HasPrefix(normalized, "gpt-5")
+	return strings.HasPrefix(normalized, "gpt-5") || isOpenAIGPT6AstraModel(normalized)
 }
 
 func isOpenAICodexImageInputModel(modelID string) bool {
 	normalized := canonicalizeOpenAIModelAliasSpelling(modelID)
 	return strings.HasPrefix(normalized, "gpt-5") ||
+		isOpenAIGPT6AstraModel(normalized) ||
 		strings.HasPrefix(normalized, "gpt-4o") ||
 		strings.HasPrefix(normalized, "gpt-4.1") ||
 		strings.HasPrefix(normalized, "gpt-4.5") ||
@@ -853,6 +875,7 @@ func buildCodexModelsManifest(
 		if metadata, ok := modelMetadata[modelID]; ok {
 			applyUpstreamModelMetadataToCodexDescriptor(&descriptor, metadata)
 		}
+		enforceOpenAIGPT6AstraDescriptorLimits(&descriptor, metadataModelID)
 		if metadataModelID != modelID {
 			descriptor.DisplayName = modelID
 			descriptor.Description = configuredCodexCustomDescription
@@ -1834,6 +1857,7 @@ func CodexModelsManifestETag(body []byte) string {
 }
 
 var apiKeyCodexModelsWithoutResponsesLite = map[string]struct{}{
+	"gpt-6-astra":   {},
 	"gpt-5.6-sol":   {},
 	"gpt-5.6-terra": {},
 	"gpt-5.6-luna":  {},
@@ -2021,6 +2045,7 @@ func applySyncedAPIKeyCodexModelMetadata(body []byte, account *Account, overwrit
 			&descriptor,
 			codexModelMetadataOverride{UpstreamModelMetadata: metadata},
 		)
+		enforceOpenAIGPT6AstraDescriptorLimits(&descriptor, slug)
 		descriptorBody, err := json.Marshal(descriptor)
 		if err != nil {
 			return nil, fmt.Errorf("encode synced model %q: %w", slug, err)
