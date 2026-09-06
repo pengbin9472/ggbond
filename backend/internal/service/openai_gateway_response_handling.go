@@ -15,11 +15,11 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/pengbin9472/ggbond/internal/pkg/apicompat"
 	"github.com/pengbin9472/ggbond/internal/pkg/logger"
-	"github.com/pengbin9472/ggbond/internal/util/responseheaders"
 	"github.com/pengbin9472/ggbond/internal/pkg/xai"
-	"github.com/google/uuid"
+	"github.com/pengbin9472/ggbond/internal/util/responseheaders"
 	"github.com/tidwall/gjson"
 	"github.com/tidwall/sjson"
 	"go.uber.org/zap"
@@ -925,7 +925,8 @@ func (s *OpenAIGatewayService) handleStreamingResponseWithReasoning(ctx context.
 				markEventProcessed(ev)
 			}
 			return resultWithUsage(), s.newOpenAIFirstOutputTimeoutError(
-				ctx, c, account, startTime, originalModel, reasoningEffort,
+				ctx, c, account, opsUpstreamProxyID(account), opsUpstreamProxyName(account),
+				startTime, originalModel, reasoningEffort,
 				firstOutputTimeout, "semantic_output", resp.Header,
 			)
 

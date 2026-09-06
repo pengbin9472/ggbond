@@ -65,8 +65,7 @@ func openAIImagesJSONResponse() *http.Response {
 
 // issue #5411：生图是长耗时、上游侧已经产生实际成本的操作。客户端中途断开时，
 // 如果连带取消上游请求，就会出现「上游已出图并计费、网关记 502 context canceled、
-// 用户不扣费」。非流式路径以前走 detachStreamUpstreamContext(ctx, false)，
-// 该函数在非流式时原样返回请求 context，因此不脱钩。
+// 用户不扣费」，因此非流式路径也必须脱钩。
 func TestForwardOpenAIImagesAPIKey_NonStreamDetachesUpstreamContext(t *testing.T) {
 	body := []byte(`{"model":"gpt-image-2","prompt":"draw a cat","response_format":"b64_json"}`)
 	c, _ := newOpenAIImagesTestContext(t, body)
@@ -135,13 +134,12 @@ func TestDetachUpstreamContextSemantics(t *testing.T) {
 		require.NoError(t, detached.Err())
 	})
 
-	t.Run("detachStreamUpstreamContext_keeps_cancel_when_not_streaming", func(t *testing.T) {
+	t.Run("detachStreamUpstreamContext_detaches_when_not_streaming", func(t *testing.T) {
 		ctx, cancel := context.WithCancel(context.Background())
 		cancel()
-		same, release := detachStreamUpstreamContext(ctx, false)
+		detached, release := detachStreamUpstreamContext(ctx, false)
 		defer release()
-		require.ErrorIs(t, same.Err(), context.Canceled,
-			"非流式时该函数原样返回请求 context —— 生图路径不能用它")
+		require.NoError(t, detached.Err())
 	})
 
 	t.Run("detachStreamUpstreamContext_detaches_when_streaming", func(t *testing.T) {

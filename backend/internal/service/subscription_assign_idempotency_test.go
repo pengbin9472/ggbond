@@ -6,10 +6,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/dgraph-io/ristretto"
 	dbent "github.com/pengbin9472/ggbond/ent"
 	infraerrors "github.com/pengbin9472/ggbond/internal/pkg/errors"
 	"github.com/pengbin9472/ggbond/internal/pkg/pagination"
-	"github.com/dgraph-io/ristretto"
+	"github.com/pengbin9472/ggbond/internal/pkg/timezone"
 	"github.com/stretchr/testify/require"
 )
 
@@ -442,7 +443,7 @@ func TestAssignSubscriptionRenewsExpiredSemanticMatch(t *testing.T) {
 	require.False(t, sub.StartsAt.Before(before))
 	require.False(t, sub.StartsAt.After(after))
 	require.Equal(t, sub.StartsAt.AddDate(0, 0, 30), sub.ExpiresAt)
-	require.Equal(t, sub.StartsAt, *sub.DailyWindowStart)
+	require.Equal(t, timezone.StartOfDay(sub.StartsAt), *sub.DailyWindowStart, "续期后日窗口应锚定当天 0 点")
 	require.Equal(t, sub.StartsAt, *sub.WeeklyWindowStart)
 	require.Equal(t, sub.StartsAt, *sub.MonthlyWindowStart)
 	require.Zero(t, sub.DailyUsageUSD)

@@ -8,8 +8,8 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/pengbin9472/ggbond/internal/pkg/logger"
 	"github.com/gin-gonic/gin"
+	"github.com/pengbin9472/ggbond/internal/pkg/logger"
 	"github.com/tidwall/gjson"
 )
 
@@ -215,6 +215,8 @@ func (s *OpenAIGatewayService) appendOpenAICompactFallbackRetryOps(
 		detail = truncateString(string(payload), maxBytes)
 	}
 	appendOpsUpstreamError(c, OpsUpstreamErrorEvent{
+		ProxyID:              opsUpstreamProxyID(account),
+		ProxyName:            opsUpstreamProxyName(account),
 		Platform:             account.Platform,
 		AccountID:            account.ID,
 		AccountName:          account.Name,
