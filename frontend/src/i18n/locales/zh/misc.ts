@@ -69,6 +69,37 @@ export default {
     notConfiguredDesc: '管理员已开启入口，但尚未配置充值/订阅链接，请联系管理员。'
   },
 
+  purchaseChannel: {
+    title: '购买渠道',
+    description: '打开管理员配置的购买渠道',
+    openShop: '打开商店',
+    copyLink: '复制链接',
+    copied: '已复制',
+    notEnabledTitle: '购买渠道未开启',
+    notEnabledDesc: '管理员暂未开启购买渠道。',
+    notConfiguredTitle: '购买渠道未配置',
+    notConfiguredDesc: '管理员尚未配置有效的购买渠道链接。'
+  },
+
+  referral: {
+    title: '邀请返利',
+    description: '邀请用户并查看返利记录',
+    invitationLink: '邀请链接',
+    invitationLinkHint: '分享此链接邀请新用户。',
+    invitationCode: '邀请码',
+    invitationUrl: '邀请地址',
+    codeCopied: '邀请码已复制',
+    urlCopied: '邀请地址已复制',
+    totalRewards: '累计返利',
+    inviteeCount: '邀请人数',
+    rewardHistory: '返利记录',
+    inviteeEmail: '受邀用户',
+    rewardAmount: '返利金额',
+    triggerAmount: '触发金额',
+    createdAt: '创建时间',
+    noHistory: '暂无返利记录'
+  },
+
   // Custom Page (iframe embed)
   customPage: {
     title: '自定义页面',

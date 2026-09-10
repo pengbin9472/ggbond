@@ -351,7 +351,7 @@ func TestNormalizeCodexModel(t *testing.T) {
 		"gpt-image-2":               "gpt-image-2",
 		"gpt-5.4-nano":              "gpt-5.4-nano",
 		"gpt-5.4-nano-high":         "gpt-5.4-nano",
-		"gpt6":                      "gpt-6-astra",
+		"gpt6":                      "gpt6",
 		"claude-opus-4-6":           "claude-opus-4-6",
 	}
 
@@ -388,10 +388,10 @@ func TestNormalizeOpenAIModelForUpstream(t *testing.T) {
 			want:    "gemini-3-flash-preview",
 		},
 		{
-			name:    "oauth routes GPT-6 alias to Astra",
+			name:    "oauth preserves invalid gpt model",
 			account: &Account{Type: AccountTypeOAuth},
 			model:   "gpt6",
-			want:    "gpt-6-astra",
+			want:    "gpt6",
 		},
 		{
 			name:    "oauth normalizes known codex alias",

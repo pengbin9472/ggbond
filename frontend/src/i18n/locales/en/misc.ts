@@ -71,6 +71,37 @@ export default {
       'The administrator enabled the entry but has not configured a recharge/subscription URL. Please contact admin.'
   },
 
+  purchaseChannel: {
+    title: 'Purchase Channel',
+    description: 'Open the configured purchase channel',
+    openShop: 'Open Store',
+    copyLink: 'Copy Link',
+    copied: 'Copied',
+    notEnabledTitle: 'Purchase channel not enabled',
+    notEnabledDesc: 'The administrator has not enabled the purchase channel.',
+    notConfiguredTitle: 'Purchase channel not configured',
+    notConfiguredDesc: 'The administrator has not configured a valid purchase channel URL.'
+  },
+
+  referral: {
+    title: 'Referral Rewards',
+    description: 'Invite users and view your referral rewards',
+    invitationLink: 'Invitation Link',
+    invitationLinkHint: 'Share this link to invite new users.',
+    invitationCode: 'Invitation Code',
+    invitationUrl: 'Invitation URL',
+    codeCopied: 'Invitation code copied',
+    urlCopied: 'Invitation URL copied',
+    totalRewards: 'Total Rewards',
+    inviteeCount: 'Invited Users',
+    rewardHistory: 'Reward History',
+    inviteeEmail: 'Invitee',
+    rewardAmount: 'Reward Amount',
+    triggerAmount: 'Trigger Amount',
+    createdAt: 'Created At',
+    noHistory: 'No referral rewards yet'
+  },
+
   // Custom Page (iframe embed)
   customPage: {
     title: 'Custom Page',

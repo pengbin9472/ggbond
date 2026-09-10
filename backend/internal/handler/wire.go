@@ -176,46 +176,6 @@ func ProvideAccountCatalogService(adminService service.AdminService) accountCata
 	return adminService
 }
 
-// ProvideAccountHandler keeps Wire on a fixed signature while AccountHandler's
-// constructor remains backward-compatible with older tests.
-func ProvideAccountHandler(
-	adminService service.AdminService,
-	oauthService *service.OAuthService,
-	openaiOAuthService *service.OpenAIOAuthService,
-	geminiOAuthService *service.GeminiOAuthService,
-	antigravityOAuthService *service.AntigravityOAuthService,
-	grokOAuthService service.GrokOAuthTokenService,
-	rateLimitService *service.RateLimitService,
-	accountUsageService *service.AccountUsageService,
-	accountTestService *service.AccountTestService,
-	billingService *service.BillingService,
-	concurrencyService *service.ConcurrencyService,
-	crsSyncService *service.CRSSyncService,
-	sessionLimitCache service.SessionLimitCache,
-	rpmCache service.RPMCache,
-	tokenCacheInvalidator service.TokenCacheInvalidator,
-	grokQuotaService *service.GrokQuotaService,
-) *admin.AccountHandler {
-	return admin.ProvideAccountHandler(
-		adminService,
-		oauthService,
-		openaiOAuthService,
-		geminiOAuthService,
-		antigravityOAuthService,
-		grokOAuthService,
-		rateLimitService,
-		accountUsageService,
-		accountTestService,
-		billingService,
-		concurrencyService,
-		crsSyncService,
-		sessionLimitCache,
-		rpmCache,
-		tokenCacheInvalidator,
-		grokQuotaService,
-	)
-}
-
 // ProvideHandlers creates the Handlers struct
 func ProvideHandlers(
 	authHandler *AuthHandler,
@@ -304,8 +264,8 @@ var ProviderSet = wire.NewSet(
 	// Admin handlers
 	admin.NewDashboardHandler,
 	admin.NewUserHandler,
-	admin.NewGroupHandler,
-	ProvideAccountHandler,
+	admin.NewGroupHandlerWithConfig,
+	admin.ProvideAccountHandler,
 	admin.NewAnnouncementHandler,
 	admin.NewDataManagementHandler,
 	admin.NewBackupHandler,

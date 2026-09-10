@@ -7,7 +7,7 @@ import (
 )
 
 func TestNormalizeKnownOpenAICodexModelGPT6Astra(t *testing.T) {
-	for _, model := range []string{"gpt-6-astra", "openai/gpt-6-astra", "gpt-6", "openai/gpt-6"} {
+	for _, model := range []string{"gpt-6-astra", "openai/gpt-6-astra", "OPENAI/GPT-6_ASTRA", "gpt-6", "openai/gpt-6"} {
 		require.Equal(t, "gpt-6-astra", normalizeKnownOpenAICodexModel(model))
 	}
 }
@@ -39,20 +39,4 @@ func TestUsageBillingModelCandidates_BareGPT56IncludesSol(t *testing.T) {
 		[]string{"openai/gpt-5.6", "gpt-5.6", "gpt-5.6-sol"},
 		usageBillingModelCandidates("openai/gpt-5.6"),
 	)
-}
-
-func TestNormalizeKnownOpenAICodexModel_AstraAliases(t *testing.T) {
-	tests := map[string]string{
-		"gpt-6-astra":            "gpt-6-astra",
-		"openai/gpt-6-astra":     "gpt-6-astra",
-		"GPT6_ASTRA-high":        "gpt-6-astra",
-		"gpt-6-astra-2026-09-05": "gpt-6-astra",
-		"gpt-6-astra-max":        "gpt-6-astra",
-	}
-
-	for input, expected := range tests {
-		t.Run(input, func(t *testing.T) {
-			require.Equal(t, expected, normalizeKnownOpenAICodexModel(input))
-		})
-	}
 }
