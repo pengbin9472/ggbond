@@ -12,8 +12,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/pengbin9472/ggbond/internal/pkg/tlsfingerprint"
 	"github.com/gin-gonic/gin"
+	"github.com/pengbin9472/ggbond/internal/pkg/tlsfingerprint"
 	"github.com/stretchr/testify/require"
 )
 

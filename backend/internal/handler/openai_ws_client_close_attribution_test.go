@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/pengbin9472/ggbond/internal/service"
 	coderws "github.com/coder/websocket"
+	"github.com/pengbin9472/ggbond/internal/service"
 	"github.com/stretchr/testify/require"
 )
 

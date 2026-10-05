@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/pengbin9472/ggbond/migrations"
 	"github.com/lib/pq"
+	"github.com/pengbin9472/ggbond/migrations"
 	"github.com/stretchr/testify/require"
 )
 

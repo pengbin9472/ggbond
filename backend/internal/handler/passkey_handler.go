@@ -9,12 +9,12 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/gin-gonic/gin"
 	infraerrors "github.com/pengbin9472/ggbond/internal/pkg/errors"
 	"github.com/pengbin9472/ggbond/internal/pkg/ip"
 	"github.com/pengbin9472/ggbond/internal/pkg/response"
 	middleware2 "github.com/pengbin9472/ggbond/internal/server/middleware"
 	"github.com/pengbin9472/ggbond/internal/service"
-	"github.com/gin-gonic/gin"
 )
 
 type PasskeyHandler struct {

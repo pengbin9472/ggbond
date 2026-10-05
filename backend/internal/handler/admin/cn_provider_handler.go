@@ -3,9 +3,9 @@ package admin
 import (
 	"strconv"
 
+	"github.com/gin-gonic/gin"
 	"github.com/pengbin9472/ggbond/internal/pkg/response"
 	"github.com/pengbin9472/ggbond/internal/service"
-	"github.com/gin-gonic/gin"
 )
 
 // CNProviderHandler 暴露国产供应商（kimi/zhipu/deepseek）的额度与余额查询端点。

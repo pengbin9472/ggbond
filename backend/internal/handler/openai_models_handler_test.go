@@ -7,9 +7,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/gin-gonic/gin"
 	middleware2 "github.com/pengbin9472/ggbond/internal/server/middleware"
 	"github.com/pengbin9472/ggbond/internal/service"
-	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/require"
 )
 

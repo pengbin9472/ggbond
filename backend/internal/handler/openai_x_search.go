@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/pengbin9472/ggbond/internal/pkg/xai"
 	"github.com/gin-gonic/gin"
+	"github.com/pengbin9472/ggbond/internal/pkg/xai"
 )
 
 type grokStandaloneSearchRequest struct {

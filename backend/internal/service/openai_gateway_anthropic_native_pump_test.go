@@ -14,9 +14,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/gin-gonic/gin"
 	"github.com/pengbin9472/ggbond/internal/config"
 	"github.com/pengbin9472/ggbond/internal/pkg/apicompat"
-	"github.com/gin-gonic/gin"
 )
 
 func newNativeAnthropicHangTestService(intervalSec int) *OpenAIGatewayService {

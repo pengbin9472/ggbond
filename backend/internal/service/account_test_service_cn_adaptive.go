@@ -10,9 +10,9 @@ import (
 	"net/url"
 	"strings"
 
+	"github.com/gin-gonic/gin"
 	"github.com/pengbin9472/ggbond/internal/pkg/claude"
 	"github.com/pengbin9472/ggbond/internal/pkg/openai"
-	"github.com/gin-gonic/gin"
 )
 
 const accountTestSuppressCompletionContextKey = "account_test_suppress_completion"

@@ -9,9 +9,9 @@ import (
 	"sync/atomic"
 	"testing"
 
+	"github.com/imroc/req/v3"
 	infraerrors "github.com/pengbin9472/ggbond/internal/pkg/errors"
 	"github.com/pengbin9472/ggbond/internal/service"
-	"github.com/imroc/req/v3"
 	"github.com/stretchr/testify/require"
 )
 

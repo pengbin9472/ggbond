@@ -9,8 +9,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pengbin9472/ggbond/internal/service"
 	"github.com/lib/pq"
+	"github.com/pengbin9472/ggbond/internal/service"
 )
 
 type channelMonitorV2Repository struct{ db *sql.DB }

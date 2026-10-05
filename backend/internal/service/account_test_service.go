@@ -26,6 +26,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/pengbin9472/ggbond/internal/config"
 	"github.com/pengbin9472/ggbond/internal/pkg/claude"
 	"github.com/pengbin9472/ggbond/internal/pkg/geminicli"
@@ -33,8 +35,6 @@ import (
 	"github.com/pengbin9472/ggbond/internal/pkg/openai_compat"
 	"github.com/pengbin9472/ggbond/internal/pkg/xai"
 	"github.com/pengbin9472/ggbond/internal/util/urlvalidator"
-	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
 	"github.com/tidwall/gjson"
 )
 
@@ -414,6 +414,10 @@ func (s *AccountTestService) TestAccountConnection(c *gin.Context, accountID int
 
 	if account.IsOpenCodeGo() {
 		return s.testOpenCodeGoAccountConnection(c, account, modelID, prompt)
+	}
+
+	if account.IsTypeSafe() {
+		return s.testTypeSafeAccountConnection(c, account, prompt)
 	}
 
 	return s.testClaudeAccountConnection(c, account, modelID)

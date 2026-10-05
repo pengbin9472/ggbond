@@ -9,8 +9,8 @@ import (
 
 	"github.com/pengbin9472/ggbond/internal/service"
 
-	middleware2 "github.com/pengbin9472/ggbond/internal/server/middleware"
 	"github.com/gin-gonic/gin"
+	middleware2 "github.com/pengbin9472/ggbond/internal/server/middleware"
 	"github.com/stretchr/testify/require"
 )
 

@@ -7,9 +7,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/gin-gonic/gin"
 	"github.com/pengbin9472/ggbond/internal/config"
 	"github.com/pengbin9472/ggbond/internal/util/responseheaders"
-	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/require"
 )
 

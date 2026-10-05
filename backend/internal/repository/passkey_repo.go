@@ -9,9 +9,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pengbin9472/ggbond/internal/service"
 	"github.com/go-webauthn/webauthn/webauthn"
 	"github.com/lib/pq"
+	"github.com/pengbin9472/ggbond/internal/service"
 )
 
 type passkeyRepository struct {

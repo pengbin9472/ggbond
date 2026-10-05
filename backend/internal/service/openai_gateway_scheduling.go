@@ -13,10 +13,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/gin-gonic/gin"
 	"github.com/pengbin9472/ggbond/internal/config"
 	"github.com/pengbin9472/ggbond/internal/pkg/openai"
 	"github.com/pengbin9472/ggbond/internal/pkg/xai"
-	"github.com/gin-gonic/gin"
 	"github.com/tidwall/gjson"
 )
 

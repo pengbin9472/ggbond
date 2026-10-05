@@ -2,11 +2,11 @@ package handler
 
 import (
 	"encoding/json"
+	"github.com/gin-gonic/gin"
 	"github.com/pengbin9472/ggbond/internal/config"
 	"github.com/pengbin9472/ggbond/internal/pkg/gemini"
 	"github.com/pengbin9472/ggbond/internal/server/middleware"
 	"github.com/pengbin9472/ggbond/internal/service"
-	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/require"
 	"io"
 	"net/http"

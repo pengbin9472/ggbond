@@ -6,10 +6,10 @@ import (
 	"context"
 	"testing"
 
-	"github.com/pengbin9472/ggbond/internal/service"
-	dbmigrations "github.com/pengbin9472/ggbond/migrations"
 	"github.com/google/uuid"
 	"github.com/lib/pq"
+	"github.com/pengbin9472/ggbond/internal/service"
+	dbmigrations "github.com/pengbin9472/ggbond/migrations"
 	"github.com/stretchr/testify/require"
 )
 

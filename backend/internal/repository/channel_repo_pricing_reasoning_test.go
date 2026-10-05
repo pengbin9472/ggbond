@@ -10,8 +10,8 @@ import (
 	"time"
 
 	"github.com/DATA-DOG/go-sqlmock"
-	"github.com/pengbin9472/ggbond/internal/service"
 	"github.com/lib/pq"
+	"github.com/pengbin9472/ggbond/internal/service"
 	"github.com/stretchr/testify/require"
 )
 

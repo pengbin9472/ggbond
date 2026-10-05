@@ -10,9 +10,9 @@ import (
 	"testing"
 	"time"
 
+	coderws "github.com/coder/websocket"
 	"github.com/pengbin9472/ggbond/internal/config"
 	"github.com/pengbin9472/ggbond/internal/pkg/tlsfingerprint"
-	coderws "github.com/coder/websocket"
 	"github.com/stretchr/testify/require"
 )
 

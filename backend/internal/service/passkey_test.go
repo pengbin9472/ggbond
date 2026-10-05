@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/pengbin9472/ggbond/internal/config"
 	"github.com/go-webauthn/webauthn/webauthn"
+	"github.com/pengbin9472/ggbond/internal/config"
 	"github.com/stretchr/testify/require"
 )
 

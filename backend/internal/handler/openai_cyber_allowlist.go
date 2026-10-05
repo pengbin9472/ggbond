@@ -1,8 +1,8 @@
 package handler
 
 import (
-	"github.com/pengbin9472/ggbond/internal/service"
 	"github.com/gin-gonic/gin"
+	"github.com/pengbin9472/ggbond/internal/service"
 )
 
 func (h *OpenAIGatewayHandler) cyberPolicyLogOnly(c *gin.Context, apiKey *service.APIKey) bool {
