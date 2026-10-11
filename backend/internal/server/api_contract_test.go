@@ -719,6 +719,16 @@ func TestAPIContracts(t *testing.T) {
 					"registration_email_suffix_whitelist": [],
 					"registration_email_domain_quota_enabled": false,
 					"promo_code_enabled": true,
+					"group_monitoring_enabled": false,
+					"purchase_channel_enabled": false,
+					"purchase_channel_image": "",
+					"purchase_channel_url": "",
+					"referral_cashback_percentage": 0,
+					"referral_enabled": false,
+					"referral_fixed_amount": 0,
+					"referral_max_rewards_per_user": 0,
+					"referral_reward_type": "",
+					"sora_client_enabled": false,
 					"password_reset_enabled": false,
 						"frontend_url": "",
 						"totp_enabled": false,
@@ -863,7 +873,7 @@ func TestAPIContracts(t *testing.T) {
 					"force_email_on_third_party_signup": false,
 					"default_concurrency": 5,
 					"default_balance": 1.25,
-					"default_platform_quotas": {"anthropic":{"daily":null,"weekly":null,"monthly":null},"antigravity":{"daily":null,"weekly":null,"monthly":null},"deepseek":{"daily":null,"weekly":null,"monthly":null},"gemini":{"daily":null,"weekly":null,"monthly":null},"grok":{"daily":null,"weekly":null,"monthly":null},"kimi":{"daily":null,"weekly":null,"monthly":null},"minimax":{"daily":null,"weekly":null,"monthly":null},"openai":{"daily":null,"weekly":null,"monthly":null},"opencode_go":{"daily":null,"weekly":null,"monthly":null},"typesafe":{"daily":null,"weekly":null,"monthly":null},"zhipu":{"daily":null,"weekly":null,"monthly":null}},
+					"default_platform_quotas": {"anthropic":{"daily":null,"weekly":null,"monthly":null},"antigravity":{"daily":null,"weekly":null,"monthly":null},"cline":{"daily":null,"weekly":null,"monthly":null},"command_code":{"daily":null,"weekly":null,"monthly":null},"deepseek":{"daily":null,"weekly":null,"monthly":null},"gemini":{"daily":null,"weekly":null,"monthly":null},"grok":{"daily":null,"weekly":null,"monthly":null},"kimi":{"daily":null,"weekly":null,"monthly":null},"minimax":{"daily":null,"weekly":null,"monthly":null},"openai":{"daily":null,"weekly":null,"monthly":null},"opencode_go":{"daily":null,"weekly":null,"monthly":null},"typesafe":{"daily":null,"weekly":null,"monthly":null},"zhipu":{"daily":null,"weekly":null,"monthly":null}},
 					"auth_source_default_email_platform_quotas": null,
 					"auth_source_default_github_platform_quotas": null,
 					"auth_source_default_google_platform_quotas": null,
@@ -1077,6 +1087,16 @@ func TestAPIContracts(t *testing.T) {
 					"registration_email_suffix_whitelist": [],
 					"registration_email_domain_quota_enabled": false,
 					"promo_code_enabled": true,
+					"group_monitoring_enabled": false,
+					"purchase_channel_enabled": false,
+					"purchase_channel_image": "",
+					"purchase_channel_url": "",
+					"referral_cashback_percentage": 0,
+					"referral_enabled": false,
+					"referral_fixed_amount": 0,
+					"referral_max_rewards_per_user": 0,
+					"referral_reward_type": "",
+					"sora_client_enabled": false,
 					"password_reset_enabled": false,
 					"frontend_url": "",
 						"invitation_code_enabled": false,
@@ -1189,7 +1209,7 @@ func TestAPIContracts(t *testing.T) {
 					"purchase_subscription_url": "",
 					"table_default_page_size": 20,
 					"table_page_size_options": [10, 20, 50],
-					"default_platform_quotas": {"anthropic":{"daily":null,"weekly":null,"monthly":null},"antigravity":{"daily":null,"weekly":null,"monthly":null},"deepseek":{"daily":null,"weekly":null,"monthly":null},"gemini":{"daily":null,"weekly":null,"monthly":null},"grok":{"daily":null,"weekly":null,"monthly":null},"kimi":{"daily":null,"weekly":null,"monthly":null},"minimax":{"daily":null,"weekly":null,"monthly":null},"openai":{"daily":null,"weekly":null,"monthly":null},"opencode_go":{"daily":null,"weekly":null,"monthly":null},"typesafe":{"daily":null,"weekly":null,"monthly":null},"zhipu":{"daily":null,"weekly":null,"monthly":null}},
+					"default_platform_quotas": {"anthropic":{"daily":null,"weekly":null,"monthly":null},"antigravity":{"daily":null,"weekly":null,"monthly":null},"cline":{"daily":null,"weekly":null,"monthly":null},"command_code":{"daily":null,"weekly":null,"monthly":null},"deepseek":{"daily":null,"weekly":null,"monthly":null},"gemini":{"daily":null,"weekly":null,"monthly":null},"grok":{"daily":null,"weekly":null,"monthly":null},"kimi":{"daily":null,"weekly":null,"monthly":null},"minimax":{"daily":null,"weekly":null,"monthly":null},"openai":{"daily":null,"weekly":null,"monthly":null},"opencode_go":{"daily":null,"weekly":null,"monthly":null},"typesafe":{"daily":null,"weekly":null,"monthly":null},"zhipu":{"daily":null,"weekly":null,"monthly":null}},
 					"auth_source_default_email_platform_quotas": null,
 					"auth_source_default_github_platform_quotas": null,
 					"auth_source_default_google_platform_quotas": null,
@@ -1777,6 +1797,25 @@ func (stubApiKeyCache) SubscribeAuthCacheInvalidation(ctx context.Context, handl
 
 type stubGroupRepo struct {
 	active []service.Group
+}
+
+func (stubGroupRepo) GetGroupMonitoringStats(context.Context) ([]service.GroupMonitoringStat, error) {
+	panic("unexpected GetGroupMonitoringStats call")
+}
+func (stubGroupRepo) ComputeGroupMonitoringStats(context.Context) ([]service.GroupMonitoringStat, error) {
+	panic("unexpected ComputeGroupMonitoringStats call")
+}
+func (stubGroupRepo) RecordGroupMonitoringProbe(context.Context, service.GroupMonitoringProbeResult) error {
+	panic("unexpected RecordGroupMonitoringProbe call")
+}
+func (stubGroupRepo) UpsertGroupMonitoringStats(context.Context, []service.GroupMonitoringStat) error {
+	panic("unexpected UpsertGroupMonitoringStats call")
+}
+func (stubGroupRepo) InsertGroupMonitoringHistory(context.Context, []service.GroupMonitoringStat) error {
+	panic("unexpected InsertGroupMonitoringHistory call")
+}
+func (stubGroupRepo) GetGroupMonitoringHistory(context.Context, int64, int) ([]service.MonitoringHistoryPoint, error) {
+	panic("unexpected GetGroupMonitoringHistory call")
 }
 
 func (r *stubGroupRepo) SetActive(groups []service.Group) {

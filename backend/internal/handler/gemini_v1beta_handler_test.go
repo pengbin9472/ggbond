@@ -10,7 +10,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/pengbin9472/ggbond/internal/pkg/antigravity"
-	"github.com/pengbin9472/ggbond/internal/pkg/gemini"
 	"github.com/pengbin9472/ggbond/internal/server/middleware"
 	"github.com/pengbin9472/ggbond/internal/service"
 	"github.com/stretchr/testify/require"

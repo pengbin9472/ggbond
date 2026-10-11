@@ -299,6 +299,7 @@ func (m *mockGatewayCacheForPlatform) GetReasoningContent(_ context.Context, _ s
 }
 
 type mockGroupRepoForGateway struct {
+	groupRepoNoop
 	groups           map[int64]*Group
 	getByIDCalls     int
 	getByIDLiteCalls int

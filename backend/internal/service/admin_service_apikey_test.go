@@ -219,6 +219,7 @@ func (s *apiKeyRepoStubForGroupUpdate) UpdateGroupIDByUserAndGroup(context.Conte
 
 // groupRepoStubForGroupUpdate implements GroupRepository for AdminUpdateAPIKeyGroupID tests.
 type groupRepoStubForGroupUpdate struct {
+	groupRepoNoop
 	group          *Group
 	getErr         error
 	lastGetByIDArg int64

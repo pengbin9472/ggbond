@@ -16,6 +16,7 @@ import (
 // listActiveErr 非 nil 时，ListActive 返回该错误用于错误传播测试。
 // listActiveCalls 记录调用次数，用于断言「失败短路时不再访问 groupRepo」等行为。
 type stubGroupRepoForAvailable struct {
+	groupRepoNoop
 	activeGroups    []Group
 	listActiveErr   error
 	listActiveCalls int

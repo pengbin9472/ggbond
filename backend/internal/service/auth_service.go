@@ -40,7 +40,7 @@ var (
 	ErrEmailSuffixNotAllowed        = infraerrors.BadRequest("EMAIL_SUFFIX_NOT_ALLOWED", "email suffix is not allowed")
 	ErrEmailDomainRegistrationLimit = infraerrors.BadRequest(
 		"EMAIL_DOMAIN_REGISTRATION_LIMIT",
-		"registration limit reached for this email domain",
+		"this email domain cannot register another account; use a mainstream email or contact support to add the enterprise domain",
 	)
 	ErrRegDisabled             = infraerrors.Forbidden("REGISTRATION_DISABLED", "registration is currently disabled")
 	ErrServiceUnavailable      = infraerrors.ServiceUnavailable("SERVICE_UNAVAILABLE", "service temporarily unavailable")
@@ -170,9 +170,6 @@ func (s *AuthService) RegisterWithVerification(ctx context.Context, email, passw
 	if isReservedEmail(email) {
 		return "", nil, ErrEmailReserved
 	}
-	if err := s.validateRegistrationEmailPolicy(ctx, email); err != nil {
-		return "", nil, err
-	}
 
 	// 检查是否需要邀请码
 	var invitationRedeemCode *RedeemCode
@@ -225,6 +222,9 @@ func (s *AuthService) RegisterWithVerification(ctx context.Context, email, passw
 	}
 	if existsEmail {
 		return "", nil, ErrEmailExists
+	}
+	if err := s.validateRegistrationEmailQuota(ctx, email); err != nil {
+		return "", nil, err
 	}
 
 	// 密码哈希
@@ -326,9 +326,6 @@ func (s *AuthService) SendVerifyCode(ctx context.Context, email string, locale .
 	if isReservedEmail(email) {
 		return ErrEmailReserved
 	}
-	if err := s.validateRegistrationEmailPolicy(ctx, email); err != nil {
-		return err
-	}
 
 	// 检查邮箱是否已存在（含 +别名 / Gmail 点号变体归一化，防止单个收件箱批量派生注册）
 	existsEmail, err := s.existsByEmailOrAlias(ctx, email)
@@ -338,6 +335,9 @@ func (s *AuthService) SendVerifyCode(ctx context.Context, email string, locale .
 	}
 	if existsEmail {
 		return ErrEmailExists
+	}
+	if err := s.validateRegistrationEmailQuota(ctx, email); err != nil {
+		return err
 	}
 
 	// 发送验证码
@@ -367,9 +367,6 @@ func (s *AuthService) SendVerifyCodeAsync(ctx context.Context, email string, loc
 	if isReservedEmail(email) {
 		return nil, ErrEmailReserved
 	}
-	if err := s.validateRegistrationEmailPolicy(ctx, email); err != nil {
-		return nil, err
-	}
 
 	// 检查邮箱是否已存在（含 +别名 / Gmail 点号变体归一化；在发信前拦截，避免批量脚本消耗发信配额）
 	existsEmail, err := s.existsByEmailOrAlias(ctx, email)
@@ -380,6 +377,9 @@ func (s *AuthService) SendVerifyCodeAsync(ctx context.Context, email string, loc
 	if existsEmail {
 		logger.LegacyPrintf("service.auth", "[Auth] Email already exists: %s", email)
 		return nil, ErrEmailExists
+	}
+	if err := s.validateRegistrationEmailQuota(ctx, email); err != nil {
+		return nil, err
 	}
 
 	// 检查邮件队列服务是否配置
@@ -1950,9 +1950,9 @@ func (s *AuthService) snapshotPlatformQuotaDefaults(ctx context.Context, userID 
 		return nil
 	}
 	// 平台配额快照是 best-effort（fail-open）：必须脱离调用方事务执行。
-	// 否则某平台违反 user_platform_quotas 的 CHECK 约束（如尚未进约束的新平台）会让
-	// 整个调用方事务被 Postgres 标记 aborted，把"无关紧要的默认配额快照"放大成
-	// "整笔注册失败"（OAuth pending 路径曾因此 500 → 清 cookie → 404）。
+	// 否则写入时的任何数据库错误（历史上是新平台尚未加入 user_platform_quotas 的
+	// CHECK 约束）都会让整个调用方事务被 Postgres 标记 aborted，把"无关紧要的默认
+	// 配额快照"放大成"整笔注册失败"（OAuth pending 路径曾因此 500 → 清 cookie → 404）。
 	ctx = dbent.WithoutTx(ctx)
 	// 仅为至少配置了一档限额的平台建行：user_platform_quotas 中不存在的行等价于不限额，
 	// 三档全空的记录不携带任何可执行的限额。

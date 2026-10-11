@@ -206,6 +206,7 @@ var _ AccountRepository = (*mockAccountRepoForGemini)(nil)
 
 // mockGroupRepoForGemini Gemini 测试用的 group repo mock
 type mockGroupRepoForGemini struct {
+	groupRepoNoop
 	groups           map[int64]*Group
 	getByIDCalls     int
 	getByIDLiteCalls int

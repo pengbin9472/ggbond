@@ -20,6 +20,7 @@ func ptrString[T ~string](v T) *string {
 
 // groupRepoStubForAdmin 用于测试 AdminService 的 GroupRepository Stub
 type groupRepoStubForAdmin struct {
+	groupRepoNoop
 	created  *Group // 记录 Create 调用的参数
 	updated  *Group // 记录 Update 调用的参数
 	getByID  *Group // GetByID 返回值
@@ -1538,6 +1539,7 @@ func TestAdminService_ValidateFallbackGroup_DetectsCycle(t *testing.T) {
 }
 
 type groupRepoStubForFallbackCycle struct {
+	groupRepoNoop
 	groups map[int64]*Group
 }
 
@@ -1609,6 +1611,7 @@ func (s *groupRepoStubForFallbackCycle) UpdateSortOrders(_ context.Context, _ []
 }
 
 type groupRepoStubForInvalidRequestFallback struct {
+	groupRepoNoop
 	groups  map[int64]*Group
 	created *Group
 	updated *Group

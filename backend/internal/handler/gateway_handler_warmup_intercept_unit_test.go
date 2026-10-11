@@ -79,6 +79,25 @@ type fakeGroupRepo struct {
 	group *service.Group
 }
 
+func (*fakeGroupRepo) GetGroupMonitoringStats(context.Context) ([]service.GroupMonitoringStat, error) {
+	panic("unexpected GetGroupMonitoringStats call")
+}
+func (*fakeGroupRepo) ComputeGroupMonitoringStats(context.Context) ([]service.GroupMonitoringStat, error) {
+	panic("unexpected ComputeGroupMonitoringStats call")
+}
+func (*fakeGroupRepo) RecordGroupMonitoringProbe(context.Context, service.GroupMonitoringProbeResult) error {
+	panic("unexpected RecordGroupMonitoringProbe call")
+}
+func (*fakeGroupRepo) UpsertGroupMonitoringStats(context.Context, []service.GroupMonitoringStat) error {
+	panic("unexpected UpsertGroupMonitoringStats call")
+}
+func (*fakeGroupRepo) InsertGroupMonitoringHistory(context.Context, []service.GroupMonitoringStat) error {
+	panic("unexpected InsertGroupMonitoringHistory call")
+}
+func (*fakeGroupRepo) GetGroupMonitoringHistory(context.Context, int64, int) ([]service.MonitoringHistoryPoint, error) {
+	panic("unexpected GetGroupMonitoringHistory call")
+}
+
 func (f *fakeGroupRepo) Create(context.Context, *service.Group) error { return nil }
 func (f *fakeGroupRepo) GetByID(context.Context, int64) (*service.Group, error) {
 	return f.group, nil

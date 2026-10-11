@@ -135,7 +135,7 @@ func TestGetModelPricing_CaseInsensitive(t *testing.T) {
 func TestGetModelPricing_GPT6AstraUsesOfficialFallback(t *testing.T) {
 	svc := newTestBillingService()
 
-	pricing, err := svc.GetModelPricing("openai/GPT6_ASTRA-max")
+	pricing, err := svc.GetModelPricing("openai/GPT-6_ASTRA")
 	require.NoError(t, err)
 	require.InDelta(t, 10e-6, pricing.InputPricePerToken, 1e-12)
 	require.InDelta(t, 50e-6, pricing.OutputPricePerToken, 1e-12)

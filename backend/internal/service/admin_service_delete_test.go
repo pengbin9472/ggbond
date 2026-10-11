@@ -244,6 +244,7 @@ func (s *userRepoStub) GetByIDIncludeDeleted(ctx context.Context, id int64) (*Us
 }
 
 type groupRepoStub struct {
+	groupRepoNoop
 	affectedUserIDs []int64
 	deleteErr       error
 	deleteCalls     []int64
