@@ -169,7 +169,8 @@ func TestGatewayService_AnthropicAPIKeyPassthrough_ForwardStreamPreservesBodyAnd
 		Schedulable: true,
 	}
 
-	result, err := svc.Forward(context.Background(), c, account, parsed)
+	// 即使故障重试设置了补偿标记，流式回包和解析用量也必须保留上游分类。
+	result, err := svc.Forward(WithForceCacheBilling(context.Background()), c, account, parsed)
 	require.NoError(t, err)
 	require.NotNil(t, result)
 	require.True(t, result.Stream)
@@ -187,6 +188,9 @@ func TestGatewayService_AnthropicAPIKeyPassthrough_ForwardStreamPreservesBodyAnd
 	require.Contains(t, rec.Body.String(), `"cached_tokens":7`)
 	require.NotContains(t, rec.Body.String(), `"cache_read_input_tokens":7`, "透传输出不应被网关改写")
 	require.Equal(t, 7, result.Usage.CacheReadInputTokens, "计费 usage 解析应保留 cached_tokens 兼容")
+	require.Equal(t, 9, result.Usage.InputTokens)
+	require.Equal(t, 3, result.Usage.OutputTokens)
+	require.Contains(t, rec.Body.String(), `"input_tokens":9`)
 	require.Empty(t, rec.Header().Get("Set-Cookie"), "响应头应经过安全过滤")
 }
 

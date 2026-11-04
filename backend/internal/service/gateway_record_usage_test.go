@@ -5,6 +5,7 @@ package service
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strings"
 	"testing"
 	"time"
@@ -53,6 +54,49 @@ func newGatewayRecordUsageServiceWithBillingRepoForTest(usageRepo UsageLogReposi
 	svc := newGatewayRecordUsageServiceForTest(usageRepo, userRepo, subRepo)
 	svc.usageBillingRepo = billingRepo
 	return svc
+}
+
+// 重试及换号传入的补偿标记不能改变 Anthropic API Key 的上游用量或扣费。
+func TestGatewayServiceRecordUsage_AnthropicAPIKeyPreservesUpstreamUsage(t *testing.T) {
+	for _, passthrough := range []bool{false, true} {
+		for _, stream := range []bool{false, true} {
+			t.Run(fmt.Sprintf("passthrough=%t/stream=%t", passthrough, stream), func(t *testing.T) {
+				var baseline *UsageLog
+				for _, force := range []bool{false, true} {
+					usageRepo := &openAIRecordUsageLogRepoStub{inserted: true}
+					userRepo := &openAIRecordUsageUserRepoStub{}
+					svc := newGatewayRecordUsageServiceForTest(usageRepo, userRepo, &openAIRecordUsageSubRepoStub{})
+					account := newAnthropicAPIKeyAccountForTest()
+					account.Extra["anthropic_passthrough"] = passthrough
+					usage := ClaudeUsage{
+						InputTokens: 11793, OutputTokens: 1442,
+						CacheReadInputTokens: 700, CacheCreationInputTokens: 1100,
+						CacheCreation5mTokens: 1100,
+					}
+					result := &ForwardResult{RequestID: "upstream-usage", Model: "claude-sonnet-4", Usage: usage, Stream: stream, Duration: time.Second}
+					require.NoError(t, svc.RecordUsage(context.Background(), &RecordUsageInput{
+						Result: result, Account: account, APIKey: &APIKey{ID: 501}, User: &User{ID: 601}, ForceCacheBilling: force,
+					}))
+					require.Equal(t, usage, result.Usage)
+					require.Equal(t, 1, usageRepo.calls)
+					require.Equal(t, 1, userRepo.deductCalls)
+					log := usageRepo.lastLog
+					require.Equal(t, 11793, log.InputTokens)
+					require.Equal(t, 700, log.CacheReadTokens)
+					require.Equal(t, 1100, log.CacheCreationTokens)
+					require.Equal(t, 1442, log.OutputTokens)
+					require.Greater(t, log.ActualCost, 0.0)
+					require.InDelta(t, log.ActualCost, userRepo.lastAmount, 1e-12)
+					if baseline == nil {
+						baseline = log
+					} else {
+						require.InDelta(t, baseline.TotalCost, log.TotalCost, 1e-12)
+						require.InDelta(t, baseline.ActualCost, log.ActualCost, 1e-12)
+					}
+				}
+			})
+		}
+	}
 }
 
 type openAIRecordUsageBestEffortLogRepoStub struct {
