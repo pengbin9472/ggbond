@@ -39,7 +39,9 @@ for filename in (
              "config", "--format", "json"],
             env=env, check=True, capture_output=True, text=True,
         )
-        actual = json.loads(result.stdout)["services"]["sub2api"]["environment"][key]
+        services = json.loads(result.stdout)["services"]
+        application = services["ggbond"] if "ggbond" in services else services["sub2api"]
+        actual = application["environment"][key]
         assert actual == (value or ""), f"{path}: override {value!r} rendered as {actual!r}"
 
 print("docker compose simple mode environment test passed")

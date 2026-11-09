@@ -8,11 +8,13 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/require"
 
 	"github.com/pengbin9472/ggbond/internal/config"
+	pkghttputil "github.com/pengbin9472/ggbond/internal/pkg/httputil"
 )
 
 func newOpenAIImagesTestContext(t *testing.T, body []byte) (*gin.Context, *httptest.ResponseRecorder) {
@@ -124,7 +126,7 @@ func TestForwardOpenAIImagesAPIKey_StreamKeepsDetachedUpstreamContext(t *testing
 		"流式路径原本就脱钩，不能被改回随客户端取消")
 }
 
-// 两个 detach 辅助函数的语义差异是本次修复的根据，锁死它们防止被悄悄改动。
+// Both helpers must preserve upstream work after client cancellation.
 func TestDetachUpstreamContextSemantics(t *testing.T) {
 	t.Run("detachUpstreamContext_always_detaches", func(t *testing.T) {
 		ctx, cancel := context.WithCancel(context.Background())
@@ -149,4 +151,24 @@ func TestDetachUpstreamContextSemantics(t *testing.T) {
 		defer release()
 		require.NoError(t, detached.Err())
 	})
+}
+
+func TestDetachStreamUpstreamContext_NonStreamUsesDrainBudget(t *testing.T) {
+	client, cancelClient := context.WithCancel(context.Background())
+	defer cancelClient()
+	detached, release := detachStreamUpstreamContext(client, false)
+	defer release()
+	attempt, cancelAttempt := pkghttputil.NewUpstreamAttemptContext(detached, 100*time.Millisecond)
+	defer cancelAttempt()
+
+	require.NoError(t, attempt.Err())
+	cancelClient()
+	require.NoError(t, detached.Err())
+
+	select {
+	case <-attempt.Done():
+		require.ErrorIs(t, attempt.Err(), context.Canceled)
+	case <-time.After(3 * time.Second):
+		t.Fatal("non-stream upstream attempt did not stop after its drain budget")
+	}
 }
