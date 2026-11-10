@@ -121,16 +121,21 @@ func (s *UserRepoSuite) TestGetLatestUsedAtByUserIDs_UsesUsageLogs() {
 	newer := time.Now().Add(-90 * time.Minute).UTC().Truncate(time.Second)
 
 	userWithUsage := s.mustCreateUser(&service.User{Email: "usage-source@example.com"})
+	otherUserWithUsage := s.mustCreateUser(&service.User{Email: "other-usage-source@example.com"})
 	userWithoutUsage := s.mustCreateUser(&service.User{Email: "usage-missing@example.com"})
 	s.mustInsertUsageLog(userWithUsage.ID, older)
 	s.mustInsertUsageLog(userWithUsage.ID, newer)
+	s.mustInsertUsageLog(otherUserWithUsage.ID, older)
 
-	got, err := s.repo.GetLatestUsedAtByUserIDs(s.ctx, []int64{userWithUsage.ID, userWithoutUsage.ID})
+	got, err := s.repo.GetLatestUsedAtByUserIDs(s.ctx, []int64{userWithUsage.ID, otherUserWithUsage.ID, userWithoutUsage.ID, userWithUsage.ID, -1})
 	s.Require().NoError(err)
+	s.Require().Len(got, 2)
 	s.Require().Contains(got, userWithUsage.ID)
 	s.Require().NotContains(got, userWithoutUsage.ID)
 	s.Require().NotNil(got[userWithUsage.ID])
 	s.Require().True(got[userWithUsage.ID].Equal(newer))
+	s.Require().NotNil(got[otherUserWithUsage.ID])
+	s.Require().True(got[otherUserWithUsage.ID].Equal(older))
 }
 
 func (s *UserRepoSuite) TestListWithFilters_SortByLastUsedAtDesc_UsesUsageLogsNotLastActiveAt() {
@@ -159,6 +164,18 @@ func (s *UserRepoSuite) TestListWithFilters_SortByLastUsedAtDesc_UsesUsageLogsNo
 	s.Require().Equal(rightSource.ID, users[0].ID)
 	s.Require().Equal(wrongSource.ID, users[1].ID)
 	s.Require().Equal(nilUsage.ID, users[2].ID)
+
+	users, _, err = s.repo.ListWithFilters(s.ctx, pagination.PaginationParams{
+		Page:      1,
+		PageSize:  10,
+		SortBy:    "last_used_at",
+		SortOrder: "asc",
+	}, service.UserListFilters{})
+	s.Require().NoError(err)
+	s.Require().Len(users, 3)
+	s.Require().Equal(nilUsage.ID, users[0].ID)
+	s.Require().Equal(wrongSource.ID, users[1].ID)
+	s.Require().Equal(rightSource.ID, users[2].ID)
 }
 
 func TestUserRepoSortSuiteSmoke(_ *testing.T) {}
