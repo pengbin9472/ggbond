@@ -1613,6 +1613,13 @@ const loadApiKeys = async () => {
     pagination.value.total = response.total
     pagination.value.pages = response.pages
 
+    // Show the API key list as soon as it is ready. Usage aggregation can be
+    // slow for users with a large usage history, so it must not keep the whole
+    // table in its loading state.
+    if (abortController === controller) {
+      loading.value = false
+    }
+
     // Load usage stats for all API keys in the list
     if (response.items.length > 0) {
       const keyIds = response.items.map((k) => k.id)
