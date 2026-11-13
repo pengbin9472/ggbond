@@ -142,6 +142,14 @@ var (
 		Mode:                                "chat",
 		SupportsPromptCaching:               true,
 	}
+	// Fable/Mythos 5.2 share the official price card, including both cache TTLs:
+	// https://platform.claude.com/docs/en/about-claude/pricing
+	claude52FallbackPricing = &LiteLLMModelPricing{
+		InputCostPerToken: 8e-6, OutputCostPerToken: 40e-6,
+		CacheCreationInputTokenCost: 10e-6, CacheCreationInputTokenCostAbove1hr: 16e-6,
+		CacheReadInputTokenCost: 0.2e-6,
+		LiteLLMProvider:         "anthropic", Mode: "chat", SupportsPromptCaching: true,
+	}
 	claudeOpus55FallbackPricing = &LiteLLMModelPricing{
 		InputCostPerToken: 4e-6, OutputCostPerToken: 20e-6,
 		CacheCreationInputTokenCost: 5e-6, CacheCreationInputTokenCostAbove1hr: 8e-6,
@@ -153,7 +161,7 @@ var (
 	claudeSonnet55FallbackPricing = &LiteLLMModelPricing{
 		InputCostPerToken: 2e-6, OutputCostPerToken: 10e-6,
 		CacheCreationInputTokenCost: 2.5e-6, CacheCreationInputTokenCostAbove1hr: 4e-6,
-		CacheReadInputTokenCost: 0.2e-6,
+		CacheReadInputTokenCost: 0.1e-6,
 		LiteLLMProvider:         "anthropic", Mode: "chat", SupportsPromptCaching: true,
 	}
 	claudeHaiku55FallbackPricing = &LiteLLMModelPricing{
@@ -656,10 +664,10 @@ func (s *PricingService) downloadPricingData() error {
 		logger.LegacyPrintf("service.pricing", "[Pricing] Failed to save file: %v", err)
 	}
 
-	// 使用远程哈希作为同步锚点，防止重复下载
-	// 当远程哈希不可用时，回退到数据本身的哈希
+	// 只有远程哈希与下载正文一致时才将其作为同步锚点。
+	// 不匹配时保留正文哈希，让下一轮同步重试，避免旧数据被误标为最新。
 	syncHash := dataHashStr
-	if remoteHash != "" {
+	if strings.EqualFold(remoteHash, dataHashStr) {
 		syncHash = remoteHash
 	}
 	hashFile := s.getHashFilePath()
@@ -1277,7 +1285,7 @@ func (s *PricingService) GetModelPricing(modelName string) *LiteLLMModelPricing 
 
 	// 4. 专用静态回退。必须放在 Claude family 模糊匹配之前，
 	// 否则远程价格文件缺少 fable 时会回退到 Sonnet 价格。
-	if strings.Contains(lookupCandidates[0], "fable") {
+	if strings.Contains(lookupCandidates[0], "fable") && !claude.IsFable52(lookupCandidates[0]) {
 		return claudeFable5FallbackPricing
 	}
 
@@ -1382,6 +1390,12 @@ func (s *PricingService) buildModelLookupCandidates(modelLower string) []string 
 }
 
 func normalizeModelNameForPricing(model string) string {
+	model = strings.TrimPrefix(model, "global.")
+	model = strings.TrimPrefix(model, "anthropic/")
+	model = strings.TrimPrefix(model, "anthropic.")
+	model = strings.TrimPrefix(model, "us.anthropic.")
+	model = strings.TrimPrefix(model, "eu.anthropic.")
+	model = strings.TrimPrefix(model, "apac.anthropic.")
 	// Common Gemini/VertexAI forms:
 	// - models/gemini-2.0-flash-exp
 	// - publishers/google/models/gemini-2.5-pro
@@ -1480,6 +1494,19 @@ func (s *PricingService) extractBaseName(model string) string {
 // matchByModelFamily 基于模型系列匹配
 func (s *PricingService) matchByModelFamily(model string) *LiteLLMModelPricing {
 	model = normalizeAntigravityClaudeTierAlias(model)
+	var claude52Model string
+	switch {
+	case claude.IsFable52(model):
+		claude52Model = "claude-fable-5-2"
+	case claude.IsMythos52(model):
+		claude52Model = "claude-mythos-5-2"
+	}
+	if claude52Model != "" {
+		if pricing, ok := s.pricingData[claude52Model]; ok {
+			return pricing
+		}
+		return claude52FallbackPricing
+	}
 	if claude.IsOpus55(model) {
 		if pricing, ok := s.pricingData["claude-opus-5-5"]; ok {
 			return pricing

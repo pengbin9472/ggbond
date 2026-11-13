@@ -435,6 +435,48 @@ func (_u *UsageLogUpdate) AddCacheCreation1hTokens(v int) *UsageLogUpdate {
 	return _u
 }
 
+// SetCacheCreation30mTokens sets the "cache_creation_30m_tokens" field.
+func (_u *UsageLogUpdate) SetCacheCreation30mTokens(v int) *UsageLogUpdate {
+	_u.mutation.ResetCacheCreation30mTokens()
+	_u.mutation.SetCacheCreation30mTokens(v)
+	return _u
+}
+
+// SetNillableCacheCreation30mTokens sets the "cache_creation_30m_tokens" field if the given value is not nil.
+func (_u *UsageLogUpdate) SetNillableCacheCreation30mTokens(v *int) *UsageLogUpdate {
+	if v != nil {
+		_u.SetCacheCreation30mTokens(*v)
+	}
+	return _u
+}
+
+// AddCacheCreation30mTokens adds value to the "cache_creation_30m_tokens" field.
+func (_u *UsageLogUpdate) AddCacheCreation30mTokens(v int) *UsageLogUpdate {
+	_u.mutation.AddCacheCreation30mTokens(v)
+	return _u
+}
+
+// SetCacheCreation12hTokens sets the "cache_creation_12h_tokens" field.
+func (_u *UsageLogUpdate) SetCacheCreation12hTokens(v int) *UsageLogUpdate {
+	_u.mutation.ResetCacheCreation12hTokens()
+	_u.mutation.SetCacheCreation12hTokens(v)
+	return _u
+}
+
+// SetNillableCacheCreation12hTokens sets the "cache_creation_12h_tokens" field if the given value is not nil.
+func (_u *UsageLogUpdate) SetNillableCacheCreation12hTokens(v *int) *UsageLogUpdate {
+	if v != nil {
+		_u.SetCacheCreation12hTokens(*v)
+	}
+	return _u
+}
+
+// AddCacheCreation12hTokens adds value to the "cache_creation_12h_tokens" field.
+func (_u *UsageLogUpdate) AddCacheCreation12hTokens(v int) *UsageLogUpdate {
+	_u.mutation.AddCacheCreation12hTokens(v)
+	return _u
+}
+
 // SetInputCost sets the "input_cost" field.
 func (_u *UsageLogUpdate) SetInputCost(v float64) *UsageLogUpdate {
 	_u.mutation.ResetInputCost()
@@ -865,6 +907,74 @@ func (_u *UsageLogUpdate) ClearImageSizeBreakdown() *UsageLogUpdate {
 	return _u
 }
 
+// SetVideoCount sets the "video_count" field.
+func (_u *UsageLogUpdate) SetVideoCount(v int) *UsageLogUpdate {
+	_u.mutation.ResetVideoCount()
+	_u.mutation.SetVideoCount(v)
+	return _u
+}
+
+// SetNillableVideoCount sets the "video_count" field if the given value is not nil.
+func (_u *UsageLogUpdate) SetNillableVideoCount(v *int) *UsageLogUpdate {
+	if v != nil {
+		_u.SetVideoCount(*v)
+	}
+	return _u
+}
+
+// AddVideoCount adds value to the "video_count" field.
+func (_u *UsageLogUpdate) AddVideoCount(v int) *UsageLogUpdate {
+	_u.mutation.AddVideoCount(v)
+	return _u
+}
+
+// SetVideoResolution sets the "video_resolution" field.
+func (_u *UsageLogUpdate) SetVideoResolution(v string) *UsageLogUpdate {
+	_u.mutation.SetVideoResolution(v)
+	return _u
+}
+
+// SetNillableVideoResolution sets the "video_resolution" field if the given value is not nil.
+func (_u *UsageLogUpdate) SetNillableVideoResolution(v *string) *UsageLogUpdate {
+	if v != nil {
+		_u.SetVideoResolution(*v)
+	}
+	return _u
+}
+
+// ClearVideoResolution clears the value of the "video_resolution" field.
+func (_u *UsageLogUpdate) ClearVideoResolution() *UsageLogUpdate {
+	_u.mutation.ClearVideoResolution()
+	return _u
+}
+
+// SetVideoDurationSeconds sets the "video_duration_seconds" field.
+func (_u *UsageLogUpdate) SetVideoDurationSeconds(v int) *UsageLogUpdate {
+	_u.mutation.ResetVideoDurationSeconds()
+	_u.mutation.SetVideoDurationSeconds(v)
+	return _u
+}
+
+// SetNillableVideoDurationSeconds sets the "video_duration_seconds" field if the given value is not nil.
+func (_u *UsageLogUpdate) SetNillableVideoDurationSeconds(v *int) *UsageLogUpdate {
+	if v != nil {
+		_u.SetVideoDurationSeconds(*v)
+	}
+	return _u
+}
+
+// AddVideoDurationSeconds adds value to the "video_duration_seconds" field.
+func (_u *UsageLogUpdate) AddVideoDurationSeconds(v int) *UsageLogUpdate {
+	_u.mutation.AddVideoDurationSeconds(v)
+	return _u
+}
+
+// ClearVideoDurationSeconds clears the value of the "video_duration_seconds" field.
+func (_u *UsageLogUpdate) ClearVideoDurationSeconds() *UsageLogUpdate {
+	_u.mutation.ClearVideoDurationSeconds()
+	return _u
+}
+
 // SetCacheTTLOverridden sets the "cache_ttl_overridden" field.
 func (_u *UsageLogUpdate) SetCacheTTLOverridden(v bool) *UsageLogUpdate {
 	_u.mutation.SetCacheTTLOverridden(v)
@@ -1038,6 +1148,11 @@ func (_u *UsageLogUpdate) check() error {
 			return &ValidationError{Name: "image_size_source", err: fmt.Errorf(`ent: validator failed for field "UsageLog.image_size_source": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.VideoResolution(); ok {
+		if err := usagelog.VideoResolutionValidator(v); err != nil {
+			return &ValidationError{Name: "video_resolution", err: fmt.Errorf(`ent: validator failed for field "UsageLog.video_resolution": %w`, err)}
+		}
+	}
 	if _u.mutation.UserCleared() && len(_u.mutation.UserIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "UsageLog.user"`)
 	}
@@ -1154,6 +1269,18 @@ func (_u *UsageLogUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if value, ok := _u.mutation.AddedCacheCreation1hTokens(); ok {
 		_spec.AddField(usagelog.FieldCacheCreation1hTokens, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.CacheCreation30mTokens(); ok {
+		_spec.SetField(usagelog.FieldCacheCreation30mTokens, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AddedCacheCreation30mTokens(); ok {
+		_spec.AddField(usagelog.FieldCacheCreation30mTokens, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.CacheCreation12hTokens(); ok {
+		_spec.SetField(usagelog.FieldCacheCreation12hTokens, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AddedCacheCreation12hTokens(); ok {
+		_spec.AddField(usagelog.FieldCacheCreation12hTokens, field.TypeInt, value)
 	}
 	if value, ok := _u.mutation.InputCost(); ok {
 		_spec.SetField(usagelog.FieldInputCost, field.TypeFloat64, value)
@@ -1283,6 +1410,27 @@ func (_u *UsageLogUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if _u.mutation.ImageSizeBreakdownCleared() {
 		_spec.ClearField(usagelog.FieldImageSizeBreakdown, field.TypeJSON)
+	}
+	if value, ok := _u.mutation.VideoCount(); ok {
+		_spec.SetField(usagelog.FieldVideoCount, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AddedVideoCount(); ok {
+		_spec.AddField(usagelog.FieldVideoCount, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.VideoResolution(); ok {
+		_spec.SetField(usagelog.FieldVideoResolution, field.TypeString, value)
+	}
+	if _u.mutation.VideoResolutionCleared() {
+		_spec.ClearField(usagelog.FieldVideoResolution, field.TypeString)
+	}
+	if value, ok := _u.mutation.VideoDurationSeconds(); ok {
+		_spec.SetField(usagelog.FieldVideoDurationSeconds, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AddedVideoDurationSeconds(); ok {
+		_spec.AddField(usagelog.FieldVideoDurationSeconds, field.TypeInt, value)
+	}
+	if _u.mutation.VideoDurationSecondsCleared() {
+		_spec.ClearField(usagelog.FieldVideoDurationSeconds, field.TypeInt)
 	}
 	if value, ok := _u.mutation.CacheTTLOverridden(); ok {
 		_spec.SetField(usagelog.FieldCacheTTLOverridden, field.TypeBool, value)
@@ -1855,6 +2003,48 @@ func (_u *UsageLogUpdateOne) AddCacheCreation1hTokens(v int) *UsageLogUpdateOne 
 	return _u
 }
 
+// SetCacheCreation30mTokens sets the "cache_creation_30m_tokens" field.
+func (_u *UsageLogUpdateOne) SetCacheCreation30mTokens(v int) *UsageLogUpdateOne {
+	_u.mutation.ResetCacheCreation30mTokens()
+	_u.mutation.SetCacheCreation30mTokens(v)
+	return _u
+}
+
+// SetNillableCacheCreation30mTokens sets the "cache_creation_30m_tokens" field if the given value is not nil.
+func (_u *UsageLogUpdateOne) SetNillableCacheCreation30mTokens(v *int) *UsageLogUpdateOne {
+	if v != nil {
+		_u.SetCacheCreation30mTokens(*v)
+	}
+	return _u
+}
+
+// AddCacheCreation30mTokens adds value to the "cache_creation_30m_tokens" field.
+func (_u *UsageLogUpdateOne) AddCacheCreation30mTokens(v int) *UsageLogUpdateOne {
+	_u.mutation.AddCacheCreation30mTokens(v)
+	return _u
+}
+
+// SetCacheCreation12hTokens sets the "cache_creation_12h_tokens" field.
+func (_u *UsageLogUpdateOne) SetCacheCreation12hTokens(v int) *UsageLogUpdateOne {
+	_u.mutation.ResetCacheCreation12hTokens()
+	_u.mutation.SetCacheCreation12hTokens(v)
+	return _u
+}
+
+// SetNillableCacheCreation12hTokens sets the "cache_creation_12h_tokens" field if the given value is not nil.
+func (_u *UsageLogUpdateOne) SetNillableCacheCreation12hTokens(v *int) *UsageLogUpdateOne {
+	if v != nil {
+		_u.SetCacheCreation12hTokens(*v)
+	}
+	return _u
+}
+
+// AddCacheCreation12hTokens adds value to the "cache_creation_12h_tokens" field.
+func (_u *UsageLogUpdateOne) AddCacheCreation12hTokens(v int) *UsageLogUpdateOne {
+	_u.mutation.AddCacheCreation12hTokens(v)
+	return _u
+}
+
 // SetInputCost sets the "input_cost" field.
 func (_u *UsageLogUpdateOne) SetInputCost(v float64) *UsageLogUpdateOne {
 	_u.mutation.ResetInputCost()
@@ -2285,6 +2475,74 @@ func (_u *UsageLogUpdateOne) ClearImageSizeBreakdown() *UsageLogUpdateOne {
 	return _u
 }
 
+// SetVideoCount sets the "video_count" field.
+func (_u *UsageLogUpdateOne) SetVideoCount(v int) *UsageLogUpdateOne {
+	_u.mutation.ResetVideoCount()
+	_u.mutation.SetVideoCount(v)
+	return _u
+}
+
+// SetNillableVideoCount sets the "video_count" field if the given value is not nil.
+func (_u *UsageLogUpdateOne) SetNillableVideoCount(v *int) *UsageLogUpdateOne {
+	if v != nil {
+		_u.SetVideoCount(*v)
+	}
+	return _u
+}
+
+// AddVideoCount adds value to the "video_count" field.
+func (_u *UsageLogUpdateOne) AddVideoCount(v int) *UsageLogUpdateOne {
+	_u.mutation.AddVideoCount(v)
+	return _u
+}
+
+// SetVideoResolution sets the "video_resolution" field.
+func (_u *UsageLogUpdateOne) SetVideoResolution(v string) *UsageLogUpdateOne {
+	_u.mutation.SetVideoResolution(v)
+	return _u
+}
+
+// SetNillableVideoResolution sets the "video_resolution" field if the given value is not nil.
+func (_u *UsageLogUpdateOne) SetNillableVideoResolution(v *string) *UsageLogUpdateOne {
+	if v != nil {
+		_u.SetVideoResolution(*v)
+	}
+	return _u
+}
+
+// ClearVideoResolution clears the value of the "video_resolution" field.
+func (_u *UsageLogUpdateOne) ClearVideoResolution() *UsageLogUpdateOne {
+	_u.mutation.ClearVideoResolution()
+	return _u
+}
+
+// SetVideoDurationSeconds sets the "video_duration_seconds" field.
+func (_u *UsageLogUpdateOne) SetVideoDurationSeconds(v int) *UsageLogUpdateOne {
+	_u.mutation.ResetVideoDurationSeconds()
+	_u.mutation.SetVideoDurationSeconds(v)
+	return _u
+}
+
+// SetNillableVideoDurationSeconds sets the "video_duration_seconds" field if the given value is not nil.
+func (_u *UsageLogUpdateOne) SetNillableVideoDurationSeconds(v *int) *UsageLogUpdateOne {
+	if v != nil {
+		_u.SetVideoDurationSeconds(*v)
+	}
+	return _u
+}
+
+// AddVideoDurationSeconds adds value to the "video_duration_seconds" field.
+func (_u *UsageLogUpdateOne) AddVideoDurationSeconds(v int) *UsageLogUpdateOne {
+	_u.mutation.AddVideoDurationSeconds(v)
+	return _u
+}
+
+// ClearVideoDurationSeconds clears the value of the "video_duration_seconds" field.
+func (_u *UsageLogUpdateOne) ClearVideoDurationSeconds() *UsageLogUpdateOne {
+	_u.mutation.ClearVideoDurationSeconds()
+	return _u
+}
+
 // SetCacheTTLOverridden sets the "cache_ttl_overridden" field.
 func (_u *UsageLogUpdateOne) SetCacheTTLOverridden(v bool) *UsageLogUpdateOne {
 	_u.mutation.SetCacheTTLOverridden(v)
@@ -2471,6 +2729,11 @@ func (_u *UsageLogUpdateOne) check() error {
 			return &ValidationError{Name: "image_size_source", err: fmt.Errorf(`ent: validator failed for field "UsageLog.image_size_source": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.VideoResolution(); ok {
+		if err := usagelog.VideoResolutionValidator(v); err != nil {
+			return &ValidationError{Name: "video_resolution", err: fmt.Errorf(`ent: validator failed for field "UsageLog.video_resolution": %w`, err)}
+		}
+	}
 	if _u.mutation.UserCleared() && len(_u.mutation.UserIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "UsageLog.user"`)
 	}
@@ -2605,6 +2868,18 @@ func (_u *UsageLogUpdateOne) sqlSave(ctx context.Context) (_node *UsageLog, err 
 	if value, ok := _u.mutation.AddedCacheCreation1hTokens(); ok {
 		_spec.AddField(usagelog.FieldCacheCreation1hTokens, field.TypeInt, value)
 	}
+	if value, ok := _u.mutation.CacheCreation30mTokens(); ok {
+		_spec.SetField(usagelog.FieldCacheCreation30mTokens, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AddedCacheCreation30mTokens(); ok {
+		_spec.AddField(usagelog.FieldCacheCreation30mTokens, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.CacheCreation12hTokens(); ok {
+		_spec.SetField(usagelog.FieldCacheCreation12hTokens, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AddedCacheCreation12hTokens(); ok {
+		_spec.AddField(usagelog.FieldCacheCreation12hTokens, field.TypeInt, value)
+	}
 	if value, ok := _u.mutation.InputCost(); ok {
 		_spec.SetField(usagelog.FieldInputCost, field.TypeFloat64, value)
 	}
@@ -2733,6 +3008,27 @@ func (_u *UsageLogUpdateOne) sqlSave(ctx context.Context) (_node *UsageLog, err 
 	}
 	if _u.mutation.ImageSizeBreakdownCleared() {
 		_spec.ClearField(usagelog.FieldImageSizeBreakdown, field.TypeJSON)
+	}
+	if value, ok := _u.mutation.VideoCount(); ok {
+		_spec.SetField(usagelog.FieldVideoCount, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AddedVideoCount(); ok {
+		_spec.AddField(usagelog.FieldVideoCount, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.VideoResolution(); ok {
+		_spec.SetField(usagelog.FieldVideoResolution, field.TypeString, value)
+	}
+	if _u.mutation.VideoResolutionCleared() {
+		_spec.ClearField(usagelog.FieldVideoResolution, field.TypeString)
+	}
+	if value, ok := _u.mutation.VideoDurationSeconds(); ok {
+		_spec.SetField(usagelog.FieldVideoDurationSeconds, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AddedVideoDurationSeconds(); ok {
+		_spec.AddField(usagelog.FieldVideoDurationSeconds, field.TypeInt, value)
+	}
+	if _u.mutation.VideoDurationSecondsCleared() {
+		_spec.ClearField(usagelog.FieldVideoDurationSeconds, field.TypeInt)
 	}
 	if value, ok := _u.mutation.CacheTTLOverridden(); ok {
 		_spec.SetField(usagelog.FieldCacheTTLOverridden, field.TypeBool, value)

@@ -132,6 +132,8 @@ func TestDefaultBedrockModelMapping_ContainsNewClaudeModels(t *testing.T) {
 	t.Parallel()
 
 	cases := map[string]string{
+		"claude-fable-5-2":  "anthropic.claude-fable-5-2",
+		"claude-mythos-5-2": "anthropic.claude-mythos-5-2",
 		"claude-fable-5":    "anthropic.claude-fable-5",
 		"claude-fable-5-1":  "anthropic.claude-fable-5-1",
 		"claude-opus-5":     "us.anthropic.claude-opus-5-v1",
