@@ -14,7 +14,6 @@ import (
 	"strings"
 
 	"github.com/google/uuid"
-	"github.com/pengbin9472/ggbond/internal/domain"
 	"github.com/pengbin9472/ggbond/internal/pkg/antigravity"
 	"github.com/pengbin9472/ggbond/internal/pkg/gemini"
 	"github.com/pengbin9472/ggbond/internal/pkg/googleapi"
