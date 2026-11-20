@@ -24,6 +24,7 @@ import (
 	"github.com/pengbin9472/ggbond/internal/pkg/gemini"
 	"github.com/pengbin9472/ggbond/internal/pkg/geminicli"
 	"github.com/pengbin9472/ggbond/internal/pkg/googleapi"
+	pkghttputil "github.com/pengbin9472/ggbond/internal/pkg/httputil"
 	"github.com/pengbin9472/ggbond/internal/pkg/logger"
 	"github.com/pengbin9472/ggbond/internal/util/responseheaders"
 	"github.com/pengbin9472/ggbond/internal/util/urlvalidator"
@@ -79,6 +80,18 @@ func (s *GeminiMessagesCompatService) readUpstreamErrorBody(resp *http.Response)
 	}
 	body, _ := io.ReadAll(io.LimitReader(resp.Body, limit))
 	return body
+}
+
+func (s *GeminiMessagesCompatService) upstreamDrainTimeout() time.Duration {
+	if s != nil && s.cfg != nil && s.cfg.Gateway.StreamDataIntervalTimeout > 0 {
+		return time.Duration(s.cfg.Gateway.StreamDataIntervalTimeout) * time.Second
+	}
+	return pkghttputil.DefaultUpstreamDrainTimeout
+}
+
+func (s *GeminiMessagesCompatService) upstreamRequestContext(ctx context.Context) context.Context {
+	detached, _ := detachUpstreamContext(ctx, s.upstreamDrainTimeout())
+	return detached
 }
 
 func NewGeminiMessagesCompatService(
@@ -601,7 +614,7 @@ func (s *GeminiMessagesCompatService) Forward(ctx context.Context, c *gin.Contex
 			}
 
 			restGeminiReq := normalizeGeminiRequestForAIStudio(geminiReq)
-			upstreamReq, err := http.NewRequestWithContext(ctx, http.MethodPost, fullURL, bytes.NewReader(restGeminiReq))
+			upstreamReq, err := http.NewRequestWithContext(s.upstreamRequestContext(ctx), http.MethodPost, fullURL, bytes.NewReader(restGeminiReq))
 			if err != nil {
 				return nil, "", err
 			}
@@ -653,7 +666,7 @@ func (s *GeminiMessagesCompatService) Forward(ctx context.Context, c *gin.Contex
 				wrapped["request"] = inner
 				wrappedBytes, _ := json.Marshal(wrapped)
 
-				upstreamReq, err := http.NewRequestWithContext(ctx, http.MethodPost, fullURL, bytes.NewReader(wrappedBytes))
+				upstreamReq, err := http.NewRequestWithContext(s.upstreamRequestContext(ctx), http.MethodPost, fullURL, bytes.NewReader(wrappedBytes))
 				if err != nil {
 					return nil, "", err
 				}
@@ -675,7 +688,7 @@ func (s *GeminiMessagesCompatService) Forward(ctx context.Context, c *gin.Contex
 				}
 
 				restGeminiReq := normalizeGeminiRequestForAIStudio(geminiReq)
-				upstreamReq, err := http.NewRequestWithContext(ctx, http.MethodPost, fullURL, bytes.NewReader(restGeminiReq))
+				upstreamReq, err := http.NewRequestWithContext(s.upstreamRequestContext(ctx), http.MethodPost, fullURL, bytes.NewReader(restGeminiReq))
 				if err != nil {
 					return nil, "", err
 				}
@@ -698,7 +711,7 @@ func (s *GeminiMessagesCompatService) Forward(ctx context.Context, c *gin.Contex
 			}
 
 			restGeminiReq := normalizeGeminiRequestForAIStudio(geminiReq)
-			upstreamReq, err := http.NewRequestWithContext(ctx, http.MethodPost, fullURL, bytes.NewReader(restGeminiReq))
+			upstreamReq, err := http.NewRequestWithContext(s.upstreamRequestContext(ctx), http.MethodPost, fullURL, bytes.NewReader(restGeminiReq))
 			if err != nil {
 				return nil, "", err
 			}
@@ -1170,7 +1183,7 @@ func (s *GeminiMessagesCompatService) ForwardNative(ctx context.Context, c *gin.
 				return nil, "", err
 			}
 
-			upstreamReq, err := http.NewRequestWithContext(ctx, http.MethodPost, fullURL, bytes.NewReader(body))
+			upstreamReq, err := http.NewRequestWithContext(s.upstreamRequestContext(ctx), http.MethodPost, fullURL, bytes.NewReader(body))
 			if err != nil {
 				return nil, "", err
 			}
@@ -1217,7 +1230,7 @@ func (s *GeminiMessagesCompatService) ForwardNative(ctx context.Context, c *gin.
 				wrapped["request"] = inner
 				wrappedBytes, _ := json.Marshal(wrapped)
 
-				upstreamReq, err := http.NewRequestWithContext(ctx, http.MethodPost, fullURL, bytes.NewReader(wrappedBytes))
+				upstreamReq, err := http.NewRequestWithContext(s.upstreamRequestContext(ctx), http.MethodPost, fullURL, bytes.NewReader(wrappedBytes))
 				if err != nil {
 					return nil, "", err
 				}
@@ -1238,7 +1251,7 @@ func (s *GeminiMessagesCompatService) ForwardNative(ctx context.Context, c *gin.
 					return nil, "", err
 				}
 
-				upstreamReq, err := http.NewRequestWithContext(ctx, http.MethodPost, fullURL, bytes.NewReader(body))
+				upstreamReq, err := http.NewRequestWithContext(s.upstreamRequestContext(ctx), http.MethodPost, fullURL, bytes.NewReader(body))
 				if err != nil {
 					return nil, "", err
 				}
@@ -1257,7 +1270,7 @@ func (s *GeminiMessagesCompatService) ForwardNative(ctx context.Context, c *gin.
 				return nil, "", err
 			}
 
-			upstreamReq, err := http.NewRequestWithContext(ctx, http.MethodPost, fullURL, bytes.NewReader(body))
+			upstreamReq, err := http.NewRequestWithContext(s.upstreamRequestContext(ctx), http.MethodPost, fullURL, bytes.NewReader(body))
 			if err != nil {
 				return nil, "", err
 			}
