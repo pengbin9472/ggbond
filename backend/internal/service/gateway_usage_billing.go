@@ -782,7 +782,7 @@ func (s *GatewayService) recordUsageCore(ctx context.Context, input *recordUsage
 	// Anthropic API Key 渠道按上游实际 usage 计费；重试或换号不代表缓存命中。
 	// 其他账号保留原有粘性会话补偿策略。
 	if input.ForceCacheBilling &&
-		!(account.Platform == PlatformAnthropic && account.Type == AccountTypeAPIKey) &&
+		(account.Platform != PlatformAnthropic || account.Type != AccountTypeAPIKey) &&
 		result.Usage.InputTokens > 0 {
 		logger.LegacyPrintf("service.gateway", "force_cache_billing: %d input_tokens → cache_read_input_tokens (account=%d)",
 			result.Usage.InputTokens, account.ID)
