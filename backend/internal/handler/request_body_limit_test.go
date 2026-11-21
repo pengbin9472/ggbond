@@ -11,6 +11,7 @@ import (
 	"testing"
 
 	"github.com/gin-gonic/gin"
+	pkghttputil "github.com/pengbin9472/ggbond/internal/pkg/httputil"
 	"github.com/pengbin9472/ggbond/internal/server/middleware"
 	"github.com/stretchr/testify/require"
 )
@@ -37,7 +38,7 @@ func TestRequestBodyLimitTooLarge(t *testing.T) {
 	router.ServeHTTP(recorder, req)
 
 	require.Equal(t, http.StatusRequestEntityTooLarge, recorder.Code)
-	require.Contains(t, recorder.Body.String(), buildBodyTooLargeMessage(limit))
+	require.Contains(t, recorder.Body.String(), pkghttputil.BodyTooLargeMessage(limit))
 }
 
 func TestHandleRequestBodyReadErrorCancellation(t *testing.T) {
