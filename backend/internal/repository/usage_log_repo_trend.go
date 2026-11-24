@@ -84,38 +84,40 @@ func (r *usageLogRepository) GetAPIKeyUsageTrend(ctx context.Context, startTime,
 // GetUserUsageTrend returns usage trend data grouped by user and date
 func (r *usageLogRepository) GetUserUsageTrend(ctx context.Context, startTime, endTime time.Time, granularity string, limit int, metric string) (results []UserUsageTrendPoint, err error) {
 	dateFormat := safeDateFormat(granularity)
-	rankExpr := "SUM(input_tokens + output_tokens + cache_creation_tokens + cache_read_tokens)"
+	rankExpr := "SUM(tokens)"
 	if metric == "actual_cost" {
 		rankExpr = "SUM(actual_cost)"
 	}
 
+	// Aggregate each user/time bucket once, then rank users from those compact
+	// results. The previous query scanned usage_logs again for the top users.
 	query := fmt.Sprintf(`
-		WITH top_users AS (
-			SELECT user_id
+		WITH buckets AS MATERIALIZED (
+			SELECT
+				TO_CHAR(created_at, '%s') AS date,
+				user_id,
+				COUNT(*) AS requests,
+				COALESCE(SUM(input_tokens + output_tokens + cache_creation_tokens + cache_read_tokens), 0) AS tokens,
+				COALESCE(SUM(total_cost), 0) AS cost,
+				COALESCE(SUM(actual_cost), 0) AS actual_cost
 			FROM usage_logs
 			WHERE created_at >= $1 AND created_at < $2
+			GROUP BY date, user_id
+		), top_users AS (
+			SELECT user_id FROM buckets
 			GROUP BY user_id
 			ORDER BY %s DESC, user_id ASC
 			LIMIT $3
 		)
-		SELECT
-			TO_CHAR(u.created_at, '%s') as date,
-			u.user_id,
-			COALESCE(us.email, '') as email,
-			COALESCE(us.username, '') as username,
-			COUNT(*) as requests,
-			COALESCE(SUM(u.input_tokens + u.output_tokens + u.cache_creation_tokens + u.cache_read_tokens), 0) as tokens,
-			COALESCE(SUM(u.total_cost), 0) as cost,
-			COALESCE(SUM(u.actual_cost), 0) as actual_cost
-		FROM usage_logs u
-		LEFT JOIN users us ON u.user_id = us.id
-		WHERE u.user_id IN (SELECT user_id FROM top_users)
-		  AND u.created_at >= $4 AND u.created_at < $5
-		GROUP BY date, u.user_id, us.email, us.username
-		ORDER BY date ASC, tokens DESC
-	`, rankExpr, dateFormat)
+		SELECT b.date, b.user_id, COALESCE(us.email, ''), COALESCE(us.username, ''),
+			b.requests, b.tokens, b.cost, b.actual_cost
+		FROM buckets b
+		JOIN top_users t ON t.user_id = b.user_id
+		LEFT JOIN users us ON b.user_id = us.id
+		ORDER BY b.date ASC, b.tokens DESC
+	`, dateFormat, rankExpr)
 
-	rows, err := r.sql.QueryContext(ctx, query, startTime, endTime, limit, startTime, endTime)
+	rows, err := r.sql.QueryContext(ctx, query, startTime, endTime, limit)
 	if err != nil {
 		return nil, err
 	}

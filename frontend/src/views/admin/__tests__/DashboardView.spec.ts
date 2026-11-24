@@ -5,8 +5,9 @@ import { createPinia, setActivePinia } from 'pinia'
 import type { DashboardStats } from '@/types'
 import DashboardView from '../DashboardView.vue'
 
-const { getSnapshotV2, getUserUsageTrend, getUserSpendingRanking } = vi.hoisted(() => ({
+const { getSnapshotV2, getModelStats, getUserUsageTrend, getUserSpendingRanking } = vi.hoisted(() => ({
   getSnapshotV2: vi.fn(),
+  getModelStats: vi.fn(),
   getUserUsageTrend: vi.fn(),
   getUserSpendingRanking: vi.fn()
 }))
@@ -19,6 +20,7 @@ vi.mock('@/api/admin', () => ({
   adminAPI: {
     dashboard: {
       getSnapshotV2,
+      getModelStats,
       getUserUsageTrend,
       getUserSpendingRanking
     }
@@ -95,6 +97,7 @@ describe('admin DashboardView', () => {
     setActivePinia(createPinia())
 
     getSnapshotV2.mockReset()
+    getModelStats.mockReset()
     getUserUsageTrend.mockReset()
     getUserSpendingRanking.mockReset()
 
@@ -103,6 +106,7 @@ describe('admin DashboardView', () => {
       trend: [],
       models: []
     })
+    getModelStats.mockResolvedValue({ models: [] })
     getUserUsageTrend.mockResolvedValue({
       trend: [],
       start_date: '',
@@ -131,10 +135,10 @@ describe('admin DashboardView', () => {
       } }
     })
     await flushPromises()
-    expect(getUserUsageTrend).toHaveBeenCalledWith(expect.objectContaining({ metric: 'tokens', limit: 12 }))
+    expect(getUserUsageTrend).toHaveBeenCalledWith(expect.objectContaining({ metric: 'tokens', limit: 12 }), expect.any(AbortSignal))
     await wrapper.findAll('button').find(button => button.text() === 'admin.dashboard.actualSpending')!.trigger('click')
-    expect(getUserUsageTrend).toHaveBeenCalledWith(expect.objectContaining({ metric: 'actual_cost', limit: 12 }))
     await flushPromises()
+    expect(getUserUsageTrend).toHaveBeenCalledWith(expect.objectContaining({ metric: 'actual_cost', limit: 12 }), expect.any(AbortSignal))
     const chart = wrapper.findComponent({ name: 'Line' })
     expect(chart.props('data').datasets[0].data).toEqual([5])
     expect(chart.props('options').scales.y.ticks.callback(5)).toBe('$5.00')
@@ -143,7 +147,7 @@ describe('admin DashboardView', () => {
     expect(chart.props('data').datasets[0].data).toEqual([5])
   })
 
-  it('uses last 24 hours as default dashboard range', async () => {
+  it('uses today as the default dashboard range', async () => {
     mount(DashboardView, {
       global: {
         stubs: {
@@ -162,13 +166,60 @@ describe('admin DashboardView', () => {
     await flushPromises()
 
     const now = new Date()
-    const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000)
 
-    expect(getSnapshotV2).toHaveBeenCalledTimes(1)
+    expect(getSnapshotV2).toHaveBeenCalledTimes(2)
     expect(getSnapshotV2).toHaveBeenCalledWith(expect.objectContaining({
-      start_date: formatLocalDate(yesterday),
+      start_date: formatLocalDate(now),
       end_date: formatLocalDate(now),
-      granularity: 'hour'
-    }))
+      granularity: 'hour',
+      include_stats: false,
+      include_model_stats: false
+    }), expect.any(AbortSignal))
   })
+  it('shows statistics and the date filter while the model query is pending', async () => {
+    getModelStats.mockImplementationOnce(() => new Promise(() => {}))
+    const wrapper = mount(DashboardView, { global: { stubs: {
+      AppLayout: { template: '<div><slot /></div>' }, LoadingSpinner: true,
+      Icon: true, DateRangePicker: { template: '<div class="date-picker" />' }, Select: true,
+      ModelDistributionChart: true, TokenUsageTrend: true, Line: true
+    } } })
+    await flushPromises()
+    expect(wrapper.find('.date-picker').exists()).toBe(true)
+    expect(wrapper.text()).toContain('admin.dashboard.apiKeys')
+    expect(getUserUsageTrend).not.toHaveBeenCalled()
+    expect(getUserSpendingRanking).not.toHaveBeenCalled()
+    wrapper.unmount()
+    expect(getModelStats.mock.calls[0][1].aborted).toBe(true)
+  })
+
+  it('keeps the date filter available when statistics fail', async () => {
+    getSnapshotV2.mockRejectedValueOnce(new Error('timeout'))
+    const wrapper = mount(DashboardView, { global: { stubs: {
+      AppLayout: { template: '<div><slot /></div>' }, LoadingSpinner: true,
+      Icon: true, DateRangePicker: { template: '<div class="date-picker" />' }, Select: true,
+      ModelDistributionChart: true, TokenUsageTrend: true, Line: true
+    } } })
+    await flushPromises()
+    expect(wrapper.find('.date-picker').exists()).toBe(true)
+    expect(wrapper.text()).toContain('admin.dashboard.failedToLoad')
+    expect(getUserSpendingRanking).toHaveBeenCalled()
+    wrapper.unmount()
+  })
+
+  it('reports failed model and user trend queries and continues to ranking', async () => {
+    getModelStats.mockRejectedValueOnce(new Error('model timeout'))
+    getUserUsageTrend.mockRejectedValueOnce(new Error('trend timeout'))
+    const wrapper = mount(DashboardView, { global: { stubs: {
+      AppLayout: { template: '<div><slot /></div>' }, LoadingSpinner: true,
+      Icon: true, DateRangePicker: true, Select: true,
+      ModelDistributionChart: { props: ['error'], template: '<div class="model-chart">{{ error }}</div>' },
+      TokenUsageTrend: true, Line: true
+    } } })
+    await flushPromises()
+    expect(wrapper.find('.model-chart').text()).toBe('true')
+    expect(wrapper.findAll('[role="alert"]').length).toBeGreaterThan(0)
+    expect(getUserSpendingRanking).toHaveBeenCalled()
+    wrapper.unmount()
+  })
+
 })

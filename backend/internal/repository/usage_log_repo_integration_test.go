@@ -1639,6 +1639,44 @@ func (s *UsageLogRepoSuite) TestGetUserUsageTrend_SelectsTopByMetric() {
 	s.Require().Equal(5.0, spend[0].ActualCost)
 }
 
+// Check that bucket aggregation preserves cache tokens, totals, ranking, and range boundaries.
+func (s *UsageLogRepoSuite) TestGetUserUsageTrend_BucketAggregation() {
+	user := mustCreateUser(s.T(), s.client, &service.User{Email: "trend-buckets@test.com"})
+	other := mustCreateUser(s.T(), s.client, &service.User{Email: "trend-buckets-other@test.com"})
+	key := mustCreateApiKey(s.T(), s.client, &service.APIKey{UserID: user.ID, Key: "sk-trend-buckets", Name: "key"})
+	otherKey := mustCreateApiKey(s.T(), s.client, &service.APIKey{UserID: other.ID, Key: "sk-trend-buckets-other", Name: "other"})
+	account := mustCreateAccount(s.T(), s.client, &service.Account{Name: "acc-trend-buckets"})
+	start := time.Date(2030, 2, 5, 12, 0, 0, 0, time.UTC)
+	for _, log := range []*service.UsageLog{
+		{UserID: user.ID, APIKeyID: key.ID, AccountID: account.ID, RequestID: uuid.NewString(), Model: "model-a", InputTokens: 10, OutputTokens: 20, CacheCreationTokens: 30, CacheReadTokens: 40, TotalCost: 2, ActualCost: 1, CreatedAt: start},
+		{UserID: user.ID, APIKeyID: key.ID, AccountID: account.ID, RequestID: uuid.NewString(), Model: "model-b", InputTokens: 5, OutputTokens: 6, CacheCreationTokens: 7, CacheReadTokens: 8, TotalCost: 3, ActualCost: 2, CreatedAt: start.Add(5 * time.Minute)},
+		{UserID: user.ID, APIKeyID: key.ID, AccountID: account.ID, RequestID: uuid.NewString(), Model: "model-a", InputTokens: 11, TotalCost: 4, ActualCost: 3, CreatedAt: start.Add(time.Hour)},
+		{UserID: other.ID, APIKeyID: otherKey.ID, AccountID: account.ID, RequestID: uuid.NewString(), Model: "model-a", InputTokens: 1, TotalCost: 10, ActualCost: 10, CreatedAt: start},
+		{UserID: other.ID, APIKeyID: otherKey.ID, AccountID: account.ID, RequestID: uuid.NewString(), Model: "model-a", InputTokens: 9999, TotalCost: 100, ActualCost: 100, CreatedAt: start.Add(2 * time.Hour)},
+	} {
+		_, err := s.repo.Create(s.ctx, log)
+		s.Require().NoError(err)
+	}
+	end := start.Add(2 * time.Hour)
+	rows, err := s.repo.GetUserUsageTrend(s.ctx, start, end, "hour", 1, "tokens")
+	s.Require().NoError(err)
+	s.Require().Len(rows, 2)
+	s.Require().Equal(user.ID, rows[0].UserID)
+	s.Require().Equal(int64(2), rows[0].Requests)
+	s.Require().Equal(int64(126), rows[0].Tokens)
+	s.Require().InDelta(5, rows[0].Cost, 0.000001)
+	s.Require().InDelta(3, rows[0].ActualCost, 0.000001)
+	s.Require().Equal(int64(11), rows[1].Tokens)
+	rows, err = s.repo.GetUserUsageTrend(s.ctx, start, end, "day", 1, "actual_cost")
+	s.Require().NoError(err)
+	s.Require().Len(rows, 1)
+	s.Require().Equal(other.ID, rows[0].UserID)
+	s.Require().Equal(int64(1), rows[0].Tokens)
+	rows, err = s.repo.GetUserUsageTrend(s.ctx, end.Add(time.Hour), end.Add(2*time.Hour), "day", 12, "tokens")
+	s.Require().NoError(err)
+	s.Require().Empty(rows)
+}
+
 // --- GetAPIKeyUsageTrend ---
 
 func (s *UsageLogRepoSuite) TestGetAPIKeyUsageTrend() {

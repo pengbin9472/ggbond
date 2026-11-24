@@ -104,8 +104,8 @@ export interface ModelStatsResponse {
  * @param params - Query parameters for filtering
  * @returns Model usage statistics
  */
-export async function getModelStats(params?: ModelStatsParams): Promise<ModelStatsResponse> {
-  const { data } = await apiClient.get<ModelStatsResponse>('/admin/dashboard/models', { params })
+export async function getModelStats(params?: ModelStatsParams, signal?: AbortSignal): Promise<ModelStatsResponse> {
+  const { data } = await apiClient.get<ModelStatsResponse>('/admin/dashboard/models', { params, signal })
   return data
 }
 
@@ -201,9 +201,9 @@ export async function getUserBreakdown(params: UserBreakdownParams): Promise<Use
 /**
  * Get dashboard snapshot v2 (aggregated response for heavy admin pages).
  */
-export async function getSnapshotV2(params?: DashboardSnapshotV2Params): Promise<DashboardSnapshotV2Response> {
+export async function getSnapshotV2(params?: DashboardSnapshotV2Params, signal?: AbortSignal): Promise<DashboardSnapshotV2Response> {
   const { data } = await apiClient.get<DashboardSnapshotV2Response>('/admin/dashboard/snapshot-v2', {
-    params
+    params, signal
   })
   return data
 }
@@ -255,9 +255,9 @@ export interface UserSpendingRankingParams
  * @param params - Query parameters for filtering
  * @returns User usage trend data
  */
-export async function getUserUsageTrend(params?: UserTrendParams): Promise<UserTrendResponse> {
+export async function getUserUsageTrend(params?: UserTrendParams, signal?: AbortSignal): Promise<UserTrendResponse> {
   const { data } = await apiClient.get<UserTrendResponse>('/admin/dashboard/users-trend', {
-    params
+    params, signal
   })
   return data
 }
@@ -268,10 +268,11 @@ export async function getUserUsageTrend(params?: UserTrendParams): Promise<UserT
  * @returns User spending ranking data
  */
 export async function getUserSpendingRanking(
-  params?: UserSpendingRankingParams
+  params?: UserSpendingRankingParams,
+  signal?: AbortSignal
 ): Promise<UserSpendingRankingResponse> {
   const { data } = await apiClient.get<UserSpendingRankingResponse>('/admin/dashboard/users-ranking', {
-    params
+    params, signal
   })
   return data
 }

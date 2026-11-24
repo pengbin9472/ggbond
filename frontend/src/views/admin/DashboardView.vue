@@ -6,7 +6,12 @@
         <LoadingSpinner />
       </div>
 
-      <template v-else-if="stats">
+      <div v-if="!loading && statsError" class="card p-4 text-sm text-red-600" role="alert">
+        {{ t('admin.dashboard.failedToLoad') }}
+        <button class="btn btn-secondary ml-2" @click="loadDashboardStats">{{ t('common.refresh') }}</button>
+      </div>
+
+      <template v-if="stats">
         <!-- Row 1: Core Stats -->
         <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
           <!-- Total API Keys -->
@@ -264,94 +269,101 @@
           </div>
         </div>
 
-        <!-- Charts Section -->
-        <div class="space-y-6">
-          <!-- Date Range Filter -->
-          <div class="card p-4">
-            <div class="flex flex-wrap items-center gap-4">
-              <div class="flex items-center gap-2">
-                <span class="text-sm font-medium text-gray-700 dark:text-gray-300"
-                  >{{ t('admin.dashboard.timeRange') }}:</span
-                >
-                <DateRangePicker
-                  v-model:start-date="startDate"
-                  v-model:end-date="endDate"
-                  @change="onDateRangeChange"
-                />
-              </div>
-              <button @click="loadDashboardStats" :disabled="chartsLoading" class="btn btn-secondary">
-                {{ t('common.refresh') }}
-              </button>
-              <div class="ml-auto flex items-center gap-2">
-                <span class="text-sm font-medium text-gray-700 dark:text-gray-300"
-                  >{{ t('admin.dashboard.granularity') }}:</span
-                >
-                <div class="w-28">
-                  <Select
-                    v-model="granularity"
-                    :options="granularityOptions"
-                    @change="loadChartData"
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
+      </template>
 
-          <!-- Charts Grid -->
-          <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
-            <ModelDistributionChart
-              :model-stats="modelStats"
-              :enable-ranking-view="true"
-              :ranking-items="rankingItems"
-              :ranking-total-actual-cost="rankingTotalActualCost"
-              :ranking-total-requests="rankingTotalRequests"
-              :ranking-total-tokens="rankingTotalTokens"
-              :loading="chartsLoading"
-              :ranking-loading="rankingLoading"
-              :ranking-error="rankingError"
-              :start-date="startDate"
-              :end-date="endDate"
-              @ranking-click="goToUserUsage"
-            />
-            <TokenUsageTrend :trend-data="trendData" :loading="chartsLoading" />
-          </div>
-
-          <!-- User Usage Trend (Full Width) -->
-          <div class="card p-4">
-            <div class="mb-4 flex items-center justify-between gap-3">
-              <h3 class="text-sm font-semibold text-gray-900 dark:text-white">{{ t('admin.dashboard.recentUsage') }} (Top 12)</h3>
-              <div class="flex gap-1" role="group" :aria-label="t('admin.dashboard.recentUsage')">
-                <button v-for="metric in (['tokens', 'actual_cost'] as const)" :key="metric" type="button"
-                  class="rounded px-2 py-1 text-xs" :class="userTrendMetric === metric ? 'bg-blue-600 text-white' : 'text-gray-600 dark:text-gray-300'"
-                  :aria-pressed="userTrendMetric === metric" @click="setUserTrendMetric(metric)">
-                  {{ t(metric === 'tokens' ? 'admin.dashboard.tokens' : 'admin.dashboard.actualSpending') }}
-                </button>
-              </div>
-            </div>
-            <div class="h-64">
-              <div v-if="userTrendLoading" class="flex h-full items-center justify-center">
-                <LoadingSpinner size="md" />
-              </div>
-              <Line v-else-if="userTrendChartData" :data="userTrendChartData" :options="lineOptions" />
-              <div
-                v-else
-                class="flex h-full items-center justify-center text-sm text-gray-500 dark:text-gray-400"
+      <!-- Charts Section -->
+      <div class="space-y-6">
+        <!-- Date Range Filter -->
+        <div class="card p-4">
+          <div class="flex flex-wrap items-center gap-4">
+            <div class="flex items-center gap-2">
+              <span class="text-sm font-medium text-gray-700 dark:text-gray-300"
+                >{{ t('admin.dashboard.timeRange') }}:</span
               >
-                {{ t('admin.dashboard.noDataAvailable') }}
+              <DateRangePicker
+                v-model:start-date="startDate"
+                v-model:end-date="endDate"
+                @change="onDateRangeChange"
+              />
+            </div>
+            <button @click="loadDashboardStats" class="btn btn-secondary">
+              {{ t('common.refresh') }}
+            </button>
+            <div class="ml-auto flex items-center gap-2">
+              <span class="text-sm font-medium text-gray-700 dark:text-gray-300"
+                >{{ t('admin.dashboard.granularity') }}:</span
+              >
+              <div class="w-28">
+                <Select
+                  v-model="granularity"
+                  :options="granularityOptions"
+                  @change="loadChartData"
+                />
               </div>
             </div>
           </div>
         </div>
-      </template>
+
+        <div v-if="chartError" class="card p-4 text-sm text-red-600" role="alert">
+          {{ t('admin.dashboard.failedToLoad') }}
+          <button class="btn btn-secondary ml-2" @click="loadChartData">{{ t('common.refresh') }}</button>
+        </div>
+
+        <!-- Charts Grid -->
+        <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+          <ModelDistributionChart
+            :error="modelError"
+            :model-stats="modelStats"
+            :enable-ranking-view="true"
+            :ranking-items="rankingItems"
+            :ranking-total-actual-cost="rankingTotalActualCost"
+            :ranking-total-requests="rankingTotalRequests"
+            :ranking-total-tokens="rankingTotalTokens"
+            :loading="chartsLoading"
+            :ranking-loading="rankingLoading"
+            :ranking-error="rankingError"
+            :start-date="startDate"
+            :end-date="endDate"
+            @ranking-click="goToUserUsage"
+          />
+          <TokenUsageTrend v-if="!trendError" :trend-data="trendData" :loading="trendLoading" />
+        </div>
+
+        <!-- User Usage Trend (Full Width) -->
+        <div class="card p-4">
+          <div class="mb-4 flex items-center justify-between gap-3">
+            <h3 class="text-sm font-semibold text-gray-900 dark:text-white">{{ t('admin.dashboard.recentUsage') }} (Top 12)</h3>
+            <div class="flex gap-1" role="group" :aria-label="t('admin.dashboard.recentUsage')">
+              <button v-for="metric in (['tokens', 'actual_cost'] as const)" :key="metric" type="button"
+                class="rounded px-2 py-1 text-xs" :class="userTrendMetric === metric ? 'bg-blue-600 text-white' : 'text-gray-600 dark:text-gray-300'"
+                :aria-pressed="userTrendMetric === metric" @click="setUserTrendMetric(metric)">
+                {{ t(metric === 'tokens' ? 'admin.dashboard.tokens' : 'admin.dashboard.actualSpending') }}
+              </button>
+            </div>
+          </div>
+          <div class="h-64">
+            <div v-if="userTrendLoading" class="flex h-full items-center justify-center">
+              <LoadingSpinner size="md" />
+            </div>
+            <div v-else-if="userTrendError" class="flex h-full items-center justify-center text-sm text-red-600" role="alert">{{ t('admin.dashboard.failedToLoad') }}</div>
+            <Line v-else-if="userTrendChartData" :data="userTrendChartData" :options="lineOptions" />
+            <div
+              v-else
+              class="flex h-full items-center justify-center text-sm text-gray-500 dark:text-gray-400"
+            >
+              {{ t('admin.dashboard.noDataAvailable') }}
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </AppLayout>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
-import { useAppStore } from '@/stores/app'
 
 const { t } = useI18n()
 import { adminAPI } from '@/api/admin'
@@ -394,15 +406,20 @@ ChartJS.register(
   Filler
 )
 
-const appStore = useAppStore()
 const router = useRouter()
 const { canUseBatchImage, refreshBatchImageAccess } = useBatchImageAccess()
 const stats = ref<DashboardStats | null>(null)
 const loading = ref(false)
 const chartsLoading = ref(false)
+const trendLoading = ref(false)
+const statsError = ref(false)
+const trendError = ref(false)
+const modelError = ref(false)
+const userTrendError = ref(false)
 const userTrendLoading = ref(false)
 const rankingLoading = ref(false)
 const rankingError = ref(false)
+const chartError = computed(() => trendError.value || modelError.value || userTrendError.value || rankingError.value)
 
 // Chart data
 const trendData = ref<TrendDataPoint[]>([])
@@ -413,9 +430,7 @@ const rankingItems = ref<UserSpendingRankingItem[]>([])
 const rankingTotalActualCost = ref(0)
 const rankingTotalRequests = ref(0)
 const rankingTotalTokens = ref(0)
-let chartLoadSeq = 0
-let usersTrendLoadSeq = 0
-let rankingLoadSeq = 0
+let activeLoad: AbortController | null = null
 const rankingLimit = 12
 
 // Helper function to format date in local timezone
@@ -423,20 +438,11 @@ const formatLocalDate = (date: Date): string => {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
 }
 
-const getLast24HoursRangeDates = (): { start: string; end: string } => {
-  const end = new Date()
-  const start = new Date(end.getTime() - 24 * 60 * 60 * 1000)
-  return {
-    start: formatLocalDate(start),
-    end: formatLocalDate(end)
-  }
-}
-
-// Date range
+// Date range uses one local calendar day by default.
 const granularity = ref<'day' | 'hour'>('hour')
-const defaultRange = getLast24HoursRangeDates()
-const startDate = ref(defaultRange.start)
-const endDate = ref(defaultRange.end)
+const today = formatLocalDate(new Date())
+const startDate = ref(today)
+const endDate = ref(today)
 
 // Granularity options for Select component
 const granularityOptions = computed(() => [
@@ -654,123 +660,137 @@ const onDateRangeChange = (range: {
   loadChartData()
 }
 
-// Load data
-const loadDashboardSnapshot = async (includeStats: boolean) => {
-  const currentSeq = ++chartLoadSeq
-  if (includeStats && !stats.value) {
-    loading.value = true
+// Heavy queries run sequentially so opening or refreshing the page does not
+// launch several scans of the usage log at the same time.
+const loadDashboard = async (includeStats: boolean) => {
+  activeLoad?.abort()
+  const controller = new AbortController()
+  activeLoad = controller
+  const signal = controller.signal
+  includeStats = includeStats || !stats.value
+  const range = { start_date: startDate.value, end_date: endDate.value }
+  const selectedGranularity = granularity.value
+  const metric = userTrendMetric.value
+  if (includeStats) {
+    loading.value = !stats.value
+    statsError.value = false
   }
+  trendLoading.value = true
   chartsLoading.value = true
+  userTrendLoading.value = true
+  rankingLoading.value = true
+  trendError.value = false
+  modelError.value = false
+  userTrendError.value = false
+  rankingError.value = false
+  trendData.value = []
+  modelStats.value = []
+  userTrend.value = []
+  rankingItems.value = []
+
+  if (includeStats) {
+    try {
+      const response = await adminAPI.dashboard.getSnapshotV2({
+        ...range,
+        include_stats: true,
+        include_trend: false,
+        include_model_stats: false,
+        include_group_stats: false,
+        include_users_trend: false
+      }, signal)
+      if (signal.aborted) return
+      if (!response.stats) throw new Error('Dashboard statistics missing from response')
+      stats.value = response.stats
+    } catch (error) {
+      if (signal.aborted) return
+      statsError.value = true
+      console.error('Error loading dashboard statistics:', error)
+    } finally {
+      if (!signal.aborted) loading.value = false
+    }
+  }
+  if (signal.aborted) return
+
   try {
     const response = await adminAPI.dashboard.getSnapshotV2({
-      start_date: startDate.value,
-      end_date: endDate.value,
-      granularity: granularity.value,
-      include_stats: includeStats,
+      ...range,
+      granularity: selectedGranularity,
+      include_stats: false,
       include_trend: true,
-      include_model_stats: true,
+      include_model_stats: false,
       include_group_stats: false,
       include_users_trend: false
-    })
-    if (currentSeq !== chartLoadSeq) return
-    if (includeStats && response.stats) {
-      stats.value = response.stats
-    }
+    }, signal)
+    if (signal.aborted) return
     trendData.value = response.trend || []
+  } catch (error) {
+    if (signal.aborted) return
+    trendError.value = true
+    console.error('Error loading usage trend:', error)
+  } finally {
+    if (!signal.aborted) trendLoading.value = false
+  }
+  if (signal.aborted) return
+
+  try {
+    const response = await adminAPI.dashboard.getModelStats(range, signal)
+    if (signal.aborted) return
     modelStats.value = response.models || []
   } catch (error) {
-    if (currentSeq !== chartLoadSeq) return
-    appStore.showError(t('admin.dashboard.failedToLoad'))
-    console.error('Error loading dashboard snapshot:', error)
+    if (signal.aborted) return
+    modelError.value = true
+    console.error('Error loading model statistics:', error)
   } finally {
-    if (currentSeq === chartLoadSeq) {
-      loading.value = false
-      chartsLoading.value = false
-    }
+    if (!signal.aborted) chartsLoading.value = false
+  }
+  if (signal.aborted) return
+
+  try {
+    const response = await adminAPI.dashboard.getUserUsageTrend({
+      ...range, granularity: selectedGranularity, limit: 12, metric
+    }, signal)
+    if (signal.aborted) return
+    userTrend.value = response.trend || []
+  } catch (error) {
+    if (signal.aborted) return
+    userTrendError.value = true
+    console.error('Error loading users trend:', error)
+  } finally {
+    if (!signal.aborted) userTrendLoading.value = false
+  }
+  if (signal.aborted) return
+
+  try {
+    const response = await adminAPI.dashboard.getUserSpendingRanking({ ...range, limit: rankingLimit }, signal)
+    if (signal.aborted) return
+    rankingItems.value = response.ranking || []
+    rankingTotalActualCost.value = response.total_actual_cost || 0
+    rankingTotalRequests.value = response.total_requests || 0
+    rankingTotalTokens.value = response.total_tokens || 0
+  } catch (error) {
+    if (signal.aborted) return
+    rankingError.value = true
+    console.error('Error loading user spending ranking:', error)
+  } finally {
+    if (!signal.aborted) rankingLoading.value = false
   }
 }
 
 const setUserTrendMetric = (metric: 'tokens' | 'actual_cost') => {
   if (userTrendMetric.value === metric) return
   userTrendMetric.value = metric
-  userTrend.value = []
-  loadUsersTrend()
+  void loadDashboard(false)
 }
 
-const loadUsersTrend = async () => {
-  const currentSeq = ++usersTrendLoadSeq
-  userTrendLoading.value = true
-  try {
-    const response = await adminAPI.dashboard.getUserUsageTrend({
-      start_date: startDate.value,
-      end_date: endDate.value,
-      granularity: granularity.value,
-      limit: 12,
-      metric: userTrendMetric.value
-    })
-    if (currentSeq !== usersTrendLoadSeq) return
-    userTrend.value = response.trend || []
-  } catch (error) {
-    if (currentSeq !== usersTrendLoadSeq) return
-    console.error('Error loading users trend:', error)
-    userTrend.value = []
-  } finally {
-    if (currentSeq === usersTrendLoadSeq) {
-      userTrendLoading.value = false
-    }
-  }
-}
-
-const loadUserSpendingRanking = async () => {
-  const currentSeq = ++rankingLoadSeq
-  rankingLoading.value = true
-  rankingError.value = false
-  try {
-    const response = await adminAPI.dashboard.getUserSpendingRanking({
-      start_date: startDate.value,
-      end_date: endDate.value,
-      limit: rankingLimit
-    })
-    if (currentSeq !== rankingLoadSeq) return
-    rankingItems.value = response.ranking || []
-    rankingTotalActualCost.value = response.total_actual_cost || 0
-    rankingTotalRequests.value = response.total_requests || 0
-    rankingTotalTokens.value = response.total_tokens || 0
-  } catch (error) {
-    if (currentSeq !== rankingLoadSeq) return
-    console.error('Error loading user spending ranking:', error)
-    rankingItems.value = []
-    rankingTotalActualCost.value = 0
-    rankingTotalRequests.value = 0
-    rankingTotalTokens.value = 0
-    rankingError.value = true
-  } finally {
-    if (currentSeq === rankingLoadSeq) {
-      rankingLoading.value = false
-    }
-  }
-}
-
-const loadDashboardStats = async () => {
-  await Promise.all([
-    loadDashboardSnapshot(true),
-    loadUsersTrend(),
-    loadUserSpendingRanking()
-  ])
-}
-
-const loadChartData = async () => {
-  await Promise.all([
-    loadDashboardSnapshot(false),
-    loadUsersTrend(),
-    loadUserSpendingRanking()
-  ])
-}
+const loadDashboardStats = () => loadDashboard(true)
+const loadChartData = () => loadDashboard(false)
 
 onMounted(() => {
   void refreshBatchImageAccess()
-  loadDashboardStats()
+  void loadDashboardStats()
 })
+
+onUnmounted(() => activeLoad?.abort())
 </script>
 
 <style scoped>
