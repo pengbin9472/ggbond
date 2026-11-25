@@ -186,7 +186,7 @@ func (r *usageLogRepository) listUsageLogsWithPagination(ctx context.Context, wh
 	limitPos := len(args) + 1
 	offsetPos := len(args) + 2
 	listArgs := append(append([]any{}, args...), params.Limit(), params.Offset())
-	query := fmt.Sprintf("SELECT %s FROM usage_logs %s ORDER BY %s LIMIT $%d OFFSET $%d", usageLogSelectColumns, whereClause, usageLogOrderBy(params), limitPos, offsetPos)
+	query := usageLogPageQuery(whereClause, params, limitPos, offsetPos)
 	logs, err := r.queryUsageLogs(ctx, query, listArgs...)
 	if err != nil {
 		return nil, nil, err
@@ -201,7 +201,7 @@ func (r *usageLogRepository) listUsageLogsWithFastPagination(ctx context.Context
 	limitPos := len(args) + 1
 	offsetPos := len(args) + 2
 	listArgs := append(append([]any{}, args...), limit+1, offset)
-	query := fmt.Sprintf("SELECT %s FROM usage_logs %s ORDER BY %s LIMIT $%d OFFSET $%d", usageLogSelectColumns, whereClause, usageLogOrderBy(params), limitPos, offsetPos)
+	query := usageLogPageQuery(whereClause, params, limitPos, offsetPos)
 
 	logs, err := r.queryUsageLogs(ctx, query, listArgs...)
 	if err != nil {
@@ -223,24 +223,50 @@ func (r *usageLogRepository) listUsageLogsWithFastPagination(ctx context.Context
 	return logs, paginationResultFromTotal(total, params), nil
 }
 
-func usageLogOrderBy(params pagination.PaginationParams) string {
+func usageLogSortColumn(params pagination.PaginationParams) string {
 	sortBy := strings.ToLower(strings.TrimSpace(params.SortBy))
-	sortOrder := strings.ToUpper(params.NormalizedSortOrder(pagination.SortOrderDesc))
-
-	var column string
 	switch sortBy {
 	case "model":
-		column = "COALESCE(NULLIF(TRIM(requested_model), ''), model)"
+		return "COALESCE(NULLIF(TRIM(requested_model), ''), model)"
 	case "created_at":
-		column = "created_at"
+		return "created_at"
 	default:
-		column = "id"
+		return "id"
+	}
+}
+
+func usageLogPageQuery(whereClause string, params pagination.PaginationParams, limitPos, offsetPos int) string {
+	sortOrder := strings.ToUpper(params.NormalizedSortOrder(pagination.SortOrderDesc))
+	sortColumn := usageLogSortColumn(params)
+	pageColumns := "id"
+	pageOrder := fmt.Sprintf("id %s", sortOrder)
+	resultOrder := fmt.Sprintf("p.id %s", sortOrder)
+	if sortColumn != "id" {
+		pageColumns = fmt.Sprintf("id, %s AS sort_key", sortColumn)
+		pageOrder = fmt.Sprintf("sort_key %s, id %s", sortOrder, sortOrder)
+		resultOrder = fmt.Sprintf("p.sort_key %s, p.id %s", sortOrder, sortOrder)
 	}
 
-	if column == "id" {
-		return fmt.Sprintf("id %s", sortOrder)
+	return fmt.Sprintf(`
+		WITH page_ids AS MATERIALIZED (
+			SELECT %s
+			FROM usage_logs %s
+			ORDER BY %s
+			LIMIT $%d OFFSET $%d
+		)
+		SELECT %s
+		FROM usage_logs ul
+		JOIN page_ids p ON p.id = ul.id
+		ORDER BY %s
+	`, pageColumns, whereClause, pageOrder, limitPos, offsetPos, usageLogSelectColumnsWithAlias("ul"), resultOrder)
+}
+
+func usageLogSelectColumnsWithAlias(alias string) string {
+	columns := strings.Split(usageLogSelectColumns, ",")
+	for i := range columns {
+		columns[i] = alias + "." + strings.TrimSpace(columns[i])
 	}
-	return fmt.Sprintf("%s %s, id %s", column, sortOrder, sortOrder)
+	return strings.Join(columns, ", ")
 }
 
 func (r *usageLogRepository) queryUsageLogs(ctx context.Context, query string, args ...any) (logs []service.UsageLog, err error) {

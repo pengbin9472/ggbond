@@ -5,7 +5,7 @@
 
 import { apiClient } from '../client'
 import type { AdminUsageLog, UsageQueryParams, PaginatedResponse, UsageRequestType } from '@/types'
-import type { EndpointStat } from '@/types'
+import type { EndpointStat, GroupStat, ModelStat } from '@/types'
 
 // ==================== Types ====================
 
@@ -24,6 +24,8 @@ export interface AdminUsageStatsResponse {
   endpoints?: EndpointStat[]
   upstream_endpoints?: EndpointStat[]
   endpoint_paths?: EndpointStat[]
+  models?: ModelStat[]
+  groups?: GroupStat[]
 }
 
 export interface SimpleUser {
@@ -131,9 +133,10 @@ export async function getStats(params: {
   end_date?: string
   timezone?: string
   nocache?: number
-}): Promise<AdminUsageStatsResponse> {
+}, signal?: AbortSignal): Promise<AdminUsageStatsResponse> {
   const { data } = await apiClient.get<AdminUsageStatsResponse>('/admin/usage/stats', {
-    params
+    params,
+    signal
   })
   return data
 }

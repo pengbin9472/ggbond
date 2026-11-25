@@ -17,7 +17,7 @@
             <div class="ml-auto flex items-center gap-2">
               <span class="text-sm font-medium text-gray-700 dark:text-gray-300">{{ t('admin.dashboard.granularity') }}:</span>
               <div class="w-28">
-                <Select v-model="granularity" :options="granularityOptions" @change="loadChartData" />
+                <Select v-model="granularity" :options="granularityOptions" @change="() => loadChartData()" />
               </div>
             </div>
           </div>
@@ -230,6 +230,7 @@ const upstreamEndpointStats = ref<EndpointStat[]>([])
 const endpointPathStats = ref<EndpointStat[]>([])
 const endpointStatsLoading = ref(false)
 let abortController: AbortController | null = null; let exportAbortController: AbortController | null = null
+let analyticsAbortController: AbortController | null = null
 let chartReqSeq = 0
 let statsReqSeq = 0
 let modelStatsReqSeq = 0
@@ -282,13 +283,9 @@ const formatLD = (d: Date) => {
   const day = String(d.getDate()).padStart(2, '0')
   return `${year}-${month}-${day}`
 }
-const getLast24HoursRangeDates = (): { start: string; end: string } => {
-  const end = new Date()
-  const start = new Date(end.getTime() - 24 * 60 * 60 * 1000)
-  return {
-    start: formatLD(start),
-    end: formatLD(end)
-  }
+const getTodayRangeDates = (): { start: string; end: string } => {
+  const today = formatLD(new Date())
+  return { start: today, end: today }
 }
 const getGranularityForRange = (start: string, end: string): 'day' | 'hour' => {
   const startTime = new Date(`${start}T00:00:00`).getTime()
@@ -296,7 +293,7 @@ const getGranularityForRange = (start: string, end: string): 'day' | 'hour' => {
   const daysDiff = Math.ceil((endTime - startTime) / (1000 * 60 * 60 * 24))
   return daysDiff <= 1 ? 'hour' : 'day'
 }
-const defaultRange = getLast24HoursRangeDates()
+const defaultRange = getTodayRangeDates()
 const startDate = ref(defaultRange.start); const endDate = ref(defaultRange.end)
 const filters = ref<AdminUsageQueryParams>({ user_id: undefined, model: undefined, group_id: undefined, request_type: undefined, native_compaction_v2: null, billing_type: null, start_date: startDate.value, end_date: endDate.value })
 const pagination = reactive({ page: 1, page_size: getPersistedPageSize(), total: 0 })
@@ -398,9 +395,10 @@ const loadLogs = async () => {
     if(!c.signal.aborted) { usageLogs.value = res.items; pagination.total = res.total }
   } catch (error: any) { if(error?.name !== 'AbortError') console.error('Failed to load usage logs:', error) } finally { if(abortController === c) loading.value = false }
 }
-const loadStats = async (force = false) => {
+const loadStats = async (force = false, signal?: AbortSignal) => {
   const seq = ++statsReqSeq
   endpointStatsLoading.value = true
+  modelStatsLoading.value = true
   try {
     const requestType = filters.value.request_type
     const legacyStream = requestType ? requestTypeToLegacyStream(requestType) : filters.value.stream
@@ -408,20 +406,33 @@ const loadStats = async (force = false) => {
       ...filters.value,
       stream: legacyStream === null ? undefined : legacyStream,
       ...(force ? { nocache: 1 } : {}),
-    })
+    }, signal)
     if (seq !== statsReqSeq) return
     usageStats.value = s
     inboundEndpointStats.value = s.endpoints || []
     upstreamEndpointStats.value = s.upstream_endpoints || []
     endpointPathStats.value = s.endpoint_paths || []
+    groupStats.value = s.groups || []
+    if (Array.isArray(s.models)) {
+      requestedModelStats.value = s.models
+      loadedModelSources.requested = true
+    } else {
+      loadedModelSources.requested = false
+    }
   } catch (error) {
+    if (signal?.aborted) return
     if (seq !== statsReqSeq) return
     console.error('Failed to load usage stats:', error)
     inboundEndpointStats.value = []
     upstreamEndpointStats.value = []
     endpointPathStats.value = []
+    groupStats.value = []
+    loadedModelSources.requested = false
   } finally {
-    if (seq === statsReqSeq) endpointStatsLoading.value = false
+    if (seq === statsReqSeq) {
+      endpointStatsLoading.value = false
+      modelStatsLoading.value = false
+    }
   }
 }
 
@@ -432,7 +443,7 @@ const invalidateModelStatsCache = () => {
   loadedModelSources.mapping = false
 }
 
-const loadModelStats = async (source: ModelDistributionSource, force = false) => {
+const loadModelStats = async (source: ModelDistributionSource, force = false, signal?: AbortSignal) => {
   if (!force && loadedModelSources[source]) {
     return
   }
@@ -457,7 +468,7 @@ const loadModelStats = async (source: ModelDistributionSource, force = false) =>
 	  upstream_model_mismatch: filters.value.upstream_model_mismatch,
     }
 
-    const response = await adminAPI.dashboard.getModelStats({ ...baseParams, model_source: source })
+    const response = await adminAPI.dashboard.getModelStats({ ...baseParams, model_source: source }, signal)
 
     if (seq !== modelStatsReqSeq) return
 
@@ -471,6 +482,7 @@ const loadModelStats = async (source: ModelDistributionSource, force = false) =>
     }
     loadedModelSources[source] = true
   } catch (error) {
+    if (signal?.aborted) return
     if (seq !== modelStatsReqSeq) return
     console.error('Failed to load model stats:', error)
     if (source === 'requested') {
@@ -486,7 +498,7 @@ const loadModelStats = async (source: ModelDistributionSource, force = false) =>
   }
 }
 
-const loadChartData = async () => {
+const loadChartData = async (signal?: AbortSignal) => {
   const seq = ++chartReqSeq
   chartsLoading.value = true
   try {
@@ -509,21 +521,38 @@ const loadChartData = async () => {
       include_stats: false,
       include_trend: true,
       include_model_stats: false,
-      include_group_stats: true,
+      include_group_stats: false,
       include_users_trend: false
-    })
+    }, signal)
     if (seq !== chartReqSeq) return
     trendData.value = snapshot.trend || []
-    groupStats.value = snapshot.groups || []
-  } catch (error) { console.error('Failed to load chart data:', error) } finally { if (seq === chartReqSeq) chartsLoading.value = false }
+  } catch (error) {
+    if (!signal?.aborted) console.error('Failed to load chart data:', error)
+  } finally {
+    if (seq === chartReqSeq) chartsLoading.value = false
+  }
+}
+// Keep usage-log aggregates from scanning the same large table at once. A new
+// filter or refresh cancels the previous chain before starting the next one.
+const loadAnalytics = async (forceStats = false) => {
+  analyticsAbortController?.abort()
+  const controller = new AbortController()
+  analyticsAbortController = controller
+  const { signal } = controller
+
+  await loadStats(forceStats, signal)
+  if (signal.aborted) return
+  if (!loadedModelSources[modelDistributionSource.value]) {
+    await loadModelStats(modelDistributionSource.value, true, signal)
+  }
+  if (signal.aborted) return
+  await loadChartData(signal)
 }
 const applyFilters = () => {
   pagination.page = 1
   invalidateModelStatsCache()
   loadLogs()
-  loadStats()
-  loadModelStats(modelDistributionSource.value, true)
-  loadChartData()
+  void loadAnalytics()
   errPage.value = 1
   if (activeTab.value === 'errors') {
     loadAdminErrors()
@@ -534,14 +563,12 @@ const applyFilters = () => {
 const refreshData = () => {
   invalidateModelStatsCache()
   loadLogs()
-  loadStats(true)
-  loadModelStats(modelDistributionSource.value, true)
-  loadChartData()
+  void loadAnalytics(true)
   if (activeTab.value === 'errors') loadAdminErrors()
   if (rankingMounted.value) rankingRef.value?.reload()
 }
 const resetFilters = () => {
-  const range = getLast24HoursRangeDates()
+  const range = getTodayRangeDates()
   startDate.value = range.start
   endDate.value = range.end
   filters.value = { start_date: startDate.value, end_date: endDate.value, request_type: undefined, native_compaction_v2: null, billing_type: null, billing_mode: undefined }
@@ -868,16 +895,17 @@ onMounted(() => {
   applyRouteQueryFilters()
   void loadRouteUserFilterLabel()
   loadLogs()
-  loadStats()
-  loadModelStats(modelDistributionSource.value, true)
-  window.setTimeout(() => {
-    void loadChartData()
-  }, 120)
+  void loadAnalytics()
   loadSavedColumns()
   loadSavedErrColumns()
   document.addEventListener('click', handleColumnClickOutside)
 })
-onUnmounted(() => { abortController?.abort(); exportAbortController?.abort(); document.removeEventListener('click', handleColumnClickOutside) })
+onUnmounted(() => {
+  abortController?.abort()
+  exportAbortController?.abort()
+  analyticsAbortController?.abort()
+  document.removeEventListener('click', handleColumnClickOutside)
+})
 
 watch(modelDistributionSource, (source) => {
   void loadModelStats(source)

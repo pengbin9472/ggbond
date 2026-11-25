@@ -820,6 +820,241 @@ func (r *usageLogRepository) GetStatsWithFilters(ctx context.Context, filters Us
 	return stats, nil
 }
 
+// GetUsageAnalyticsWithFilters returns the usage summary, endpoint breakdowns,
+// model breakdown, and group breakdown from one usage_logs scan. This is used
+// by the admin usage page to avoid running four independent aggregates over the
+// same time range.
+func (r *usageLogRepository) GetUsageAnalyticsWithFilters(ctx context.Context, filters UsageLogFilters) (*UsageStats, error) {
+	conditions := make([]string, 0, 12)
+	args := make([]any, 0, 12)
+	addCondition := func(condition string, value any) {
+		conditions = append(conditions, fmt.Sprintf(condition, len(args)+1))
+		args = append(args, value)
+	}
+
+	if filters.UserID > 0 {
+		addCondition("ul.user_id = $%d", filters.UserID)
+	}
+	if filters.APIKeyID > 0 {
+		addCondition("ul.api_key_id = $%d", filters.APIKeyID)
+	}
+	if filters.AccountID > 0 {
+		addCondition("ul.account_id = $%d", filters.AccountID)
+	}
+	if filters.GroupID > 0 {
+		addCondition("ul.group_id = $%d", filters.GroupID)
+	}
+	if strings.TrimSpace(filters.Model) != "" {
+		modelSource := filters.ModelFilterSource
+		modelExpr := resolveModelDimensionExpressionWithAlias(modelSource, "ul")
+		if strings.TrimSpace(modelSource) == "" {
+			modelExpr = "ul.model"
+		}
+		addCondition(modelExpr+" = $%d", filters.Model)
+	}
+	if filters.RequestType != nil {
+		condition, conditionArgs := buildRequestTypeFilterConditionWithAlias(len(args)+1, *filters.RequestType, "ul")
+		conditions = append(conditions, condition)
+		args = append(args, conditionArgs...)
+	} else if filters.Stream != nil {
+		addCondition("ul.stream = $%d", *filters.Stream)
+	}
+	conditions, args = appendNativeCompactionV2WhereCondition(conditions, args, filters.NativeCompactionV2, "ul")
+	if filters.BillingType != nil {
+		addCondition("ul.billing_type = $%d", int16(*filters.BillingType))
+	}
+	conditions, args = appendUsageLogBillingModeWhereConditionWithAlias(conditions, args, filters.BillingMode, "ul")
+	if filters.UpstreamModelMismatch != nil {
+		conditions = append(conditions, upstreamModelMismatchCondition("ul.upstream_model_mismatch", *filters.UpstreamModelMismatch))
+	}
+	if filters.StartTime != nil {
+		addCondition("ul.created_at >= $%d", *filters.StartTime)
+	}
+	if filters.EndTime != nil {
+		addCondition("ul.created_at < $%d", *filters.EndTime)
+	}
+
+	modelExpr := resolveModelDimensionExpressionWithAlias(usagestats.ModelSourceRequested, "ul")
+	query := fmt.Sprintf(`
+		WITH scoped AS (
+			SELECT
+				COALESCE(NULLIF(TRIM(ul.inbound_endpoint), ''), 'unknown') AS inbound_endpoint,
+				COALESCE(NULLIF(TRIM(ul.upstream_endpoint), ''), 'unknown') AS upstream_endpoint,
+				COALESCE(%s, 'unknown') AS model_key,
+				COALESCE(ul.group_id, 0) AS group_key,
+				ul.input_tokens,
+				ul.output_tokens,
+				ul.cache_creation_tokens,
+				ul.cache_read_tokens,
+				ul.total_cost,
+				ul.actual_cost,
+				COALESCE(ul.account_stats_cost, ul.total_cost) * COALESCE(ul.account_rate_multiplier, 1) AS account_cost,
+				ul.duration_ms
+			FROM usage_logs ul
+			%s
+		), aggregated AS (
+			SELECT
+				GROUPING(inbound_endpoint) AS inbound_grouped,
+				GROUPING(upstream_endpoint) AS upstream_grouped,
+				GROUPING(model_key) AS model_grouped,
+				GROUPING(group_key) AS group_grouped,
+				inbound_endpoint,
+				upstream_endpoint,
+				model_key,
+				group_key,
+				COUNT(*) AS requests,
+				COALESCE(SUM(input_tokens), 0) AS input_tokens,
+				COALESCE(SUM(output_tokens), 0) AS output_tokens,
+				COALESCE(SUM(cache_creation_tokens), 0) AS cache_creation_tokens,
+				COALESCE(SUM(cache_read_tokens), 0) AS cache_read_tokens,
+				COALESCE(SUM(input_tokens + output_tokens + cache_creation_tokens + cache_read_tokens), 0) AS total_tokens,
+				COALESCE(SUM(total_cost), 0) AS cost,
+				COALESCE(SUM(actual_cost), 0) AS actual_cost,
+				COALESCE(SUM(account_cost), 0) AS account_cost,
+				COALESCE(AVG(duration_ms), 0) AS avg_duration_ms
+			FROM scoped
+			GROUP BY GROUPING SETS (
+				(),
+				(inbound_endpoint),
+				(upstream_endpoint),
+				(inbound_endpoint, upstream_endpoint),
+				(model_key),
+				(group_key)
+			)
+		)
+		SELECT
+			a.inbound_grouped,
+			a.upstream_grouped,
+			a.model_grouped,
+			a.group_grouped,
+			a.inbound_endpoint,
+			a.upstream_endpoint,
+			a.model_key,
+			a.group_key,
+			COALESCE(g.name, '') AS group_name,
+			a.requests,
+			a.input_tokens,
+			a.output_tokens,
+			a.cache_creation_tokens,
+			a.cache_read_tokens,
+			a.total_tokens,
+			a.cost,
+			a.actual_cost,
+			a.account_cost,
+			a.avg_duration_ms
+		FROM aggregated a
+		LEFT JOIN groups g ON a.group_grouped = 0 AND g.id = a.group_key
+	`, modelExpr, buildWhere(conditions))
+
+	rows, err := r.sql.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = rows.Close() }()
+
+	stats := &UsageStats{
+		Endpoints:         make([]EndpointStat, 0),
+		UpstreamEndpoints: make([]EndpointStat, 0),
+		EndpointPaths:     make([]EndpointStat, 0),
+		Models:            make([]usagestats.ModelStat, 0),
+		Groups:            make([]usagestats.GroupStat, 0),
+	}
+	var totalAccountCost float64
+	for rows.Next() {
+		var (
+			inboundGrouped, upstreamGrouped, modelGrouped, groupGrouped                int
+			inboundEndpoint, upstreamEndpoint, modelName                               sql.NullString
+			groupID                                                                    sql.NullInt64
+			groupName                                                                  string
+			requests, inputTokens, outputTokens, cacheCreation, cacheRead, totalTokens int64
+			cost, actualCost, accountCost, averageDurationMs                           float64
+		)
+		if err := rows.Scan(
+			&inboundGrouped,
+			&upstreamGrouped,
+			&modelGrouped,
+			&groupGrouped,
+			&inboundEndpoint,
+			&upstreamEndpoint,
+			&modelName,
+			&groupID,
+			&groupName,
+			&requests,
+			&inputTokens,
+			&outputTokens,
+			&cacheCreation,
+			&cacheRead,
+			&totalTokens,
+			&cost,
+			&actualCost,
+			&accountCost,
+			&averageDurationMs,
+		); err != nil {
+			return nil, err
+		}
+
+		switch {
+		case inboundGrouped == 1 && upstreamGrouped == 1 && modelGrouped == 1 && groupGrouped == 1:
+			stats.TotalRequests = requests
+			stats.TotalInputTokens = inputTokens
+			stats.TotalOutputTokens = outputTokens
+			stats.TotalCacheCreationTokens = cacheCreation
+			stats.TotalCacheReadTokens = cacheRead
+			stats.TotalCacheTokens = cacheCreation + cacheRead
+			stats.TotalCost = cost
+			stats.TotalActualCost = actualCost
+			totalAccountCost = accountCost
+			stats.AverageDurationMs = averageDurationMs
+		case modelGrouped == 0 && inboundGrouped == 1 && upstreamGrouped == 1 && groupGrouped == 1:
+			stats.Models = append(stats.Models, usagestats.ModelStat{
+				Model: modelName.String, Requests: requests, InputTokens: inputTokens, OutputTokens: outputTokens,
+				CacheCreationTokens: cacheCreation, CacheReadTokens: cacheRead, TotalTokens: totalTokens,
+				Cost: cost, ActualCost: actualCost, AccountCost: accountCost,
+			})
+		case groupGrouped == 0 && inboundGrouped == 1 && upstreamGrouped == 1 && modelGrouped == 1:
+			stats.Groups = append(stats.Groups, usagestats.GroupStat{
+				GroupID: groupID.Int64, GroupName: groupName, Requests: requests, TotalTokens: totalTokens,
+				Cost: cost, ActualCost: actualCost, AccountCost: accountCost,
+			})
+		case inboundGrouped == 0 && upstreamGrouped == 1:
+			stats.Endpoints = append(stats.Endpoints, usagestats.EndpointStat{
+				Endpoint: inboundEndpoint.String, Requests: requests, TotalTokens: totalTokens,
+				Cost: cost, ActualCost: actualCost, AccountCost: accountCost,
+			})
+		case inboundGrouped == 1 && upstreamGrouped == 0:
+			stats.UpstreamEndpoints = append(stats.UpstreamEndpoints, usagestats.EndpointStat{
+				Endpoint: upstreamEndpoint.String, Requests: requests, TotalTokens: totalTokens,
+				Cost: cost, ActualCost: actualCost, AccountCost: accountCost,
+			})
+		case inboundGrouped == 0 && upstreamGrouped == 0:
+			stats.EndpointPaths = append(stats.EndpointPaths, usagestats.EndpointStat{
+				Endpoint: inboundEndpoint.String + " -> " + upstreamEndpoint.String,
+				Requests: requests, TotalTokens: totalTokens, Cost: cost, ActualCost: actualCost, AccountCost: accountCost,
+			})
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	sortEndpointStats := func(values []EndpointStat) {
+		sort.Slice(values, func(i, j int) bool {
+			if values[i].Requests != values[j].Requests {
+				return values[i].Requests > values[j].Requests
+			}
+			return values[i].Endpoint < values[j].Endpoint
+		})
+	}
+	sortEndpointStats(stats.Endpoints)
+	sortEndpointStats(stats.UpstreamEndpoints)
+	sortEndpointStats(stats.EndpointPaths)
+	sort.Slice(stats.Models, func(i, j int) bool { return stats.Models[i].TotalTokens > stats.Models[j].TotalTokens })
+	sort.Slice(stats.Groups, func(i, j int) bool { return stats.Groups[i].TotalTokens > stats.Groups[j].TotalTokens })
+	stats.TotalAccountCost = &totalAccountCost
+	stats.TotalTokens = stats.TotalInputTokens + stats.TotalOutputTokens + stats.TotalCacheTokens
+	return stats, nil
+}
+
 // AccountUsageHistory represents daily usage history for an account
 type AccountUsageHistory = usagestats.AccountUsageHistory
 

@@ -461,3 +461,40 @@ func (s *UsageService) GetStatsWithFilters(ctx context.Context, filters usagesta
 	}
 	return stats, nil
 }
+
+// GetUsageAnalyticsWithFilters returns the summary and its model/group
+// breakdowns. Repositories with a combined aggregate can serve all three from
+// one scan; the fallback keeps alternate repository implementations compatible.
+func (s *UsageService) GetUsageAnalyticsWithFilters(ctx context.Context, filters usagestats.UsageLogFilters) (*usagestats.UsageStats, error) {
+	type combinedAnalyticsRepo interface {
+		GetUsageAnalyticsWithFilters(ctx context.Context, filters usagestats.UsageLogFilters) (*usagestats.UsageStats, error)
+	}
+	if repo, ok := s.usageRepo.(combinedAnalyticsRepo); ok {
+		stats, err := repo.GetUsageAnalyticsWithFilters(ctx, filters)
+		if err != nil {
+			return nil, fmt.Errorf("get usage analytics with filters: %w", err)
+		}
+		return stats, nil
+	}
+
+	stats, err := s.GetStatsWithFilters(ctx, filters)
+	if err != nil {
+		return nil, err
+	}
+	var startTime, endTime time.Time
+	if filters.StartTime != nil {
+		startTime = *filters.StartTime
+	}
+	if filters.EndTime != nil {
+		endTime = *filters.EndTime
+	}
+	stats.Models, err = s.GetModelStatsWithFiltersBySource(ctx, startTime, endTime, filters, usagestats.ModelSourceRequested)
+	if err != nil {
+		return nil, err
+	}
+	stats.Groups, err = s.GetGroupStatsWithFilters(ctx, startTime, endTime, filters)
+	if err != nil {
+		return nil, err
+	}
+	return stats, nil
+}

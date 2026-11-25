@@ -313,9 +313,9 @@ describe('admin UsageView native compaction filter', () => {
       expect.objectContaining({ native_compaction_v2: true }),
       expect.anything()
     )
-    expect(getStats).toHaveBeenCalledWith(expect.objectContaining({ native_compaction_v2: true }))
-    expect(getModelStats).toHaveBeenCalledWith(expect.objectContaining({ native_compaction_v2: true }))
-    expect(getSnapshotV2).toHaveBeenCalledWith(expect.objectContaining({ native_compaction_v2: true }))
+    expect(getStats).toHaveBeenCalledWith(expect.objectContaining({ native_compaction_v2: true }), expect.any(AbortSignal))
+    expect(getModelStats).toHaveBeenCalledWith(expect.objectContaining({ native_compaction_v2: true }), expect.any(AbortSignal))
+    expect(getSnapshotV2).toHaveBeenCalledWith(expect.objectContaining({ native_compaction_v2: true }), expect.any(AbortSignal))
 
     list.mockClear()
     getStats.mockClear()
@@ -331,9 +331,9 @@ describe('admin UsageView native compaction filter', () => {
       expect.objectContaining({ native_compaction_v2: null }),
       expect.anything()
     )
-    expect(getStats).toHaveBeenCalledWith(expect.objectContaining({ native_compaction_v2: null }))
-    expect(getModelStats).toHaveBeenCalledWith(expect.objectContaining({ native_compaction_v2: null }))
-    expect(getSnapshotV2).toHaveBeenCalledWith(expect.objectContaining({ native_compaction_v2: null }))
+    expect(getStats).toHaveBeenCalledWith(expect.objectContaining({ native_compaction_v2: null }), expect.any(AbortSignal))
+    expect(getModelStats).toHaveBeenCalledWith(expect.objectContaining({ native_compaction_v2: null }), expect.any(AbortSignal))
+    expect(getSnapshotV2).toHaveBeenCalledWith(expect.objectContaining({ native_compaction_v2: null }), expect.any(AbortSignal))
   })
 })
 
@@ -404,6 +404,33 @@ describe('admin UsageView distribution metric toggles', () => {
     expect((wrapper.vm as any).requestedModelStats).toEqual([{ model: 'B', total_tokens: 20 }])
   })
 
+  it('loads combined usage aggregates before requesting the trend', async () => {
+    let resolveStats!: (value: any) => void
+    getStats.mockReturnValueOnce(new Promise((resolve) => { resolveStats = resolve }))
+
+    const wrapper = mountRouteFilteredUsageView()
+    await wrapper.vm.$nextTick()
+
+    expect(getStats).toHaveBeenCalledTimes(1)
+    expect(getModelStats).not.toHaveBeenCalled()
+    expect(getSnapshotV2).not.toHaveBeenCalled()
+
+    resolveStats({
+      total_requests: 0,
+      total_input_tokens: 0,
+      total_output_tokens: 0,
+      total_tokens: 0,
+      models: [{ model: 'gpt-5', total_tokens: 12 }],
+      groups: [{ group_id: 7, group_name: 'test', total_tokens: 12 }],
+    })
+    await flushPromises()
+
+    expect(getModelStats).not.toHaveBeenCalled()
+    expect(getSnapshotV2).toHaveBeenCalledTimes(1)
+    expect(getSnapshotV2).toHaveBeenCalledWith(expect.objectContaining({ include_group_stats: false }), expect.any(AbortSignal))
+    expect((wrapper.vm as any).requestedModelStats).toEqual([{ model: 'gpt-5', total_tokens: 12 }])
+  })
+
   it('keeps model and group metric toggles independent without refetching chart data', async () => {
     const wrapper = mount(UsageView, {
       global: {
@@ -431,13 +458,20 @@ describe('admin UsageView distribution metric toggles', () => {
     await flushPromises()
 
     expect(getSnapshotV2).toHaveBeenCalledTimes(1)
-    const now = new Date()
-    const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000)
+    const today = new Date()
     expect(getSnapshotV2).toHaveBeenCalledWith(expect.objectContaining({
-      start_date: formatLocalDate(yesterday),
-      end_date: formatLocalDate(now),
+      start_date: formatLocalDate(today),
+      end_date: formatLocalDate(today),
       granularity: 'hour'
-    }))
+    }), expect.any(AbortSignal))
+    expect(getStats).toHaveBeenCalledWith(expect.objectContaining({
+      start_date: formatLocalDate(today),
+      end_date: formatLocalDate(today)
+    }), expect.any(AbortSignal))
+    expect(list).toHaveBeenCalledWith(expect.objectContaining({
+      start_date: formatLocalDate(today),
+      end_date: formatLocalDate(today)
+    }), expect.anything())
 
     const modelChart = wrapper.find('[data-test="model-chart"]')
     const groupChart = wrapper.find('[data-test="group-chart"]')
