@@ -527,7 +527,7 @@ gateway:
   # 流数据间隔超时（秒），0=禁用
   stream_data_interval_timeout: 180
   # Stream keepalive interval (seconds), 0=disable
-  # 流式 keepalive 间隔（秒），0=禁用
+  # 流式 keepalive 间隔（秒），包含 Responses 等待上游响应头阶段；0=禁用
   stream_keepalive_interval: 10
   # Image stream data interval timeout (seconds), 0=disable; independent from ordinary text streams
   # 图片流数据间隔超时（秒），0=禁用；独立于普通文本流式

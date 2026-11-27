@@ -84,7 +84,7 @@ func writeOpenCodeUnsupportedModelError(c *gin.Context, isAnthropic bool, model 
 		if isAnthropic {
 			writeAnthropicError(c, http.StatusBadRequest, "invalid_request_error", msg)
 		} else {
-			c.JSON(http.StatusBadRequest, gin.H{
+			writeOpenAIJSONError(c, http.StatusBadRequest, gin.H{
 				"error": gin.H{
 					"type":    "invalid_request_error",
 					"code":    "model_not_supported",

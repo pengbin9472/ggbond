@@ -11,7 +11,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// openAICompactSSEKeepaliveKey 存放 body-signal compact 请求的下游 SSE 心跳器。
+// openAICompactSSEKeepaliveKey 存放 Responses/compact 请求共享的下游 SSE 心跳器。
 const openAICompactSSEKeepaliveKey = "openai_compact_sse_keepalive"
 
 // openAICompactSSEKeepalive 在 compact 上游 unary 等待期间向下游写 SSE 注释行
@@ -55,14 +55,34 @@ func StartOpenAICompactSSEKeepalive(c *gin.Context, interval time.Duration) func
 //
 // 心跳字节由 OpenAICompactKeepaliveAdjustedWrittenSize 统一排除，因此不会污染
 // "是否已向客户端写出语义响应"的 failover 判定（见 #3887）。
+// 多阶段等待/重试重启心跳时，保留累计字节和已提交状态；已有活动心跳则复用。
 func startOpenAISSEKeepalive(c *gin.Context, interval time.Duration) func() {
 	if c == nil || c.Writer == nil || interval <= 0 {
 		return func() {}
 	}
 	originalWriter := c.Writer
+	var previousBytes int
+	var committed bool
+	if value, ok := c.Get(openAICompactSSEKeepaliveKey); ok {
+		if previous, ok := value.(*openAICompactSSEKeepalive); ok && previous != nil {
+			previous.mu.Lock()
+			// An outer compact/request heartbeat already owns the writer.
+			if !previous.stopped {
+				previous.mu.Unlock()
+				return func() {}
+			}
+			previousBytes, committed = previous.bytes, previous.started
+			previous.mu.Unlock()
+			if wrapped, ok := originalWriter.(*openAICompactKeepaliveWriter); ok && wrapped.k == previous {
+				originalWriter = wrapped.ResponseWriter
+			}
+		}
+	}
 	k := &openAICompactSSEKeepalive{
-		writer: originalWriter,
-		stop:   make(chan struct{}),
+		writer:  originalWriter,
+		bytes:   previousBytes,
+		started: committed,
+		stop:    make(chan struct{}),
 	}
 	c.Set(openAICompactSSEKeepaliveKey, k)
 	wrappedWriter := &openAICompactKeepaliveWriter{ResponseWriter: originalWriter, k: k}
